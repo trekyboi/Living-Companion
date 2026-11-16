@@ -51,6 +51,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.level.Level;
@@ -323,7 +324,8 @@ public class CompanionEntity extends PathfinderMob {
     /** Immediately redirects the companion toward a hostile attacking its owner. */
     public void assistOwnerAgainst(LivingEntity attacker) {
         if (this.level().isClientSide || attacker == null || !attacker.isAlive()
-                || !(attacker instanceof Monster) || this.command == Command.STAY) return;
+                || (!(attacker instanceof Monster) && !(attacker instanceof EnderDragon))
+                || this.command == Command.STAY) return;
         Player owner = getOwnerPlayer();
         if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
         double protectiveRange = 16.0D + this.personality.getProtectiveInstinct() * 4.0D;
