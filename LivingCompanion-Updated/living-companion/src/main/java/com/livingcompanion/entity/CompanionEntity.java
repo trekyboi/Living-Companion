@@ -284,6 +284,9 @@ public class CompanionEntity extends PathfinderMob {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (isProtectedFromOwner() && isOwnerDamage(source)) return false;
+        if (!this.level().isClientSide) {
+            amount = this.skillRuntime.mitigateIncomingDamage(amount);
+        }
         return super.hurt(source, amount);
     }
 
