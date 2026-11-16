@@ -316,6 +316,22 @@ public class CompanionEntity extends PathfinderMob {
         if (!this.level().isClientSide) this.personality.recordProtection();
     }
 
+    /** Immediately redirects the companion toward a hostile attacking its owner. */
+    public void assistOwnerAgainst(LivingEntity attacker) {
+        if (this.level().isClientSide || attacker == null || !attacker.isAlive()
+                || !(attacker instanceof Monster) || this.command == Command.STAY) return;
+        Player owner = getOwnerPlayer();
+        if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
+        if (attacker.distanceToSqr(owner) > 20.0D * 20.0D) return;
+        LivingEntity current = this.getTarget();
+        if (current == null || !current.isAlive()
+                || current.getHealth() > current.getMaxHealth() * 0.30F
+                || attacker.distanceToSqr(owner) < current.distanceToSqr(owner)) {
+            this.setTarget(attacker);
+            this.getNavigation().moveTo(attacker, 1.2D);
+        }
+    }
+
     public void recordDiscovery() {
         if (!this.level().isClientSide) this.personality.recordDiscovery();
     }
