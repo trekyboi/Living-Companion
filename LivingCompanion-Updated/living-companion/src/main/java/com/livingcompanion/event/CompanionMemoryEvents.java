@@ -68,11 +68,10 @@ public final class CompanionMemoryEvents {
         String memory = null;
         if (event.getTo() == Level.NETHER) memory = "we entered the Nether together";
         else if (event.getTo() == Level.END) memory = "we entered the End together";
-        if (memory == null) return;
         CompanionEntity companion = findCompanion(player);
         if (companion == null) return;
 
-        companion.remember(memory);
+        if (memory != null) companion.remember(memory);
 
         // FOLLOW and DEFEND companions travel with their owner. STAY companions
         // deliberately remain in the dimension where they were ordered to wait.
