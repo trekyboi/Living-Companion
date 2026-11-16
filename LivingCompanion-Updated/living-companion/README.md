@@ -43,6 +43,13 @@ remains the fallback when the combat addons are absent.
 - Persistent bed-based resurrection queue; companion equipment and memories are
   captured on death and restored after the configured delay
 
+
+## Optional backpack compatibility
+
+Living Companion exposes the companion entity's Curios **back** slot when Curios API 5.14.1+ for Forge 1.20.1 is installed. Backpack items that support the Curios back slot can be equipped through Curios-compatible equipment workflows. Curios remains optional; the companion's normal inventory and equipment work without it.
+
+The Curios slot provides equipment compatibility and persistence through Curios. Opening a backpack's custom storage interface on a companion is backpack-mod-specific and requires a dedicated integration. That access layer is being developed separately.
+
 ## Remaining verification work
 
 - Full ForgeGradle build and in-game test on a normal Windows development machine
