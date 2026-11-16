@@ -2,7 +2,9 @@
 
 A lightweight knight companion mod for Minecraft Java 1.20.1 and Forge 47.x.
 The companion uses Minecraft's **vanilla player model**, a custom 64×64 knight
-skin, and the normal humanoid walking and arm-swing animation pipeline.
+skin, and the vanilla humanoid movement pipeline. With Better Combat and Better
+Mob Combat installed, the knight uses weapon-aware attack animations through
+Player Animator.
 
 ## Target environment
 
@@ -10,13 +12,15 @@ skin, and the normal humanoid walking and arm-swing animation pipeline.
 - Minecraft Forge 47.x (development pinned to 47.4.0)
 - Java 17
 - ForgeGradle 6 / Gradle wrapper 8.1.1
-- Optional: Better Combat for 1.20.1 Forge
+- Optional combat stack: Better Combat 1.9.0, Better Mob Combat 1.3.0,
+  Player Animator, Mob Player Animator, Cloth Config API, and Better Mob Combat
+  Fix (BMCFIX) 1.0.2 for the Better Combat 1.9.0 compatibility issue
 
-There is no GeckoLib dependency and no custom 3D model or animation framework.
-Better Combat can be installed alongside the mod. The companion uses vanilla
-server-side melee AI and standard item attack-damage attributes; weapon items
-that expose those attributes can be equipped. Better Combat-specific NPC attack
-animations are not claimed or required.
+There is no GeckoLib dependency and no custom 3D model or procedural attack-animation
+framework. Better Mob Combat routes humanoid mob melee attacks through Better
+Combat. The companion keeps its existing PlayerModel rig, allowing Player
+Animator to animate the same model used to render the knight. Vanilla melee
+remains the fallback when the combat addons are absent.
 
 ## Current project features
 
@@ -24,7 +28,8 @@ animations are not claimed or required.
 - Owner UUID binding and persistent ownership
 - Configurable health, damage, movement speed and hostile scan range
 - Player-model renderer with `companion_knight.png`
-- Vanilla player-style movement and melee swing animations
+- Vanilla player-style movement animations
+- Better Combat attack animations when the optional Better Mob Combat stack is installed
 - Held-item and armor rendering
 - FOLLOW / STAY / DEFEND command cycle (right-click the companion)
 - Shift-right-click to display command and health status
@@ -42,7 +47,7 @@ animations are not claimed or required.
 ## Remaining verification work
 
 - Full ForgeGradle build and in-game test on a normal Windows development machine
-- Better Combat compatibility testing for modded weapon items and NPC attack visuals
+- In-game testing of Better Combat / Better Mob Combat attack visuals and weapon compatibility
 - Multiplayer testing for ownership, duplicate prevention, and resurrection timing
 
 Complex relationship progression and evolving personality simulation are
@@ -62,7 +67,15 @@ Open this folder in IntelliJ IDEA as a Gradle project, using JDK 17.
 On Windows use `gradlew.bat` instead of `./gradlew`.
 
 The distributable mod JAR is created in `build/libs/`. Install it in a Forge
-1.20.1 instance. Better Combat is optional and can be installed separately.
+1.20.1 instance.
+
+For Better Combat-style companion attacks, install the Forge 1.20.1 versions of
+Better Combat, Better Mob Combat, Player Animator, Mob Player Animator, and
+Cloth Config API. Better Combat 1.9.0 requires Better Mob Combat Fix (BMCFIX)
+1.0.2 to address an upstream compatibility break. Install Architectury API if
+the fix mod's release metadata lists it as a dependency. The combat addons
+must be installed on the client and server where required by their mod pages.
+Without the addon stack, Living Companion continues using vanilla combat.
 
 ## In-game use
 
@@ -72,7 +85,8 @@ The distributable mod JAR is created in `build/libs/`. Install it in a Forge
 3. Right-click with an empty hand to cycle FOLLOW → STAY → DEFEND → FOLLOW.
 4. Shift-right-click to view his current command and health.
 5. Right-click while holding a weapon, shield, or armor piece to give it to him.
-6. The companion targets nearby hostile monsters and uses ordinary melee AI.
+6. The companion targets nearby hostile monsters. With Better Mob Combat installed,
+   its melee goal uses Better Combat weapon attacks and Player Animator poses.
 
 The `/summon livingcompanion:companion` command also creates the entity. A
 nearby player is assigned as owner during spawn finalization when possible.
