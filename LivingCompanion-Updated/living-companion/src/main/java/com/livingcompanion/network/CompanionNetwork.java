@@ -63,6 +63,9 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(8, ChooseSpecializationMessage.class,
                 ChooseSpecializationMessage::encode, ChooseSpecializationMessage::decode,
                 ChooseSpecializationMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(9, OpenBackpackMessage.class,
+                OpenBackpackMessage::encode, OpenBackpackMessage::decode,
+                OpenBackpackMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -86,7 +89,11 @@ public final class CompanionNetwork {
         CHANNEL.sendToServer(new RequestSkillDataMessage(companionEntityId));
     }
 
-    public static void requestOpenBackpack(int companionEntityId) {\n        CHANNEL.sendToServer(new OpenBackpackMessage(companionEntityId));\n    }\n\n    public static void requestStats(int companionEntityId) {
+    public static void requestOpenBackpack(int companionEntityId) {
+        CHANNEL.sendToServer(new OpenBackpackMessage(companionEntityId));
+    }
+
+    public static void requestStats(int companionEntityId) {
         CHANNEL.sendToServer(new RequestStatsMessage(companionEntityId));
     }
 
@@ -155,7 +162,8 @@ public final class CompanionNetwork {
             context.setPacketHandled(true);
         }
     }
-\n    public static final class RequestStatsMessage {
+
+    public static final class RequestStatsMessage {
         private final int entityId;
         public RequestStatsMessage(int entityId) { this.entityId = entityId; }
         public static void encode(RequestStatsMessage message, FriendlyByteBuf buffer) {
