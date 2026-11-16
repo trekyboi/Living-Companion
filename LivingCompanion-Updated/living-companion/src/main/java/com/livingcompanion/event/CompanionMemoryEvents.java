@@ -42,9 +42,23 @@ public final class CompanionMemoryEvents {
         Entity attacker = event.getSource().getEntity();
         if (attacker instanceof ServerPlayer player) {
             CompanionEntity companion = findCompanion(player);
-            if (companion != null) companion.remember(memory);
+            if (companion != null) {
+                companion.remember(memory);
+                if (event.getEntity() instanceof EnderDragon) {
+                    companion.commentOnEvent("Well. That's the biggest problem dealt with.",
+                            "I was expecting a longer argument.",
+                            "Remind me never to do that twice in one afternoon.");
+                } else {
+                    companion.commentOnEvent("That thing was a proper nuisance.",
+                            "I would like to file a complaint about that fight.",
+                            "Good. I was running out of patience.");
+                }
+            }
         } else if (attacker instanceof CompanionEntity companion) {
             companion.remember(memory);
+            companion.commentOnEvent("Well. That's the biggest problem dealt with.",
+                    "I was expecting a longer argument.",
+                    "Remind me never to do that twice in one afternoon.");
         }
     }
 
@@ -59,7 +73,19 @@ public final class CompanionMemoryEvents {
         }
         if (memory == null) return;
         CompanionEntity companion = findCompanion(player);
-        if (companion != null) companion.remember(memory);
+        if (companion != null) {
+            companion.remember(memory);
+            if (event.getState().is(Blocks.DIAMOND_ORE)
+                    || event.getState().is(Blocks.DEEPSLATE_DIAMOND_ORE)) {
+                companion.commentOnEvent("Diamonds. Excellent. Try not to spend them all at once.",
+                        "That's a good find. Suddenly this trip feels worthwhile.",
+                        "I'll pretend I spotted those first.");
+            } else {
+                companion.commentOnEvent("Ancient debris. That should make the trip worthwhile.",
+                        "Careful with that. It looks valuable and unpleasant.",
+                        "Now that's a reason to keep exploring.");
+            }
+        }
     }
 
     @SubscribeEvent
@@ -92,6 +118,15 @@ public final class CompanionMemoryEvents {
             Entity transferred = companion.changeDimension(destination, teleporter);
             if (transferred instanceof CompanionEntity movedCompanion) {
                 movedCompanion.getNavigation().stop();
+                if (event.getTo() == Level.NETHER) {
+                    movedCompanion.commentOnEvent("The Nether. Lovely. Everything here wants to kill us.",
+                            "Try not to touch anything. Especially the things that are on fire.",
+                            "I preferred the weather back home.");
+                } else if (event.getTo() == Level.END) {
+                    movedCompanion.commentOnEvent("The End. Subtle name. Very welcoming.",
+                            "Right. Let's deal with the dragon and leave.",
+                            "I have a bad feeling about this place. Several, actually.");
+                }
             }
         }
     }
