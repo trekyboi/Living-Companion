@@ -101,8 +101,10 @@ public final class CompanionInventoryMenu extends AbstractContainerMenu {
         if (index < playerStart) {
             if (!this.moveItemStackTo(source, playerStart, playerEnd, true)) return empty;
         } else {
-            boolean moved = this.moveItemStackTo(source, storageStart, storageStart + 36, false);
-            if (!moved && curiosBackSlot) moved = this.moveItemStackTo(source, 6, 7, false);
+            // Prefer the dedicated back slot for compatible backpacks. Ordinary
+            // items fall through to companion storage when Curios rejects them.
+            boolean moved = curiosBackSlot && this.moveItemStackTo(source, 6, 7, false);
+            if (!moved) moved = this.moveItemStackTo(source, storageStart, storageStart + 36, false);
             if (!moved) return empty;
         }
 
