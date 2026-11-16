@@ -535,6 +535,21 @@ public class CompanionEntity extends PathfinderMob {
         }
     }
 
+    /** Delivers a short event-specific line through the same dialogue cooldown. */
+    public void commentOnEvent(String... lines) {
+        if (this.level().isClientSide || !CompanionConfig.DIALOGUE_ENABLED.get()
+                || lines == null || lines.length == 0) return;
+        Player owner = getOwnerPlayer();
+        long now = this.level().getGameTime();
+        if (owner == null || !owner.isAlive() || owner.level() != this.level()
+                || this.distanceToSqr(owner) > 24.0D * 24.0D || now < this.nextDialogueTick) return;
+        String line = lines[this.random.nextInt(lines.length)];
+        if (line.equals(this.lastDialogueLine) && lines.length > 1) {
+            line = lines[(this.random.nextInt(lines.length - 1) + 1) % lines.length];
+        }
+        speakLine(line, now);
+    }
+
     /** Stores a short, unique memory. The newest twelve memories survive world saves. */
     public void remember(String memory) {
         if (memory == null || memory.isBlank() || this.memories.contains(memory)) return;
