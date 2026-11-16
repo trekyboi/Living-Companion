@@ -3,11 +3,14 @@ package com.livingcompanion.client;
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.client.renderer.CompanionPlayerRenderer;
 import com.livingcompanion.registry.ModEntities;
+import com.livingcompanion.registry.ModMenus;
+import com.livingcompanion.client.screen.CompanionInventoryScreen;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.event.RegisterMenuScreensEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -23,6 +26,11 @@ public final class ClientModEvents {
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(ModModelLayers.COMPANION,
                 () -> LayerDefinition.create(PlayerModel.createMesh(CubeDeformation.NONE, false), 64, 64));
+    }
+
+    @SubscribeEvent
+    public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
+        event.register(ModMenus.COMPANION_INVENTORY.get(), CompanionInventoryScreen::new);
     }
 
     private ClientModEvents() { }
