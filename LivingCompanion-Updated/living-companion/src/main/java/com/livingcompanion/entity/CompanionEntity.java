@@ -406,6 +406,9 @@ public class CompanionEntity extends PathfinderMob {
         int gained = this.progression.getLevel() - oldLevel;
         if (gained > 0) {
             applyProgressionAttributes(true);
+            if (this.progression.getLevel() >= 10) awardAchievement(CompanionAchievement.VETERAN);
+            if (this.progression.getLevel() >= 25) awardAchievement(CompanionAchievement.ELITE);
+            if (this.progression.getLevel() >= 50) awardAchievement(CompanionAchievement.LEGEND);
             Player owner = getOwnerPlayer();
             if (owner != null) {
                 owner.sendSystemMessage(Component.literal(this.getName().getString()
