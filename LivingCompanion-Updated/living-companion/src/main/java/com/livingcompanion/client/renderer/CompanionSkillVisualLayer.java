@@ -54,19 +54,20 @@ public final class CompanionSkillVisualLayer
             renderHalo(poseStack, out, time, 1.72F, 0.48F, 255, 225, 145);
         }
         if ((flags & DIVINE_PROTECTION) != 0) {
-            renderVerticalAura(poseStack, out, time, 0.88F, 0.035F, 255, 205, 85, 100);
-            renderRing(poseStack, out, 0.10F, 0.83F, 0.018F, 48, 255, 225, 135, 190, time * 0.025F);
+            renderPaladinBarrier(poseStack, out, time, 0.94F, 255, 205, 85);
+            renderRing(poseStack, out, 0.09F, 1.02F, 0.065F, 64, 255, 205, 85, 190, time * 0.025F);
             renderHalo(poseStack, out, time, 1.65F, 0.34F, 255, 235, 170);
         }
         if ((flags & AEGIS) != 0) {
-            renderWings(poseStack, out, time);
-            renderVerticalAura(poseStack, out, time, 1.12F, 0.065F, 255, 225, 130, 105);
+            renderAegisWings(poseStack, out, time);
+            renderPaladinBarrier(poseStack, out, time, 1.28F, 255, 225, 130);
             renderHalo(poseStack, out, time, 2.02F, 0.58F, 255, 245, 185);
-            renderRing(poseStack, out, 0.06F, 1.32F, 0.028F, 64, 255, 205, 95, 190, time * -0.045F);
+            renderRing(poseStack, out, 0.07F, 1.42F, 0.075F, 72, 255, 205, 95, 210, time * -0.045F);
+            renderRing(poseStack, out, 1.32F, 0.74F, 0.035F, 56, 255, 240, 175, 145, time * 0.035F);
         }
         if ((flags & PRAYER) != 0) {
-            renderRing(poseStack, out, 0.045F, 1.12F, 0.035F, 56, 255, 220, 105, 220, time * 0.055F);
-            renderRisingSpiral(poseStack, out, time, 0.68F, 255, 235, 165);
+            renderPrayerCircle(poseStack, out, time);
+            renderHealingRibbons(poseStack, out, time);
             renderHalo(poseStack, out, time, 1.95F, 0.28F, 255, 245, 195);
         }
         if ((flags & TAUNT) != 0) {
@@ -85,12 +86,90 @@ public final class CompanionSkillVisualLayer
             renderRing(poseStack, out, 1.12F, 0.48F, 0.014F, 40, 255, 190, 80, 75, time * -0.03F);
         }
         if ((flags & DIVINE_GRACE) != 0) {
-            renderHalo(poseStack, out, time, 1.94F, 0.24F, 255, 240, 175);
-            renderRing(poseStack, out, 1.38F, 0.36F, 0.012F, 32, 255, 235, 165, 85, time * 0.018F);
+            renderHalo(poseStack, out, time, 1.94F, 0.30F, 255, 240, 175);
+            renderRing(poseStack, out, 1.34F, 0.62F, 0.035F, 48, 255, 220, 135, 125, time * 0.018F);
+            renderGraceAura(poseStack, out, time);
         }
     }
 
     
+
+    private static void renderPaladinBarrier(PoseStack pose, VertexConsumer out, float time,
+                                             float radius, int red, int green, int blue) {
+        Matrix4f m=pose.last().pose();
+        for(int i=0;i<8;i++) {
+            double a=time*0.012D+Math.PI*2.0D*i/8.0D;
+            float cx=(float)Math.cos(a), cz=(float)Math.sin(a);
+            float tx=-cz*0.30F, tz=cx*0.30F;
+            float x=cx*radius, z=cz*radius;
+            int alpha=54+(int)((Math.sin(time*0.12F+i)+1.0F)*18.0F);
+            quad(out,m,x-tx,0.38F,z-tz,x-tx*0.72F,1.76F,z-tz*0.72F,
+                    x+tx*0.72F,1.76F,z+tz*0.72F,x+tx,0.38F,z+tz,
+                    red,green,blue,alpha);
+            bar3D(out,m,x-tx,0.38F,z-tz,x-tx*0.72F,1.76F,z-tz*0.72F,
+                    0.025F,255,245,190,210);
+            bar3D(out,m,x+tx,0.38F,z+tz,x+tx*0.72F,1.76F,z+tz*0.72F,
+                    0.025F,255,245,190,210);
+        }
+    }
+
+    private static void renderPrayerCircle(PoseStack pose, VertexConsumer out, float time) {
+        Matrix4f m=pose.last().pose();
+        float rotation=time*0.018F;
+        renderDisc(pose,out,0.035F,1.16F,64,255,202,86,34);
+        renderRing(pose,out,0.052F,1.18F,0.095F,72,255,211,105,225,rotation);
+        renderRing(pose,out,0.060F,0.91F,0.035F,64,255,245,185,235,-rotation*1.5F);
+        renderRing(pose,out,0.065F,0.55F,0.055F,56,240,165,55,190,rotation*2.0F);
+        for(int i=0;i<8;i++) {
+            double a=rotation+Math.PI*2.0D*i/8.0D;
+            float x=(float)Math.cos(a), z=(float)Math.sin(a);
+            bar3D(out,m,x*0.62F,0.072F,z*0.62F,x*1.02F,0.072F,z*1.02F,
+                    0.035F,255,235,155,230);
+        }
+    }
+
+    private static void renderHealingRibbons(PoseStack pose, VertexConsumer out, float time) {
+        Matrix4f m=pose.last().pose();
+        for(int i=0;i<6;i++) {
+            double a=time*0.035D+i*Math.PI/3.0D;
+            float x=(float)Math.cos(a), z=(float)Math.sin(a);
+            float y=0.18F+(float)((time*0.018F+i*0.17F)%1.0F)*1.42F;
+            float w=0.075F;
+            quad(out,m,x*0.42F-w,y,z*0.42F,x*0.70F-w,y+0.28F,z*0.70F,
+                    x*0.70F+w,y+0.28F,z*0.70F,x*0.42F+w,y,z*0.42F,
+                    255,235,155,105);
+        }
+    }
+
+    private static void renderGraceAura(PoseStack pose, VertexConsumer out, float time) {
+        Matrix4f m=pose.last().pose();
+        for(int i=0;i<12;i++) {
+            double a=time*0.012D+i*Math.PI/6.0D;
+            float x=(float)Math.cos(a), z=(float)Math.sin(a);
+            float y=0.38F+(float)Math.sin(time*0.045F+i)*0.18F;
+            quad(out,m,x*0.48F,y,z*0.48F,x*0.70F,y+0.28F,z*0.70F,
+                    x*0.73F,y+0.31F,z*0.73F,x*0.50F,y+0.03F,z*0.50F,
+                    255,220,125,55);
+        }
+    }
+
+    private static void renderAegisWings(PoseStack pose, VertexConsumer out, float time) {
+        float flap=(float)Math.sin(time*0.085F)*0.16F;
+        Matrix4f m=pose.last().pose();
+        for(int side=-1;side<=1;side+=2) {
+            float s=side;
+            quad(out,m,0.10F*s,1.35F,0.10F,0.48F*s,1.95F+flap,0.16F,
+                    1.12F*s,1.70F+flap,0.22F,0.72F*s,1.18F,0.16F,
+                    255,226,145,78);
+            for(int f=0;f<5;f++) {
+                float rx=(0.28F+f*0.075F)*s, tx=(0.52F+f*0.13F)*s;
+                float ry=1.48F-f*0.055F, ty=1.86F-f*0.13F+flap;
+                quad(out,m,rx,ry,0.13F,tx,ty,0.18F,(tx+rx)*0.5F,ty-0.19F,0.20F,
+                        rx+0.06F*s,ry-0.15F,0.16F,255,245,190,105);
+            }
+        }
+    }
+
     /**
      * Layered Tank taunt rune: filled segmented ground seal, heavy outer bands,
      * radial glyphs and a raised expanding shockwave. Geometry is camera-visible
@@ -171,7 +250,7 @@ public final class CompanionSkillVisualLayer
             quad(out, m, 0,y,0,
                     (float)Math.cos(a)*radius,y,(float)Math.sin(a)*radius,
                     (float)Math.cos(b)*radius,y,(float)Math.sin(b)*radius,
-                    0,y,0, 255, red, green, blue, alpha);
+                    0,y,0, red, green, blue, alpha);
         }
     }
 
