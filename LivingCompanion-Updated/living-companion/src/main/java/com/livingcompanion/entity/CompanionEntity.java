@@ -5,6 +5,7 @@ import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionProgression;
 import com.livingcompanion.progression.CompanionAttribute;
 import com.livingcompanion.ai.FollowOwnerGoal;
+import com.livingcompanion.ai.CompanionIdleRoutineGoal;
 import com.livingcompanion.inventory.CompanionInventory;
 import com.livingcompanion.menu.CompanionInventoryMenu;
 import net.minecraft.nbt.CompoundTag;
@@ -488,6 +489,7 @@ public class CompanionEntity extends PathfinderMob {
         this.goalSelector.addGoal(2, new FollowOwnerGoal(this, 1.15D));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+        this.goalSelector.addGoal(5, new CompanionIdleRoutineGoal(this));
 
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Monster.class,
