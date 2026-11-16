@@ -2,6 +2,8 @@ package com.livingcompanion.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
+import java.util.List;
+
 /** Simple server-authoritative settings for the companion's core systems. */
 public final class CompanionConfig {
     public static final ForgeConfigSpec SPEC;
@@ -16,6 +18,8 @@ public final class CompanionConfig {
     public static final ForgeConfigSpec.IntValue RESURRECTION_DELAY_SECONDS;
     public static final ForgeConfigSpec.BooleanValue DIALOGUE_ENABLED;
     public static final ForgeConfigSpec.IntValue DIALOGUE_COOLDOWN_SECONDS;
+    public static final ForgeConfigSpec.BooleanValue LOOT_PICKUP_ENABLED;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LOOT_PICKUP_WHITELIST;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
@@ -41,6 +45,11 @@ public final class CompanionConfig {
         b.push("combat");
         HOSTILE_SCAN_RANGE = b.comment("Range used to find hostile monsters.")
                 .defineInRange("hostileScanRange", 16.0D, 4.0D, 48.0D);
+        LOOT_PICKUP_ENABLED = b.comment("Allow companions to collect explicitly approved nearby item drops.")
+                .define("lootPickupEnabled", false);
+        LOOT_PICKUP_WHITELIST = b.comment("Item registry IDs the companion may collect. Empty means collect nothing.")
+                .defineList("lootPickupWhitelist", List.of(), value -> value instanceof String itemId
+                        && itemId.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"));
         b.pop();
 
         b.push("resurrection");
