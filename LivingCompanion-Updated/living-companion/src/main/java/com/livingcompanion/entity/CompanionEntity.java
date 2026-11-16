@@ -437,7 +437,7 @@ public class CompanionEntity extends PathfinderMob {
             }
         }
         if (tag.contains("Progression", Tag.TAG_COMPOUND)) {
-            this.progression.load(tag.getCompound("Progression"));
+            this.progression.load(tag.getCompound("Progression"), this.companionClass);
         }
         setProtectedFromOwner(tag.getBoolean("ProtectFromOwner"));
         if (tag.contains("Command")) {
