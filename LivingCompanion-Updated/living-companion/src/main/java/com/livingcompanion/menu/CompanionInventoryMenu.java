@@ -2,6 +2,7 @@ package com.livingcompanion.menu;
 
 import com.livingcompanion.entity.CompanionEntity;
 import com.livingcompanion.inventory.CompanionInventory;
+import net.minecraftforge.fml.ModList;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
@@ -14,6 +15,7 @@ import net.minecraft.world.item.ArmorItem;
 public final class CompanionInventoryMenu extends AbstractContainerMenu {
     private final CompanionEntity companion;
     private final CompanionInventory companionInventory;
+    private final boolean curiosBackSlot;
 
     /** Client constructor. The entity id is sent by NetworkHooks.openScreen. */
     public CompanionInventoryMenu(int id, Inventory playerInventory, FriendlyByteBuf data) {
@@ -25,6 +27,7 @@ public final class CompanionInventoryMenu extends AbstractContainerMenu {
         super(com.livingcompanion.registry.ModMenus.COMPANION_INVENTORY.get(), id);
         this.companion = companion;
         this.companionInventory = companion.getCompanionInventory();
+        this.curiosBackSlot = ModList.get().isLoaded("curios");
 
         // Companion armor and hand slots, arranged like the equipment column
         // in the vanilla player inventory.
@@ -34,6 +37,12 @@ public final class CompanionInventoryMenu extends AbstractContainerMenu {
         this.addSlot(new EquipmentSlotMenuSlot(companionInventory, CompanionInventory.FEET, 8, 74, EquipmentSlot.FEET));
         this.addSlot(new Slot(companionInventory, CompanionInventory.MAIN_HAND, 26, 20));
         this.addSlot(new Slot(companionInventory, CompanionInventory.OFF_HAND, 26, 56));
+
+        // Optional Curios back slot; Curios owns its saved equipment data.
+        if (this.curiosBackSlot) {
+            Slot backpackSlot = com.livingcompanion.compat.curios.CuriosBackpackSlot.create(companion, 26, 38);
+            if (backpackSlot != null) this.addSlot(backpackSlot);
+        }
 
         // Companion's 27 storage slots and 9-slot hotbar.
         for (int row = 0; row < 3; row++) {
@@ -55,6 +64,8 @@ public final class CompanionInventoryMenu extends AbstractContainerMenu {
             this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 200));
         }
     }
+
+    public boolean hasCuriosBackSlot() { return curiosBackSlot; }
 
     public CompanionEntity getCompanion() {
         return companion;
@@ -82,11 +93,17 @@ public final class CompanionInventoryMenu extends AbstractContainerMenu {
         ItemStack source = slot.getItem();
         ItemStack original = source.copy();
 
-        // Slot layout: 0-5 equipment, 6-41 companion storage, 42-77 player.
-        if (index < 42) {
-            if (!this.moveItemStackTo(source, 42, 78, true)) return empty;
+        // Without Curios: 0-5 equipment, 6-41 storage, 42-77 player.
+        // With Curios: slot 6 is the back accessory, 7-42 storage, 43-78 player.
+        int storageStart = curiosBackSlot ? 7 : 6;
+        int playerStart = curiosBackSlot ? 43 : 42;
+        int playerEnd = playerStart + 36;
+        if (index < playerStart) {
+            if (!this.moveItemStackTo(source, playerStart, playerEnd, true)) return empty;
         } else {
-            if (!this.moveItemStackTo(source, 6, 42, false)) return empty;
+            boolean moved = this.moveItemStackTo(source, storageStart, storageStart + 36, false);
+            if (!moved && curiosBackSlot) moved = this.moveItemStackTo(source, 6, 7, false);
+            if (!moved) return empty;
         }
 
         if (source.isEmpty()) slot.set(ItemStack.EMPTY);
