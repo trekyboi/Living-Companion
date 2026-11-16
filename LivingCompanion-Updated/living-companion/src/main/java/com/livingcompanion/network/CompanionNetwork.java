@@ -86,7 +86,7 @@ public final class CompanionNetwork {
         CHANNEL.sendToServer(new RequestSkillDataMessage(companionEntityId));
     }
 
-    public static void requestStats(int companionEntityId) {
+    public static void requestOpenBackpack(int companionEntityId) {\n        CHANNEL.sendToServer(new OpenBackpackMessage(companionEntityId));\n    }\n\n    public static void requestStats(int companionEntityId) {
         CHANNEL.sendToServer(new RequestStatsMessage(companionEntityId));
     }
 
@@ -136,7 +136,26 @@ public final class CompanionNetwork {
                                 .map(achievement -> achievement.getTitle()).toArray(String[]::new)));
     }
 
-    public static final class RequestStatsMessage {
+    public static final class OpenBackpackMessage {
+        private final int companionEntityId;
+        public OpenBackpackMessage(int companionEntityId) { this.companionEntityId = companionEntityId; }
+        public static void encode(OpenBackpackMessage message, FriendlyByteBuf buffer) { buffer.writeVarInt(message.companionEntityId); }
+        public static OpenBackpackMessage decode(FriendlyByteBuf buffer) { return new OpenBackpackMessage(buffer.readVarInt()); }
+        public static void handle(OpenBackpackMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null || !net.minecraftforge.fml.ModList.get().isLoaded("curios")
+                        || !net.minecraftforge.fml.ModList.get().isLoaded("sophisticatedbackpacks")) return;
+                Entity entity = player.serverLevel().getEntity(message.companionEntityId);
+                if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
+                        || !companion.isAlive() || companion.distanceToSqr(player) > 64.0D) return;
+                com.livingcompanion.compat.sophisticated.SophisticatedBackpacksCompat.openBackpack(player, companion);
+            });
+            context.setPacketHandled(true);
+        }
+    }
+\n    public static final class RequestStatsMessage {
         private final int entityId;
         public RequestStatsMessage(int entityId) { this.entityId = entityId; }
         public static void encode(RequestStatsMessage message, FriendlyByteBuf buffer) {
