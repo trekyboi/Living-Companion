@@ -27,8 +27,10 @@ public final class CompanionCreationScreen extends Screen {
     @Override
     protected void init() {
         int center = this.width / 2;
-        this.nameField = new EditBox(this.font, center - 100, this.height / 2 - 62,
-                200, 20, Component.literal("Companion name"));
+        int panelWidth = Math.min(252, Math.max(220, this.width - 16));
+        int contentWidth = Math.min(200, panelWidth - 32);
+        this.nameField = new EditBox(this.font, center - contentWidth / 2, this.height / 2 - 62,
+                contentWidth, 20, Component.literal("Companion name"));
         this.nameField.setMaxLength(24);
         this.nameField.setValue("Aldric");
         this.addRenderableWidget(this.nameField);
@@ -77,10 +79,13 @@ public final class CompanionCreationScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
         int center = this.width / 2;
-        int top = this.height / 2 - 112;
-        graphics.fill(center - 126, top, center + 126, top + 226, 0xE0181B20);
-        graphics.fill(center - 126, top, center + 126, top + 2, 0xFFB18A55);
-        graphics.fill(center - 126, top + 224, center + 126, top + 226, 0xFFB18A55);
+        int panelWidth = Math.min(252, Math.max(220, this.width - 16));
+        int panelLeft = center - panelWidth / 2;
+        int panelHeight = Math.min(226, Math.max(210, this.height - 16));
+        int top = (this.height - panelHeight) / 2;
+        graphics.fill(panelLeft, top, panelLeft + panelWidth, top + panelHeight, 0xE0181B20);
+        graphics.fill(panelLeft, top, panelLeft + panelWidth, top + 2, 0xFFB18A55);
+        graphics.fill(panelLeft, top + panelHeight - 2, panelLeft + panelWidth, top + panelHeight, 0xFFB18A55);
         graphics.drawCenteredString(this.font, "A COMPANION FOR THE JOURNEY",
                 center, top + 12, 0xFFE8D5B5);
         graphics.drawCenteredString(this.font, "Choose his name and calling.",

@@ -5,6 +5,7 @@ import com.livingcompanion.entity.CompanionEntity;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
 import com.livingcompanion.progression.CompanionAttribute;
+import com.livingcompanion.progression.CompanionSpecialization;
 import net.minecraft.client.Minecraft;
 import com.livingcompanion.registry.ModEntities;
 import net.minecraft.network.FriendlyByteBuf;
@@ -53,6 +54,15 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(5, UpgradeAttributeMessage.class,
                 UpgradeAttributeMessage::encode, UpgradeAttributeMessage::decode,
                 UpgradeAttributeMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(6, RequestStatsMessage.class,
+                RequestStatsMessage::encode, RequestStatsMessage::decode,
+                RequestStatsMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(7, StatsDataMessage.class,
+                StatsDataMessage::encode, StatsDataMessage::decode,
+                StatsDataMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(8, ChooseSpecializationMessage.class,
+                ChooseSpecializationMessage::encode, ChooseSpecializationMessage::decode,
+                ChooseSpecializationMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -64,12 +74,163 @@ public final class CompanionNetwork {
         CHANNEL.sendToServer(new UpgradeSkillMessage(companionEntityId, skillId));
     }
 
+    public static void requestSpecialization(int companionEntityId, String specializationId) {
+        CHANNEL.sendToServer(new ChooseSpecializationMessage(companionEntityId, specializationId));
+    }
+
     public static void requestAttributeUpgrade(int companionEntityId, String attributeId) {
         CHANNEL.sendToServer(new UpgradeAttributeMessage(companionEntityId, attributeId));
     }
 
     public static void requestSkillData(int companionEntityId) {
         CHANNEL.sendToServer(new RequestSkillDataMessage(companionEntityId));
+    }
+
+    public static void requestStats(int companionEntityId) {
+        CHANNEL.sendToServer(new RequestStatsMessage(companionEntityId));
+    }
+
+    private static void sendStatsData(ServerPlayer player, CompanionEntity companion) {
+        net.minecraft.world.entity.ai.attributes.AttributeInstance maxHealth =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance attack =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance armor =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance toughness =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance movement =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance knockback =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE);
+        double[] stats = {
+                companion.getHealth(), companion.getMaxHealth(),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE),
+                maxHealth == null ? companion.getMaxHealth() : maxHealth.getBaseValue(),
+                attack == null ? 0.0D : attack.getBaseValue(),
+                armor == null ? 0.0D : armor.getBaseValue(),
+                toughness == null ? 0.0D : toughness.getBaseValue(),
+                movement == null ? 0.0D : movement.getBaseValue(),
+                knockback == null ? 0.0D : knockback.getBaseValue()
+        };
+        int[] attributes = new int[CompanionAttribute.values().length];
+        for (CompanionAttribute attribute : CompanionAttribute.values()) {
+            attributes[attribute.ordinal()] = companion.getProgression().getAttribute(attribute);
+        }
+        int[] ranks = new int[CompanionSkill.values().length];
+        for (CompanionSkill skill : CompanionSkill.values()) {
+            ranks[skill.ordinal()] = companion.getProgression().getSkillRank(skill.getId());
+        }
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+                new StatsDataMessage(companion.getId(), companion.getCompanionClass().ordinal(),
+                        companion.getProgression().getLevel(), companion.getProgression().getExperience(),
+                        companion.getProgression().getExperienceToNextLevel(), stats, attributes, ranks,
+                        companion.getRelationship().getLevel(), companion.getRelationship().getExperience(),
+                        companion.getRelationship().getExperienceToNextLevel(), companion.getRelationship().getTitle(),
+                        companion.getProgression().getTitle(), companion.getProgression().getAchievements().size(),
+                        companion.getProgression().getAchievements().stream()
+                                .map(achievement -> achievement.getTitle()).toArray(String[]::new)));
+    }
+
+    public static final class RequestStatsMessage {
+        private final int entityId;
+        public RequestStatsMessage(int entityId) { this.entityId = entityId; }
+        public static void encode(RequestStatsMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.entityId);
+        }
+        public static RequestStatsMessage decode(FriendlyByteBuf buffer) {
+            return new RequestStatsMessage(buffer.readVarInt());
+        }
+        public static void handle(RequestStatsMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null) return;
+                Entity entity = player.serverLevel().getEntity(message.entityId);
+                if (entity instanceof CompanionEntity companion && companion.isOwnedBy(player)
+                        && companion.distanceToSqr(player) <= 64.0D) sendStatsData(player, companion);
+            });
+            context.setPacketHandled(true);
+        }
+    }
+
+    public static final class StatsDataMessage {
+        public final int entityId, classId, level, experience, experienceToNext;
+        public final int relationshipLevel, relationshipExperience, relationshipExperienceToNext;
+        public final String relationshipTitle, companionTitle;
+        public final int achievementCount;
+        public final String[] achievementTitles;
+        public final double[] stats;
+        public final int[] attributes, ranks;
+        public StatsDataMessage(int entityId, int classId, int level, int experience,
+                                int experienceToNext, double[] stats, int[] attributes, int[] ranks,
+                                int relationshipLevel, int relationshipExperience,
+                                int relationshipExperienceToNext, String relationshipTitle,
+                                String companionTitle, int achievementCount, String[] achievementTitles) {
+            this.entityId=entityId; this.classId=classId; this.level=level;
+            this.experience=experience; this.experienceToNext=experienceToNext;
+            this.stats=stats; this.attributes=attributes; this.ranks=ranks;
+            this.relationshipLevel=relationshipLevel; this.relationshipExperience=relationshipExperience;
+            this.relationshipExperienceToNext=relationshipExperienceToNext;
+            this.relationshipTitle=relationshipTitle;
+            this.companionTitle=companionTitle; this.achievementCount=achievementCount;
+            this.achievementTitles=achievementTitles;
+        }
+        public static void encode(StatsDataMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
+            buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
+            buffer.writeVarInt(message.experienceToNext);
+            buffer.writeVarInt(message.stats.length);
+            for (double value : message.stats) buffer.writeDouble(value);
+            buffer.writeVarIntArray(message.attributes);
+            buffer.writeVarIntArray(message.ranks);
+            buffer.writeVarInt(message.relationshipLevel);
+            buffer.writeVarInt(message.relationshipExperience);
+            buffer.writeVarInt(message.relationshipExperienceToNext);
+            buffer.writeUtf(message.relationshipTitle, 64);
+            buffer.writeUtf(message.companionTitle, 64);
+            buffer.writeVarInt(message.achievementCount);
+            buffer.writeVarInt(message.achievementTitles.length);
+            for (String achievement : message.achievementTitles) buffer.writeUtf(achievement, 64);
+        }
+        public static StatsDataMessage decode(FriendlyByteBuf buffer) {
+            int entityId=buffer.readVarInt(), classId=buffer.readVarInt(), level=buffer.readVarInt();
+            int experience=buffer.readVarInt(), next=buffer.readVarInt();
+            int count=Math.min(16, buffer.readVarInt());
+            double[] stats=new double[count];
+            for(int i=0;i<count;i++) stats[i]=buffer.readDouble();
+            int[] attributes=buffer.readVarIntArray(CompanionAttribute.values().length);
+            int[] ranks=buffer.readVarIntArray(CompanionSkill.values().length);
+            int relationshipLevel=buffer.readVarInt();
+            int relationshipExperience=buffer.readVarInt();
+            int relationshipNext=buffer.readVarInt();
+            String relationshipTitle=buffer.readUtf(64);
+            String companionTitle=buffer.readUtf(64);
+            int achievementCount=buffer.readVarInt();
+            int achievementTitleCount=Math.min(32, buffer.readVarInt());
+            String[] achievementTitles=new String[achievementTitleCount];
+            for(int i=0;i<achievementTitleCount;i++) achievementTitles[i]=buffer.readUtf(64);
+            return new StatsDataMessage(entityId,classId,level,experience,next,stats,
+                    attributes,ranks,relationshipLevel,relationshipExperience,relationshipNext,
+                    relationshipTitle,companionTitle,achievementCount,achievementTitles);
+        }
+        public static void handle(StatsDataMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context=supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+                Minecraft minecraft=Minecraft.getInstance();
+                net.minecraft.client.gui.screens.Screen parent=minecraft.screen;
+                if(parent instanceof com.livingcompanion.client.screen.CompanionStatsScreen statsScreen) {
+                    statsScreen.updateData(message);
+                } else {
+                    com.livingcompanion.client.screen.CompanionStatsScreen.open(parent,message);
+                }
+            }));
+            context.setPacketHandled(true);
+        }
     }
 
     private static void sendSkillData(ServerPlayer player, CompanionEntity companion) {
@@ -89,6 +250,8 @@ public final class CompanionNetwork {
         }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                 new SkillDataMessage(companion.getId(), companion.getCompanionClass().ordinal(),
+                        companion.getProgression().getSpecialization() == null ? -1
+                                : companion.getProgression().getSpecialization().ordinal(),
                         companion.getProgression().getLevel(), companion.getProgression().getExperience(),
                         companion.getProgression().getExperienceToNextLevel(),
                         companion.getProgression().getSkillPoints(), companion.getProgression().getAttributePoints(),
@@ -118,21 +281,22 @@ public final class CompanionNetwork {
     }
 
     public static final class SkillDataMessage {
-        public final int entityId, classId, level, experience, experienceToNext, skillPoints, attributePoints;
+        public final int entityId, classId, specializationId, level, experience, experienceToNext, skillPoints, attributePoints;
         public final int[] ranks;
         public final int[] cooldowns;
         public final int[] activeTicks;
         public final int[] attributes;
-        public SkillDataMessage(int entityId, int classId, int level, int experience,
+        public SkillDataMessage(int entityId, int classId, int specializationId, int level, int experience,
                                 int experienceToNext, int skillPoints, int attributePoints, int[] ranks,
                                 int[] cooldowns, int[] activeTicks, int[] attributes) {
-            this.entityId = entityId; this.classId = classId; this.level = level;
+            this.entityId = entityId; this.classId = classId; this.specializationId = specializationId; this.level = level;
             this.experience = experience; this.experienceToNext = experienceToNext;
             this.skillPoints = skillPoints; this.attributePoints = attributePoints; this.ranks = ranks;
             this.cooldowns = cooldowns; this.activeTicks = activeTicks; this.attributes = attributes;
         }
         public static void encode(SkillDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
+            buffer.writeVarInt(message.specializationId);
             buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
             buffer.writeVarInt(message.experienceToNext); buffer.writeVarInt(message.skillPoints);
             buffer.writeVarInt(message.attributePoints);
@@ -143,7 +307,7 @@ public final class CompanionNetwork {
         }
         public static SkillDataMessage decode(FriendlyByteBuf buffer) {
             return new SkillDataMessage(buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
+                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
                     buffer.readVarIntArray(CompanionSkill.values().length),
                     buffer.readVarIntArray(CompanionSkill.values().length),
                     buffer.readVarIntArray(CompanionSkill.values().length),
@@ -162,6 +326,46 @@ public final class CompanionNetwork {
                     com.livingcompanion.client.screen.CompanionSkillsScreen.open(parent, message);
                 }
             }));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public static final class ChooseSpecializationMessage {
+        private final int companionEntityId;
+        private final String specializationId;
+
+        public ChooseSpecializationMessage(int companionEntityId, String specializationId) {
+            this.companionEntityId = companionEntityId;
+            this.specializationId = specializationId;
+        }
+
+        public static void encode(ChooseSpecializationMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.companionEntityId);
+            buffer.writeUtf(message.specializationId, 32);
+        }
+
+        public static ChooseSpecializationMessage decode(FriendlyByteBuf buffer) {
+            return new ChooseSpecializationMessage(buffer.readVarInt(), buffer.readUtf(32));
+        }
+
+        public static void handle(ChooseSpecializationMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null) return;
+                Entity entity = player.serverLevel().getEntity(message.companionEntityId);
+                if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
+                        || companion.distanceToSqr(player) > 64.0D) return;
+                CompanionSpecialization choice = CompanionSpecialization.byId(message.specializationId);
+                if (!companion.getProgression().chooseSpecialization(choice, companion.getCompanionClass())) {
+                    player.sendSystemMessage(Component.literal("That specialization is unavailable. Reach level 15 and choose a path for your class."));
+                    return;
+                }
+                companion.refreshProgressionAttributes();
+                player.sendSystemMessage(Component.literal(companion.getName().getString()
+                        + " has chosen the " + choice.getDisplayName() + " path."));
+                sendSkillData(player, companion);
+            });
             context.setPacketHandled(true);
         }
     }

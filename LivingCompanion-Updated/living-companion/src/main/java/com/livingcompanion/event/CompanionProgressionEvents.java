@@ -2,6 +2,7 @@ package com.livingcompanion.event;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
+import com.livingcompanion.progression.CompanionAchievement;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -32,7 +33,16 @@ public final class CompanionProgressionEvents {
         Entity attacker = event.getSource().getEntity();
 
         if (attacker instanceof CompanionEntity companion) {
-            if (companion.isAlive()) companion.awardExperience(scaleExperience(baseExperience, companion, defeated));
+            if (companion.isAlive()) {
+                companion.awardExperience(scaleExperience(baseExperience, companion, defeated));
+                companion.addRelationshipExperience(2);
+                companion.awardAchievement(CompanionAchievement.FIRST_BLOOD);
+                companion.commentOnEvent(
+                        "That's one less threat on the road.",
+                        "Good. Let's make sure there aren't any more.",
+                        "Well handled. I think we can breathe for a moment."
+                );
+            }
             return;
         }
 
@@ -47,6 +57,13 @@ public final class CompanionProgressionEvents {
                 .orElse(null);
 
         if (companion != null) {
+            companion.addRelationshipExperience(1);
+            companion.awardAchievement(CompanionAchievement.FIRST_BLOOD);
+            companion.commentOnEvent(
+                    "You handled that well.",
+                    "Good strike. I'll keep the next one off you.",
+                    "One less problem. Keep moving."
+            );
             // The companion receives a meaningful share while the owner remains
             // the primary combatant. Boss rewards remain substantial.
             int sharedExperience = Math.max(1, Math.round(scaleExperience(baseExperience, companion, defeated) * 0.75F));

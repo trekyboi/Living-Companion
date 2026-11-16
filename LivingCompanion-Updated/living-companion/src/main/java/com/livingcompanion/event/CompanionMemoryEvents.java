@@ -2,6 +2,7 @@ package com.livingcompanion.event;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
+import com.livingcompanion.progression.CompanionAchievement;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -28,7 +29,35 @@ public final class CompanionMemoryEvents {
     public static void onPlayerDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             CompanionEntity companion = findCompanion(player);
-            if (companion != null) companion.remember("you fell in battle");
+            if (companion != null) {
+                companion.remember("you fell in battle");
+                companion.addRelationshipExperience(5);
+            }
+        }
+    }
+
+    /** A quiet acknowledgement when the owner returns after a death. */
+    @SubscribeEvent
+    public static void onOwnerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        CompanionEntity companion = findCompanion(player);
+        if (companion == null) return;
+        companion.remember("you came back after falling in battle");
+        companion.addRelationshipExperience(20);
+        if (companion.getCompanionClass() == com.livingcompanion.progression.CompanionClass.PALADIN) {
+            companion.commentOnEvent(
+                    "You're back. Take your time; I'll keep watch.",
+                    "I'm glad to see you standing again. We continue when you're ready.",
+                    "That was a hard fall. You don't have to face the next one alone."
+            );
+        } else if (companion.getCompanionClass() == com.livingcompanion.progression.CompanionClass.TANK) {
+            companion.commentOnEvent(
+                    "There you are. I was beginning to run out of things to hit.",
+                    "Back on your feet? Good. Stay close this time.",
+                    "We'll get your things back. Then we settle the score."
+            );
+        } else {
+            companion.commentOnEvent("There you are. Take a moment; I'll keep watch.");
         }
     }
 
@@ -44,6 +73,9 @@ public final class CompanionMemoryEvents {
             CompanionEntity companion = findCompanion(player);
             if (companion != null) {
                 companion.remember(memory);
+                companion.addRelationshipExperience(30);
+                companion.awardAchievement(event.getEntity() instanceof EnderDragon
+                        ? CompanionAchievement.DRAGON_SLAYER : CompanionAchievement.WITHER_SLAYER);
                 if (event.getEntity() instanceof EnderDragon) {
                     companion.commentOnEvent("Well. That's the biggest problem dealt with.",
                             "I was expecting a longer argument.",
@@ -56,6 +88,9 @@ public final class CompanionMemoryEvents {
             }
         } else if (attacker instanceof CompanionEntity companion) {
             companion.remember(memory);
+            companion.addRelationshipExperience(30);
+            companion.awardAchievement(event.getEntity() instanceof EnderDragon
+                    ? CompanionAchievement.DRAGON_SLAYER : CompanionAchievement.WITHER_SLAYER);
             companion.commentOnEvent("Well. That's the biggest problem dealt with.",
                     "I was expecting a longer argument.",
                     "Remind me never to do that twice in one afternoon.");
@@ -75,6 +110,11 @@ public final class CompanionMemoryEvents {
         CompanionEntity companion = findCompanion(player);
         if (companion != null) {
             companion.remember(memory);
+            companion.addRelationshipExperience(8);
+            if (event.getState().is(Blocks.DIAMOND_ORE)
+                    || event.getState().is(Blocks.DEEPSLATE_DIAMOND_ORE)) {
+                companion.awardAchievement(CompanionAchievement.DIAMOND_SEEKER);
+            }
             if (event.getState().is(Blocks.DIAMOND_ORE)
                     || event.getState().is(Blocks.DEEPSLATE_DIAMOND_ORE)) {
                 companion.commentOnEvent("Diamonds. Excellent. Try not to spend them all at once.",
@@ -97,7 +137,12 @@ public final class CompanionMemoryEvents {
         CompanionEntity companion = findCompanion(player);
         if (companion == null) return;
 
-        if (memory != null) companion.remember(memory);
+        if (memory != null) {
+            companion.remember(memory);
+            companion.addRelationshipExperience(10);
+            companion.awardAchievement(event.getTo() == Level.NETHER
+                    ? CompanionAchievement.NETHER_EXPLORER : CompanionAchievement.END_EXPLORER);
+        }
 
         // FOLLOW and DEFEND companions travel with their owner. STAY companions
         // deliberately remain in the dimension where they were ordered to wait.

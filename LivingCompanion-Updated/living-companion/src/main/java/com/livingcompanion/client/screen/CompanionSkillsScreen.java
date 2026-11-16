@@ -3,11 +3,14 @@ package com.livingcompanion.client.screen;
 import com.livingcompanion.network.CompanionNetwork;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
+import com.livingcompanion.progression.CompanionSpecialization;
 import com.livingcompanion.network.CompanionNetwork.SkillDataMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,11 +21,12 @@ public final class CompanionSkillsScreen extends Screen {
     private static final int PANEL_MAX_HEIGHT = 430;
     private static final int ROW_HEIGHT = 68;
     private static final int ROW_GAP = 6;
-    private static final int HEADER_HEIGHT = 76;
+    private static final int HEADER_HEIGHT = 102;
 
     private final Screen parent;
     private SkillDataMessage data;
     private final List<Button> upgradeButtons = new ArrayList<>();
+    private final List<Button> specializationButtons = new ArrayList<>();
     private int scrollOffset;
     private int panelLeft;
     private int panelTop;
@@ -50,8 +54,13 @@ public final class CompanionSkillsScreen extends Screen {
 
     public void updateData(SkillDataMessage data) {
         if (data.entityId != this.data.entityId) return;
+        int previousSpecialization = this.data.specializationId;
         this.data = data;
-        updateButtonPositions();
+        if (previousSpecialization != data.specializationId && this.minecraft != null) {
+            this.init(this.minecraft, this.width, this.height);
+        } else {
+            updateButtonPositions();
+        }
     }
 
     @Override
@@ -68,9 +77,10 @@ public final class CompanionSkillsScreen extends Screen {
         super.init();
         this.clearWidgets();
         this.upgradeButtons.clear();
+        this.specializationButtons.clear();
 
-        this.panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(300, this.width - 24));
-        this.panelHeight = Math.min(PANEL_MAX_HEIGHT, Math.max(240, this.height - 24));
+        this.panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(220, this.width - 16));
+        this.panelHeight = Math.min(PANEL_MAX_HEIGHT, Math.max(200, this.height - 16));
         this.panelLeft = (this.width - this.panelWidth) / 2;
         this.panelTop = (this.height - this.panelHeight) / 2;
         this.listTop = this.panelTop + HEADER_HEIGHT;
@@ -84,17 +94,46 @@ public final class CompanionSkillsScreen extends Screen {
 
         int buttonWidth = Math.min(96, Math.max(76, this.panelWidth / 6));
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
-        for (CompanionSkill skill : CompanionSkill.forClass(classes[data.classId])) {
+        if (data.level >= 15 && data.specializationId < 0) {
+            CompanionSpecialization[] choices = CompanionSpecialization.forClass(classes[data.classId]);
+            int choiceWidth = Math.min(120, Math.max(80, (this.panelWidth - 48) / 2));
+            for (int i = 0; i < choices.length; i++) {
+                CompanionSpecialization choice = choices[i];
+                Button select = Button.builder(Component.literal(choice.getDisplayName()), button ->
+                        CompanionNetwork.requestSpecialization(data.entityId, choice.getId()))
+                        .bounds(this.panelLeft + 16 + i * (choiceWidth + 8), this.panelTop + 72,
+                                choiceWidth, 20).build();
+                this.specializationButtons.add(select);
+                this.addRenderableWidget(select);
+            }
+        }
+        for (CompanionSkill skill : CompanionSkill.forClassAndSpecialization(
+                classes[data.classId], getSelectedSpecialization())) {
             int rank = skill.ordinal() < data.ranks.length ? data.ranks[skill.ordinal()] : 0;
+            boolean[] confirmationPending = {false};
             Button upgrade = Button.builder(Component.literal(rank >= skill.getMaximumRank()
-                            ? "MAXED" : "Upgrade"), button ->
-                    CompanionNetwork.requestSkillUpgrade(data.entityId, skill.getId()))
+                            ? "MAXED" : "Upgrade"), button -> {
+                    if (!confirmationPending[0]) {
+                        confirmationPending[0] = true;
+                        button.setMessage(Component.literal("Confirm?"));
+                    } else {
+                        confirmationPending[0] = false;
+                        CompanionNetwork.requestSkillUpgrade(data.entityId, skill.getId());
+                        button.setMessage(Component.literal("Sent"));
+                    }
+                })
                     .bounds(buttonX, this.listTop, buttonWidth, 22).build();
             upgrade.active = canUpgrade(skill, rank);
             this.upgradeButtons.add(upgrade);
             this.addRenderableWidget(upgrade);
         }
         updateButtonPositions();
+    }
+
+    private CompanionSpecialization getSelectedSpecialization() {
+        CompanionSpecialization[] values = CompanionSpecialization.values();
+        return data.specializationId >= 0 && data.specializationId < values.length
+                ? values[data.specializationId] : null;
     }
 
     private boolean canUpgrade(CompanionSkill skill, int rank) {
@@ -108,7 +147,8 @@ public final class CompanionSkillsScreen extends Screen {
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
         CompanionClass[] classes = CompanionClass.values();
         if (data.classId <= 0 || data.classId >= classes.length) return;
-        List<CompanionSkill> skills = CompanionSkill.forClass(classes[data.classId]);
+        List<CompanionSkill> skills = CompanionSkill.forClassAndSpecialization(
+                classes[data.classId], getSelectedSpecialization());
         for (int i = 0; i < this.upgradeButtons.size(); i++) {
             Button button = this.upgradeButtons.get(i);
             int rowY = this.listTop + i * rowStep - this.scrollOffset;
@@ -166,8 +206,19 @@ public final class CompanionSkillsScreen extends Screen {
             String xp = data.level >= CompanionProgressionMaxLevel.VALUE
                     ? "Maximum level reached" : "XP: " + data.experience + " / " + data.experienceToNext;
             graphics.drawString(this.font, xp, left + 16, top + 49, 0xFFB9B9B9, false);
+            if (getSelectedSpecialization() != null) {
+                graphics.drawString(this.font, "Path: " + getSelectedSpecialization().getDisplayName(),
+                        left + 16, top + 70, 0xFFFFD58A, false);
+            } else if (data.level < 15) {
+                graphics.drawString(this.font, "Specialization unlocks at level 15",
+                        left + 16, top + 70, 0xFF9BA5AF, false);
+            } else {
+                graphics.drawString(this.font, "Choose your permanent class specialization:",
+                        left + 16, top + 70, 0xFFFFD58A, false);
+            }
 
-            List<CompanionSkill> skills = CompanionSkill.forClass(classes[data.classId]);
+            List<CompanionSkill> skills = CompanionSkill.forClassAndSpecialization(
+                    classes[data.classId], getSelectedSpecialization());
             int descriptionWidth = Math.max(90, this.panelWidth - Math.min(96, Math.max(76, this.panelWidth / 6)) - 54);
             graphics.enableScissor(left + 8, this.listTop, right - 8, this.listBottom);
             for (int i = 0; i < skills.size(); i++) {
@@ -176,12 +227,21 @@ public final class CompanionSkillsScreen extends Screen {
                 int rowY = this.listTop + i * (ROW_HEIGHT + ROW_GAP) - this.scrollOffset;
                 int rowBottom = rowY + ROW_HEIGHT;
                 graphics.fill(left + 8, rowY, right - 8, rowBottom, 0xFF252A31);
+                boolean locked = data.level < skill.getUnlockLevel();
+                if (locked) graphics.fill(left + 8, rowY, right - 8, rowBottom, 0x884B2525);
 
-                int textX = left + 18;
+                graphics.renderItem(skillIcon(skill), left + 16, rowY + 24);
+                if (locked) graphics.drawString(this.font, "L", left + 30, rowY + 39, 0xFFFFA070, false);
+                int textX = left + 44;
                 int textRight = textX + descriptionWidth;
                 graphics.drawString(this.font, skill.getDisplayName() + "  [" + skill.getType().name()
                                 + "]  Rank " + rank + "/" + skill.getMaximumRank(),
                         textX, rowY + 8, 0xFFFFE6BE, false);
+                for (int pip = 0; pip < skill.getMaximumRank(); pip++) {
+                    int pipX = textX + pip * 9;
+                    graphics.fill(pipX, rowY + 19, pipX + 7, rowY + 23,
+                            pip < rank ? 0xFFFFD06E : 0xFF555B64);
+                }
 
                 List<net.minecraft.util.FormattedCharSequence> description =
                         this.font.split(Component.literal(skill.getDescription()), descriptionWidth);
@@ -220,6 +280,13 @@ public final class CompanionSkillsScreen extends Screen {
                     statusColor = 0xFF83E6A0;
                 }
                 graphics.drawString(this.font, status, textX, rowY + 53, statusColor, false);
+                if (cooldownTicks > 0 && skill.getCooldownTicks() > 0) {
+                    int barWidth = Math.max(36, descriptionWidth - 8);
+                    int remaining = Math.min(skill.getCooldownTicks(), cooldownTicks);
+                    int filled = barWidth * remaining / skill.getCooldownTicks();
+                    graphics.fill(textX, rowY + 63, textX + barWidth, rowY + 66, 0xFF090B0E);
+                    graphics.fill(textX, rowY + 63, textX + filled, rowY + 66, 0xFFD6A85F);
+                }
             }
             graphics.disableScissor();
 
@@ -232,6 +299,19 @@ public final class CompanionSkillsScreen extends Screen {
         }
         updateButtonPositions();
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private static ItemStack skillIcon(CompanionSkill skill) {
+        return switch (skill) {
+            case PALADIN_DIVINE_GRACE -> new ItemStack(Items.GOLDEN_APPLE);
+            case PALADIN_HOLY_STRIKE, PALADIN_JUDGMENT, TANK_VANGUARD_FURY -> new ItemStack(Items.GOLDEN_SWORD);
+            case PALADIN_DIVINE_PROTECTION, TANK_SHIELD_WALL, TANK_BULWARK_OATH -> new ItemStack(Items.SHIELD);
+            case PALADIN_PRAYER, PALADIN_SANCTUARY -> new ItemStack(Items.GHAST_TEAR);
+            case PALADIN_AEGIS_OF_DAWN, TANK_LAST_BASTION -> new ItemStack(Items.TOTEM_OF_UNDYING);
+            case TANK_UNYIELDING -> new ItemStack(Items.IRON_CHESTPLATE);
+            case TANK_TAUNT -> new ItemStack(Items.BELL);
+            case TANK_INTERCEPT -> new ItemStack(Items.IRON_INGOT);
+        };
     }
 
     private static final class MthClamp {

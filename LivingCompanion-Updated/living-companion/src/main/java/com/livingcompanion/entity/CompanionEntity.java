@@ -4,7 +4,12 @@ import com.livingcompanion.config.CompanionConfig;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionProgression;
 import com.livingcompanion.progression.CompanionAttribute;
+import com.livingcompanion.progression.CompanionRelationship;
+import com.livingcompanion.progression.CompanionPersonality;
+import com.livingcompanion.progression.CompanionAchievement;
+import com.livingcompanion.progression.CompanionSpecialization;
 import com.livingcompanion.ai.FollowOwnerGoal;
+import com.livingcompanion.ai.CompanionIdleRoutineGoal;
 import com.livingcompanion.inventory.CompanionInventory;
 import com.livingcompanion.menu.CompanionInventoryMenu;
 import net.minecraft.nbt.CompoundTag;
@@ -20,6 +25,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -43,8 +49,13 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.level.Level;
+import net.minecraft.tags.StructureTags;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
@@ -73,6 +84,9 @@ public class CompanionEntity extends PathfinderMob {
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Boolean> DATA_OWNER_PROTECTION =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Bit flags for currently active skill visuals; synchronized for client rendering. */
+    private static final EntityDataAccessor<Integer> DATA_SKILL_VISUAL_FLAGS =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
     /** Cached owner name for messages; survives owner logout. */
     private String ownerNameCache = "";
 
@@ -88,8 +102,27 @@ public class CompanionEntity extends PathfinderMob {
     /** Persistent carried inventory shown through the companion's player-style menu. */
     private final CompanionInventory companionInventory = new CompanionInventory(this);
     private final CompanionProgression progression = new CompanionProgression();
+    private final CompanionRelationship relationship = new CompanionRelationship();
+    private final CompanionPersonality personality = new CompanionPersonality();
+    private int relationshipInteractionCooldownTicks = 0;
+    private int worldAwarenessTicks = 0;
+    private long nextSocialInteractionTick = 0L;
+    private String lastBiomeId = "";
+    private boolean insideVillage = false;
+    private String lastStructureId = "";
     private final CompanionSkillRuntime skillRuntime = new CompanionSkillRuntime(this);
     private CompanionClass companionClass = CompanionClass.UNASSIGNED;
+
+    /** Custom survival food state. Food drains over time and is replenished from carried supplies. */
+    private int foodLevel = 20;
+    private float foodSaturation = 5.0F;
+    private int foodDrainTicks = 0;
+    private int starvationTicks = 0;
+    private int eatingCooldownTicks = 0;
+    private boolean warnedLowFood = false;
+    private static final int MAX_FOOD_LEVEL = 20;
+    private static final int PASSIVE_FOOD_INTERVAL = 3600; // one point every three minutes
+    private static final int COMBAT_FOOD_INTERVAL = 1800;  // combat doubles food use
 
     public enum Command { FOLLOW, STAY, DEFEND }
     private Command command = Command.FOLLOW;
@@ -160,6 +193,40 @@ public class CompanionEntity extends PathfinderMob {
             "A scratch. A rather enthusiastic scratch.",
             "I'll be fine. Keep your attention on the fight."
     );
+    /** Paladin dialogue: measured, reassuring, and guided by a quiet sense of duty. */
+    private static final List<String> PALADIN_LINES = List.of(
+            "A little patience can save a great deal of blood.",
+            "Keep your courage. Fear is useful when it reminds us to pay attention.",
+            "There are easier roads. I suspect we would find trouble on those too.",
+            "If someone needs help out here, we have the strength to give it.",
+            "I keep watch because someone has to. I happen to be good at it.",
+            "Take a moment to breathe. The next challenge will still be there.",
+            "A blade can end a fight. A steady hand can prevent one.",
+            "I would like to see this world with fewer graves and more lanterns."
+    );
+    /** Tank dialogue: practical, dry-humoured, and quietly protective. */
+    private static final List<String> TANK_LINES = List.of(
+            "The plan is simple. We stand here, and trouble breaks itself against us.",
+            "I checked the route. It has the usual number of things trying to kill us.",
+            "You handle the clever part. I'll handle anything that gets too close.",
+            "Good armor, a clear path, and a sensible amount of violence. That's a fine day.",
+            "I don't mind carrying the front line. Just keep the supplies coming.",
+            "That noise was probably harmless. I intend to hit it anyway.",
+            "We should rest soon. Even steel gets tired of being hit.",
+            "If the world insists on throwing monsters at us, the world can expect a sore fist."
+    );
+    private static final List<String> PALADIN_COMBAT_LINES = List.of(
+            "Stand firm. I will keep them away from you.",
+            "Hold your ground. We leave together.",
+            "I will give you room. Move when you see it.",
+            "Stay behind my shield. This ends here."
+    );
+    private static final List<String> TANK_COMBAT_LINES = List.of(
+            "Behind me. I'll make a wall out of myself.",
+            "Come on, then. I've got room for all of you.",
+            "Keep swinging. My armor enjoys the attention.",
+            "I've had doors hit harder. Keep moving."
+    );
     private static final List<String> MEMORY_LINES = List.of(
             "I still remember when %s. That was a day worth keeping.",
             "Funny how a journey stays with you. Especially the part where %s.",
@@ -222,6 +289,7 @@ public class CompanionEntity extends PathfinderMob {
         super.defineSynchedData();
         this.entityData.define(DATA_OWNER_UUID, Optional.empty());
         this.entityData.define(DATA_OWNER_PROTECTION, false);
+        this.entityData.define(DATA_SKILL_VISUAL_FLAGS, 0);
     }
 
     public CompanionInventory getCompanionInventory() {
@@ -236,8 +304,123 @@ public class CompanionEntity extends PathfinderMob {
         return this.progression;
     }
 
+    public CompanionRelationship getRelationship() {
+        return this.relationship;
+    }
+
+    public CompanionPersonality getPersonality() {
+        return this.personality;
+    }
+
+    /** Records combat experience used to shape the companion's developing behavior. */
+    public void recordCombatExperience() {
+        if (!this.level().isClientSide) this.personality.recordCombat();
+    }
+
+    public void recordProtectionEvent() {
+        if (!this.level().isClientSide) this.personality.recordProtection();
+    }
+
+    /** Immediately redirects the companion toward a hostile attacking its owner. */
+    public void assistOwnerAgainst(LivingEntity attacker) {
+        if (this.level().isClientSide || attacker == null || !attacker.isAlive()
+                || (!(attacker instanceof Monster) && !(attacker instanceof EnderDragon))
+                || this.command == Command.STAY) return;
+        Player owner = getOwnerPlayer();
+        if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
+        double protectiveRange = 16.0D + this.personality.getProtectiveInstinct() * 4.0D;
+        if (attacker.distanceToSqr(owner) > protectiveRange * protectiveRange) return;
+        LivingEntity current = this.getTarget();
+        double finishThreshold = 0.30D + this.personality.getCombatConfidence() * 0.15D;
+        if (current == null || !current.isAlive()
+                || current.getHealth() > current.getMaxHealth() * finishThreshold
+                || attacker.distanceToSqr(owner) < current.distanceToSqr(owner)) {
+            this.setTarget(attacker);
+            this.getNavigation().moveTo(attacker, 1.2D);
+        }
+    }
+
+    public void recordDiscovery() {
+        if (!this.level().isClientSide) this.personality.recordDiscovery();
+    }
+
+    public void recordPeacefulInteraction() {
+        if (!this.level().isClientSide) this.personality.recordPeacefulInteraction();
+    }
+
+    /** Awards familiarity for meaningful shared events. */
+    public void addRelationshipExperience(int amount) {
+        if (this.level().isClientSide || amount <= 0) return;
+        int gained = this.relationship.addExperience(amount);
+        updateRelationshipAchievements();
+        if (gained > 0) {
+            Player owner = getOwnerPlayer();
+            if (owner != null) {
+                owner.sendSystemMessage(Component.literal(this.getName().getString()
+                        + " feels closer to you. Relationship: " + this.relationship.getTitle() + "."));
+            }
+            commentOnEvent(
+                    "We've grown into a good team. I trust your judgement.",
+                    "I know your ways by now. That makes the road easier.",
+                    "Somewhere along the way, this stopped feeling like an assignment."
+            );
+        }
+    }
+
+    public void awardAchievement(CompanionAchievement achievement) {
+        if (this.level().isClientSide || achievement == null) return;
+        if (this.progression.awardAchievement(achievement)) {
+            Player owner = getOwnerPlayer();
+            if (owner != null) {
+                owner.sendSystemMessage(Component.literal("Achievement unlocked: "
+                        + achievement.getTitle() + " — " + achievement.getDescription()));
+            }
+        }
+    }
+
+    private void updateRelationshipAchievements() {
+        if (this.relationship.getLevel() >= 5) awardAchievement(CompanionAchievement.TRUSTED);
+        if (this.relationship.getLevel() >= 8) awardAchievement(CompanionAchievement.DEVOTED);
+        if (this.relationship.getLevel() >= 10) awardAchievement(CompanionAchievement.UNBREAKABLE);
+    }
+
+    private void tickRelationship() {
+        if (this.relationshipInteractionCooldownTicks > 0) this.relationshipInteractionCooldownTicks--;
+        Player owner = getOwnerPlayer();
+        if (owner != null && owner.isAlive() && owner.level() == this.level()
+                && this.distanceToSqr(owner) <= 12.0D * 12.0D) {
+            int previousLevel = this.relationship.getLevel();
+            this.relationship.tickNearOwner();
+            updateRelationshipAchievements();
+            if (this.relationship.getLevel() > previousLevel) {
+                owner.sendSystemMessage(Component.literal(this.getName().getString()
+                        + " feels closer to you. Relationship: " + this.relationship.getTitle() + "."));
+            }
+        }
+    }
+
     public CompanionSkillRuntime getSkillRuntime() {
         return this.skillRuntime;
+    }
+
+    public int getFoodLevel() {
+        return this.foodLevel;
+    }
+
+    public int getMaxFoodLevel() {
+        return MAX_FOOD_LEVEL;
+    }
+
+    /** Client-readable flags describing which persistent skill effects are active. */
+    public int getSkillVisualFlags() {
+        return this.entityData.get(DATA_SKILL_VISUAL_FLAGS);
+    }
+
+    /** Server-authoritative update; SynchedEntityData distributes changes to tracking clients. */
+    public void setSkillVisualFlags(int flags) {
+        if (!this.level().isClientSide && this.entityData.get(DATA_SKILL_VISUAL_FLAGS) != flags) {
+            this.entityData.set(DATA_SKILL_VISUAL_FLAGS, flags);
+        }
     }
 
     public float interceptOwnerDamage(ServerPlayer owner, DamageSource source, float amount) {
@@ -273,12 +456,20 @@ public class CompanionEntity extends PathfinderMob {
         int gained = this.progression.getLevel() - oldLevel;
         if (gained > 0) {
             applyProgressionAttributes(true);
+            if (this.progression.getLevel() >= 10) awardAchievement(CompanionAchievement.VETERAN);
+            if (this.progression.getLevel() >= 25) awardAchievement(CompanionAchievement.ELITE);
+            if (this.progression.getLevel() >= 50) awardAchievement(CompanionAchievement.LEGEND);
             Player owner = getOwnerPlayer();
             if (owner != null) {
-                owner.sendSystemMessage(Component.literal(this.getName().getString()
+                owner.sendSystemMessage(Component.literal("LEVEL UP — " + this.getName().getString()
                         + " reached level " + this.progression.getLevel()
-                        + "! +" + gained + " skill point" + (gained == 1 ? "" : "s")
-                        + " and +" + (gained * 2) + " attribute points."));
+                        + ". +" + gained + " skill point" + (gained == 1 ? "" : "s")
+                        + ", +" + (gained * 2) + " attribute points. "
+                        + (this.progression.getLevel() >= CompanionProgression.MAX_LEVEL
+                        ? "Maximum level reached." : this.progression.getExperienceToNextLevel()
+                        + " XP to the next level.")));
+                owner.level().playSound(null, owner.blockPosition(), SoundEvents.PLAYER_LEVELUP,
+                        SoundSource.PLAYERS, 0.65F, 1.1F);
             }
         }
         inventoryChanged();
@@ -320,6 +511,20 @@ public class CompanionEntity extends PathfinderMob {
                 health += levelBonus * 0.5D;
                 attack += levelBonus * 0.1D;
             }
+        }
+
+        CompanionSpecialization specialization = this.progression.getSpecialization();
+        if (specialization == CompanionSpecialization.PALADIN_WARDEN) {
+            health += 4.0D;
+            armor += 1.0D;
+        } else if (specialization == CompanionSpecialization.PALADIN_CRUSADER) {
+            attack += 1.5D;
+        } else if (specialization == CompanionSpecialization.TANK_BULWARK) {
+            armor += 2.0D;
+            toughness += 1.0D;
+        } else if (specialization == CompanionSpecialization.TANK_VANGUARD) {
+            attack += 1.0D;
+            movement += 0.01D;
         }
 
         setBase(Attributes.MAX_HEALTH, health);
@@ -419,6 +624,7 @@ public class CompanionEntity extends PathfinderMob {
         this.goalSelector.addGoal(2, new FollowOwnerGoal(this, 1.15D));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+        this.goalSelector.addGoal(5, new CompanionIdleRoutineGoal(this));
 
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Monster.class,
@@ -457,8 +663,317 @@ public class CompanionEntity extends PathfinderMob {
         }
         if (!this.level().isClientSide) {
             this.skillRuntime.tick();
+            tickFoodSystem();
+            tickRelationship();
+            if (this.tickCount % 10 == 0) tickCombatCooperation();
+            tickWorldAwareness();
+            tickLootAwareness();
             if (this.tickCount % 20 == 0) speakOccasionally();
         }
+    }
+
+    /**
+     * During an active fight, prioritizes nearly defeated hostiles already engaging
+     * the owner or companion. This reduces target switching and helps finish threats.
+     */
+    private void tickCombatCooperation() {
+        if (this.command == Command.STAY) return;
+        Player owner = getOwnerPlayer();
+        if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
+        LivingEntity current = this.getTarget();
+        if ((current == null || !current.isAlive())
+                && owner.getHealth() > owner.getMaxHealth() * 0.55F) return;
+
+        List<Monster> threats = this.level().getEntitiesOfClass(Monster.class,
+                this.getBoundingBox().inflate(12.0D), mob -> mob.isAlive()
+                        && (mob == current || mob.getTarget() == owner || mob.getTarget() == this));
+        Monster weakest = null;
+        double weakestRatio = 1.0D;
+        for (Monster threat : threats) {
+            double ratio = threat.getHealth() / Math.max(1.0D, threat.getMaxHealth());
+            if (ratio < weakestRatio) {
+                weakestRatio = ratio;
+                weakest = threat;
+            }
+        }
+
+        if (weakest != null && weakestRatio <= 0.35D
+                && (current == null || weakest != current)) {
+            this.setTarget(weakest);
+        }
+    }
+
+    /**
+     * Detects biome transitions and village visits at a low polling rate.
+     * Existing memory events cover boss fights, dimensions, and valuable discoveries.
+     */
+    private void tickWorldAwareness() {
+        if (++this.worldAwarenessTicks < 100 || !(this.level() instanceof ServerLevel serverLevel)) return;
+        this.worldAwarenessTicks = 0;
+
+        String biomeId = this.level().getBiome(this.blockPosition()).unwrapKey()
+                .map(key -> key.location().toString()).orElse("unknown");
+        if (this.lastBiomeId.isEmpty()) {
+            this.lastBiomeId = biomeId;
+        } else if (!biomeId.equals(this.lastBiomeId)) {
+            this.lastBiomeId = biomeId;
+            String biomeName = biomeId.substring(biomeId.indexOf(':') + 1).replace('_', ' ');
+            remember("we travelled through the " + biomeName + " biome");
+            this.personality.recordDiscovery();
+            if (biomeId.contains("desert")) {
+                commentOnEvent("Desert ahead. Keep water and supplies close.",
+                        "Sand as far as I can see. I already miss trees.",
+                        "Watch the horizon. Open ground gives trouble plenty of room.");
+            } else if (biomeId.contains("snow") || biomeId.contains("frozen") || biomeId.contains("ice")) {
+                commentOnEvent("Cold country. Keep moving and watch your footing.",
+                        "I can feel the chill through the armor. That's impressive, really.",
+                        "Snow hides holes, cliffs, and the occasional unpleasant surprise.");
+            } else if (biomeId.contains("jungle")) {
+                commentOnEvent("Dense jungle. Stay close; visibility is poor.",
+                        "Every leaf seems to be hiding something with teeth.",
+                        "Keep an eye out for ruins. This place has a long memory.");
+            } else if (biomeId.contains("ocean") || biomeId.contains("beach")) {
+                commentOnEvent("We've reached the coast. The open water makes me uneasy.",
+                        "A long way to swim. I hope you brought a boat.",
+                        "The sea is peaceful from here. I intend to keep it that way.");
+            } else if (biomeId.contains("badlands") || biomeId.contains("mesa")) {
+                commentOnEvent("Strange country. The stone looks almost painted.",
+                        "This place has seen a lot of sun and very little rain.",
+                        "Keep looking. There may be something buried out here.");
+            } else if (biomeId.contains("swamp") || biomeId.contains("mangrove")) {
+                commentOnEvent("A swamp. Wonderful. Mud, water, and things that bite.",
+                        "Watch your step. The ground here has questionable intentions.",
+                        "I would rather camp somewhere dry.");
+            } else {
+                commentOnEvent("New terrain. Let's see what this place has to offer.",
+                        "The landscape has changed. Keep your eyes open.",
+                        "Another stretch of the world to learn.");
+            }
+        }
+
+        var structures = serverLevel.structureManager();
+        boolean nowInVillage = structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.VILLAGE).isValid();
+        if (nowInVillage && !this.insideVillage) {
+            remember("we visited a village");
+            commentOnEvent("A village. Let's see if anyone here needs a hand.",
+                    "People have made a life out here. Worth keeping safe.",
+                    "A proper settlement. I hope the walls are stronger than they look.");
+        }
+        this.insideVillage = nowInVillage;
+
+        String structureId = "";
+        String structureLine = "";
+        if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.MINESHAFT).isValid()) {
+            structureId = "mineshaft";
+            structureLine = "An old mineshaft. Watch the supports and the dark corners.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.RUINED_PORTAL).isValid()) {
+            structureId = "ruined_portal";
+            structureLine = "A ruined portal. Someone came through here once. I wonder what followed.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.SHIPWRECK).isValid()) {
+            structureId = "shipwreck";
+            structureLine = "A shipwreck. There may be supplies worth salvaging.";
+        }
+
+        if (!structureId.isEmpty() && !structureId.equals(this.lastStructureId)) {
+            this.lastStructureId = structureId;
+            remember("we discovered " + structureId.replace('_', ' '));
+            commentOnEvent(structureLine);
+        } else if (structureId.isEmpty()) {
+            this.lastStructureId = "";
+        }
+
+        tickSocialAwareness(serverLevel);
+    }
+
+    /** Notices nearby villagers, the owner's tamed animals, and unfamiliar players. */
+    private void tickSocialAwareness(ServerLevel serverLevel) {
+        if (serverLevel.getGameTime() < this.nextSocialInteractionTick) return;
+        Player owner = getOwnerPlayer();
+        if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
+
+        Villager villager = this.level().getEntitiesOfClass(Villager.class,
+                this.getBoundingBox().inflate(7.0D), Villager::isAlive).stream().findFirst().orElse(null);
+        if (villager != null) {
+            this.personality.recordPeacefulInteraction();
+            remember("we met a villager near " + villager.blockPosition().getX() + ", "
+                    + villager.blockPosition().getZ());
+            commentOnEvent("A local. Let's be decent company for once.",
+                    "People make a place worth defending. Keep that in mind.",
+                    "I'll give them room. They have enough trouble living out here.");
+            this.nextSocialInteractionTick = serverLevel.getGameTime() + 600L;
+            return;
+        }
+
+        TamableAnimal pet = this.level().getEntitiesOfClass(TamableAnimal.class,
+                this.getBoundingBox().inflate(7.0D), animal -> animal.isAlive()
+                        && animal.isTame() && owner.getUUID().equals(animal.getOwnerUUID()))
+                .stream().findFirst().orElse(null);
+        if (pet != null) {
+            this.personality.recordPeacefulInteraction();
+            commentOnEvent("Your companion seems to have made a friend. Sensible creature.",
+                    "I'll keep an eye on your little scout.",
+                    "Good company. Even a guard deserves some.");
+            this.nextSocialInteractionTick = serverLevel.getGameTime() + 600L;
+            return;
+        }
+
+        Player stranger = this.level().getEntitiesOfClass(Player.class,
+                this.getBoundingBox().inflate(8.0D), player -> player.isAlive()
+                        && !player.getUUID().equals(owner.getUUID())).stream().findFirst().orElse(null);
+        if (stranger != null) {
+            commentOnEvent("Another traveler. Let's see whether they bring trouble.",
+                    "A fellow adventurer. Keep your wits about you.",
+                    "I'll let you do the talking. I have a face for guarding.");
+            remember("we crossed paths with another player");
+            this.nextSocialInteractionTick = serverLevel.getGameTime() + 600L;
+        }
+    }
+
+    /**
+     * Notices rare drops and collects only item IDs explicitly approved in server config.
+     * Pickup is disabled by default; an empty whitelist always means no collection.
+     */
+    private void tickLootAwareness() {
+        if (this.tickCount % 10 != 0 || !(this.level() instanceof ServerLevel serverLevel)) return;
+        List<ItemEntity> nearbyDrops = serverLevel.getEntitiesOfClass(ItemEntity.class,
+                this.getBoundingBox().inflate(4.0D), ItemEntity::isAlive);
+        List<? extends String> whitelist = CompanionConfig.LOOT_PICKUP_WHITELIST.get();
+
+        for (ItemEntity drop : nearbyDrops) {
+            ItemStack stack = drop.getItem();
+            if (stack.isEmpty()) continue;
+
+            if (stack.getRarity() != net.minecraft.world.item.Rarity.COMMON
+                    && !drop.getPersistentData().getBoolean("LivingCompanionNoticed")) {
+                drop.getPersistentData().putBoolean("LivingCompanionNoticed", true);
+                String itemName = stack.getHoverName().getString();
+                commentOnEvent("That's a rare find: " + itemName + ". Keep it safe.",
+                        "Well now. " + itemName + " is worth remembering.",
+                        "I've seen plenty of loot. " + itemName + " deserves a closer look.");
+                remember("we discovered " + itemName);
+            }
+
+            if (!CompanionConfig.LOOT_PICKUP_ENABLED.get()) continue;
+            net.minecraft.resources.ResourceLocation itemId =
+                    net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
+            if (itemId == null || !whitelist.contains(itemId.toString())) continue;
+
+            ItemStack remaining = stack.copy();
+            for (int slot = 0; slot < CompanionInventory.STORAGE_SIZE && !remaining.isEmpty(); slot++) {
+                ItemStack stored = this.companionInventory.getItem(slot);
+                if (stored.isEmpty()) {
+                    this.companionInventory.setItem(slot, remaining.copy());
+                    remaining = ItemStack.EMPTY;
+                } else if (ItemStack.isSameItemSameTags(stored, remaining)) {
+                    int room = Math.max(0, stored.getMaxStackSize() - stored.getCount());
+                    int moved = Math.min(room, remaining.getCount());
+                    if (moved > 0) {
+                        stored.grow(moved);
+                        remaining.shrink(moved);
+                    }
+                }
+            }
+
+            if (remaining.getCount() != stack.getCount()) {
+                drop.setItem(remaining);
+                this.inventoryChanged();
+                if (remaining.isEmpty()) {
+                    drop.discard();
+                    commentOnEvent("I'll carry that. One less thing for you to manage.",
+                            "Picked it up. I'll keep it safe.",
+                            "Added to our supplies. Let's keep moving.");
+                }
+            }
+        }
+    }
+
+    /**
+     * Drains food gradually, consumes the best available carried food, and applies starvation.
+     * All state changes happen on the server so food cannot be duplicated by client prediction.
+     */
+    private void tickFoodSystem() {
+        if (this.eatingCooldownTicks > 0) this.eatingCooldownTicks--;
+
+        int interval = this.getTarget() != null && this.getTarget().isAlive()
+                ? COMBAT_FOOD_INTERVAL : PASSIVE_FOOD_INTERVAL;
+        this.foodDrainTicks++;
+        if (this.foodDrainTicks >= interval) {
+            this.foodDrainTicks = 0;
+            if (this.foodSaturation > 0.0F) {
+                this.foodSaturation = Math.max(0.0F, this.foodSaturation - 1.0F);
+            } else if (this.foodLevel > 0) {
+                this.foodLevel--;
+                inventoryChanged();
+            }
+        }
+
+        if (this.foodLevel <= 14 && this.eatingCooldownTicks <= 0) {
+            consumeCarriedFood();
+        }
+
+        if (this.foodLevel <= 5 && !this.warnedLowFood) {
+            this.warnedLowFood = true;
+            commentOnEvent(
+                    "I'm running low on food. We should keep an eye out for supplies.",
+                    "A little food would help. I can keep going, though.",
+                    "Our rations are getting thin. Keep some food handy."
+            );
+        } else if (this.foodLevel > 10) {
+            this.warnedLowFood = false;
+        }
+
+        if (this.foodLevel <= 0) {
+            this.starvationTicks++;
+            if (this.starvationTicks >= 200) {
+                this.starvationTicks = 0;
+                this.hurt(this.damageSources().starve(), 1.0F);
+            }
+        } else {
+            this.starvationTicks = 0;
+        }
+    }
+
+    /** Selects the most nutritious food stack in the companion's carried storage. */
+    private void consumeCarriedFood() {
+        int bestSlot = -1;
+        int bestNutrition = 0;
+        float bestSaturation = -1.0F;
+
+        for (int slot = 0; slot < CompanionInventory.STORAGE_SIZE; slot++) {
+            ItemStack stack = this.companionInventory.getItem(slot);
+            if (stack.isEmpty()) continue;
+            net.minecraft.world.food.FoodProperties food = stack.getFoodProperties(this);
+            if (food == null || food.getNutrition() <= 0) continue;
+            float saturationValue = food.getNutrition() * food.getSaturationModifier();
+            if (food.getNutrition() > bestNutrition
+                    || (food.getNutrition() == bestNutrition && saturationValue > bestSaturation)) {
+                bestSlot = slot;
+                bestNutrition = food.getNutrition();
+                bestSaturation = saturationValue;
+            }
+        }
+
+        if (bestSlot < 0) {
+            this.eatingCooldownTicks = 200;
+            return;
+        }
+
+        ItemStack foodStack = this.companionInventory.getItem(bestSlot);
+        net.minecraft.world.food.FoodProperties food = foodStack.getFoodProperties(this);
+        int nutrition = food.getNutrition();
+        float saturation = nutrition * food.getSaturationModifier() * 2.0F;
+        ItemStack remaining = foodStack.finishUsingItem(this.level(), this);
+        this.companionInventory.setItem(bestSlot, remaining);
+        this.foodLevel = Math.min(MAX_FOOD_LEVEL, this.foodLevel + nutrition);
+        this.foodSaturation = Math.min(this.foodLevel, this.foodSaturation + saturation);
+        this.eatingCooldownTicks = 100;
+        this.starvationTicks = 0;
+        this.inventoryChanged();
+        commentOnEvent(
+                "That hit the spot. I'll keep watch while we travel.",
+                "Much better. A full stomach makes the road easier.",
+                "Good. I was starting to think about the rations."
+        );
     }
 
     @Override
@@ -504,8 +1019,20 @@ public class CompanionEntity extends PathfinderMob {
         tag.putString("Command", this.command.name());
         tag.putString("CompanionClass", this.companionClass.name());
         tag.put("Progression", this.progression.save());
+        tag.put("Relationship", this.relationship.save());
+        tag.put("Personality", this.personality.save());
+        tag.putInt("RelationshipInteractionCooldown", this.relationshipInteractionCooldownTicks);
+        tag.putString("LastBiomeId", this.lastBiomeId);
+        tag.putBoolean("InsideVillage", this.insideVillage);
+        tag.putString("LastStructureId", this.lastStructureId);
+        tag.putLong("NextSocialInteractionTick", this.nextSocialInteractionTick);
         tag.put("SkillRuntime", this.skillRuntime.save());
         tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
+        tag.putInt("FoodLevel", this.foodLevel);
+        tag.putFloat("FoodSaturation", this.foodSaturation);
+        tag.putInt("FoodDrainTicks", this.foodDrainTicks);
+        tag.putInt("StarvationTicks", this.starvationTicks);
+        tag.putBoolean("WarnedLowFood", this.warnedLowFood);
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
         tag.put("Memories", savedMemories);
@@ -530,10 +1057,28 @@ public class CompanionEntity extends PathfinderMob {
         if (tag.contains("Progression", Tag.TAG_COMPOUND)) {
             this.progression.load(tag.getCompound("Progression"), this.companionClass);
         }
+        if (tag.contains("Relationship", Tag.TAG_COMPOUND)) {
+            this.relationship.load(tag.getCompound("Relationship"));
+        }
+        if (tag.contains("Personality", Tag.TAG_COMPOUND)) {
+            this.personality.load(tag.getCompound("Personality"));
+        }
+        this.relationshipInteractionCooldownTicks = Math.max(0, tag.getInt("RelationshipInteractionCooldown"));
+        this.lastBiomeId = tag.getString("LastBiomeId");
+        this.insideVillage = tag.getBoolean("InsideVillage");
+        this.lastStructureId = tag.getString("LastStructureId");
+        this.nextSocialInteractionTick = Math.max(0L, tag.getLong("NextSocialInteractionTick"));
         if (tag.contains("SkillRuntime", Tag.TAG_COMPOUND)) {
             this.skillRuntime.load(tag.getCompound("SkillRuntime"));
         }
         setProtectedFromOwner(tag.getBoolean("ProtectFromOwner"));
+        this.foodLevel = tag.contains("FoodLevel", Tag.TAG_INT)
+                ? Math.max(0, Math.min(MAX_FOOD_LEVEL, tag.getInt("FoodLevel"))) : MAX_FOOD_LEVEL;
+        this.foodSaturation = tag.contains("FoodSaturation", Tag.TAG_FLOAT)
+                ? Math.max(0.0F, Math.min(this.foodLevel, tag.getFloat("FoodSaturation"))) : 5.0F;
+        this.foodDrainTicks = Math.max(0, tag.getInt("FoodDrainTicks"));
+        this.starvationTicks = Math.max(0, tag.getInt("StarvationTicks"));
+        this.warnedLowFood = tag.getBoolean("WarnedLowFood");
         if (tag.contains("Command")) {
             try {
                 this.command = Command.valueOf(tag.getString("Command"));
@@ -567,6 +1112,9 @@ public class CompanionEntity extends PathfinderMob {
     /** Stores a short, unique memory. The newest twelve memories survive world saves. */
     public void remember(String memory) {
         if (memory == null || memory.isBlank() || this.memories.contains(memory)) return;
+        if (memory.contains("discovered") || memory.contains("found") || memory.contains("diamonds")) {
+            this.personality.recordDiscovery();
+        }
         this.memories.add(memory);
         while (this.memories.size() > MAX_MEMORIES) this.memories.remove(0);
     }
@@ -612,6 +1160,10 @@ public class CompanionEntity extends PathfinderMob {
                 player.sendSystemMessage(Component.translatable("message.livingcompanion.not_yours",
                         this.ownerNameCache.isEmpty() ? "someone" : this.ownerNameCache));
             } else if (player.isShiftKeyDown()) {
+                if (this.relationshipInteractionCooldownTicks <= 0) {
+                    addRelationshipExperience(5);
+                    this.relationshipInteractionCooldownTicks = 600;
+                }
                 Command next = switch (this.command) {
                     case FOLLOW -> Command.STAY;
                     case STAY -> Command.DEFEND;
@@ -624,6 +1176,10 @@ public class CompanionEntity extends PathfinderMob {
                     case DEFEND -> "I'll stay close and protect you.";
                 }));
             } else if (player instanceof ServerPlayer serverPlayer) {
+                if (this.relationshipInteractionCooldownTicks <= 0) {
+                    addRelationshipExperience(5);
+                    this.relationshipInteractionCooldownTicks = 600;
+                }
                 NetworkHooks.openScreen(serverPlayer,
                         new SimpleMenuProvider((id, inventory, opener) ->
                                 new CompanionInventoryMenu(id, inventory, this),
@@ -668,7 +1224,39 @@ public class CompanionEntity extends PathfinderMob {
 
         List<String> pool;
         if (this.getTarget() != null && this.getTarget().isAlive()) {
-            pool = COMBAT_LINES;
+            if (this.personality.getCombatConfidence() >= 0.60D) {
+                pool = List.of(
+                        "I've learned their habits. This should be quick.",
+                        "I've seen worse. Keep your eyes on the next one.",
+                        "They are making the same mistake. I'll make sure they regret it."
+                );
+            } else if (this.personality.getProtectiveInstinct() >= 0.50D) {
+                pool = List.of(
+                        "Stay close. I know what happens when they get through.",
+                        "I'll keep the pressure away from you. Focus on staying alive.",
+                        "They came for you. That makes this personal."
+                );
+            } else if (this.companionClass == CompanionClass.PALADIN) pool = PALADIN_COMBAT_LINES;
+            else if (this.companionClass == CompanionClass.TANK) pool = TANK_COMBAT_LINES;
+            else pool = COMBAT_LINES;
+        } else if (this.personality.getPeacefulInteractions() >= 20 && this.random.nextInt(3) == 0) {
+            pool = List.of(
+                    "There are decent people out here. Worth remembering.",
+                    "A quiet word can do more than a drawn sword.",
+                    "I used to think every stranger was trouble. Experience has softened that view."
+            );
+        } else if (this.personality.getCuriosity() >= 0.40D && this.random.nextInt(3) == 0) {
+            pool = List.of(
+                    "There's always another corner of this world worth seeing.",
+                    "I keep wondering what lies beyond the next ridge.",
+                    "We've found a great deal already. I suspect the world has more to show us."
+            );
+        } else if (this.foodLevel <= 5) {
+            pool = List.of(
+                    "We should find food soon. I'm running on fumes.",
+                    "I could use a meal. The next fight may come at a bad time.",
+                    "Rations are low. Keep an eye out for something edible."
+            );
         } else if (owner.getHealth() <= owner.getMaxHealth() * 0.35F) {
             pool = OWNER_HURT_LINES;
         } else if (this.getHealth() <= this.getMaxHealth() * 0.35F) {
@@ -683,8 +1271,12 @@ public class CompanionEntity extends PathfinderMob {
             String template = MEMORY_LINES.get(this.random.nextInt(MEMORY_LINES.size()));
             speakLine(String.format(template, memory), now);
             return;
-        } else if (this.random.nextInt(5) == 0) {
+        } else if (this.random.nextInt(4) == 0) {
             pool = EXPLORATION_LINES;
+        } else if (this.random.nextInt(3) == 0 && this.companionClass == CompanionClass.PALADIN) {
+            pool = PALADIN_LINES;
+        } else if (this.random.nextInt(3) == 0 && this.companionClass == CompanionClass.TANK) {
+            pool = TANK_LINES;
         } else {
             pool = IDLE_LINES;
         }

@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.client.gui.components.Button;
 
 /** Player-style companion inventory with explicit slot wells and section labels. */
@@ -16,18 +18,19 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     private static final int SLOT_EDGE_DARK = 0xFF08090B;
     private Button protectionButton;
     private Button skillsButton;
+    private Button statsButton;
 
     public CompanionInventoryScreen(CompanionInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 236;
-        this.imageHeight = 232;
+        this.imageHeight = 250;
         this.inventoryLabelY = 130;
         this.titleLabelX = 8;
         this.titleLabelY = 6;
     }
 
     private Component protectionLabel() {
-        return Component.literal("Protect from owner: " + (this.menu.getCompanion().isProtectedFromOwner() ? "ON" : "OFF"));
+        return Component.literal("Owner damage blocked: " + (this.menu.getCompanion().isProtectedFromOwner() ? "ON" : "OFF"));
     }
 
     @Override
@@ -36,12 +39,15 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         this.clearWidgets();
         this.skillsButton = this.addRenderableWidget(Button.builder(Component.literal("Skills"), button -> {
             CompanionNetwork.requestSkillData(this.menu.getCompanion().getId());
-        }).bounds(this.leftPos + 62, this.topPos + 2, 72, 18).build());
+        }).bounds(this.leftPos + 132, this.topPos + 2, 46, 18).build());
+        this.statsButton = this.addRenderableWidget(Button.builder(Component.literal("Stats"), button -> {
+            CompanionNetwork.requestStats(this.menu.getCompanion().getId());
+        }).bounds(this.leftPos + 180, this.topPos + 2, 48, 18).build());
         this.protectionButton = this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
             if (this.minecraft != null && this.minecraft.gameMode != null) {
                 this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
             }
-        }).bounds(this.leftPos + 62, this.topPos + 94, 166, 18).build());
+        }).bounds(this.leftPos + 62, this.topPos + 226, 166, 18).build());
     }
 
     private static void drawSlot(GuiGraphics graphics, int x, int y) {
@@ -91,7 +97,26 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         graphics.fill(left + 6, top + 126, left + this.imageWidth - 6, top + 127, 0xFF51483C);
         graphics.drawString(this.font, "Equipment", left + 8, top + 116, 0xFFE6D3B0, false);
         graphics.drawString(this.font, "Companion Storage", left + 62, top + 116, 0xFFE6D3B0, false);
-        graphics.drawString(this.font, "Your Inventory", left + 8, top + 130, 0xFFE6D3B0, false);
+        graphics.drawString(this.font, "Your Inventory", left + 8, top + 132, 0xFFE6D3B0, false);
+
+        // Recognizable vanilla item silhouettes identify each empty equipment slot.
+        ItemStack[] equipmentIcons = {
+                new ItemStack(Items.IRON_HELMET),
+                new ItemStack(Items.IRON_CHESTPLATE),
+                new ItemStack(Items.IRON_LEGGINGS),
+                new ItemStack(Items.IRON_BOOTS),
+                new ItemStack(Items.IRON_SWORD),
+                new ItemStack(Items.SHIELD)
+        };
+        int[][] equipmentPositions = {{8, 20}, {8, 38}, {8, 56}, {8, 74}, {26, 20}, {26, 56}};
+        for (int i = 0; i < equipmentPositions.length; i++) {
+            int sx = left + equipmentPositions[i][0];
+            int sy = top + equipmentPositions[i][1];
+            if (!this.menu.getSlot(i).hasItem()) {
+                graphics.renderItem(equipmentIcons[i], sx + 1, sy + 1);
+                graphics.fill(sx + 2, sy + 15, sx + 16, sy + 16, 0x88777D86);
+            }
+        }
     }
 
     @Override
@@ -100,5 +125,29 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         if (this.protectionButton != null) this.protectionButton.setMessage(protectionLabel());
         super.render(graphics, mouseX, mouseY, partialTick);
         this.renderTooltip(graphics, mouseX, mouseY);
+        String equipmentTip = equipmentTooltip(mouseX - this.leftPos, mouseY - this.topPos);
+        if (equipmentTip != null) {
+            graphics.renderTooltip(this.font, Component.literal(equipmentTip), mouseX, mouseY);
+        }
+    }
+
+    private String equipmentTooltip(int x, int y) {
+        int slot = -1;
+        String description = null;
+        if (x >= 8 && x < 26 && y >= 20 && y < 38) {
+            slot = 0; description = "Helmet slot — head armor";
+        } else if (x >= 8 && x < 26 && y >= 38 && y < 56) {
+            slot = 1; description = "Chest slot — chest armor";
+        } else if (x >= 8 && x < 26 && y >= 56 && y < 74) {
+            slot = 2; description = "Leg slot — leg armor";
+        } else if (x >= 8 && x < 26 && y >= 74 && y < 92) {
+            slot = 3; description = "Boot slot — foot armor";
+        } else if (x >= 26 && x < 44 && y >= 20 && y < 38) {
+            slot = 4; description = "Main hand — weapon or utility item";
+        } else if (x >= 26 && x < 44 && y >= 56 && y < 74) {
+            slot = 5; description = "Off hand — shield or utility item";
+        }
+        // Preserve vanilla item tooltips whenever the slot contains an item.
+        return slot >= 0 && !this.menu.getSlot(slot).hasItem() ? description : null;
     }
 }
