@@ -32,7 +32,10 @@ public final class CompanionProgressionEvents {
         Entity attacker = event.getSource().getEntity();
 
         if (attacker instanceof CompanionEntity companion) {
-            if (companion.isAlive()) companion.awardExperience(scaleExperience(baseExperience, companion, defeated));
+            if (companion.isAlive()) {
+                companion.awardExperience(scaleExperience(baseExperience, companion, defeated));
+                companion.addRelationshipExperience(2);
+            }
             return;
         }
 
@@ -47,6 +50,7 @@ public final class CompanionProgressionEvents {
                 .orElse(null);
 
         if (companion != null) {
+            companion.addRelationshipExperience(1);
             // The companion receives a meaningful share while the owner remains
             // the primary combatant. Boss rewards remain substantial.
             int sharedExperience = Math.max(1, Math.round(scaleExperience(baseExperience, companion, defeated) * 0.75F));
