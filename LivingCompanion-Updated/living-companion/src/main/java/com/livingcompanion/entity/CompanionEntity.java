@@ -316,7 +316,12 @@ public class CompanionEntity extends PathfinderMob {
         Player owner = getOwnerPlayer();
         if (owner != null && owner.isAlive() && owner.level() == this.level()
                 && this.distanceToSqr(owner) <= 12.0D * 12.0D) {
+            int previousLevel = this.relationship.getLevel();
             this.relationship.tickNearOwner();
+            if (this.relationship.getLevel() > previousLevel) {
+                owner.sendSystemMessage(Component.literal(this.getName().getString()
+                        + " feels closer to you. Relationship: " + this.relationship.getTitle() + "."));
+            }
         }
     }
 
