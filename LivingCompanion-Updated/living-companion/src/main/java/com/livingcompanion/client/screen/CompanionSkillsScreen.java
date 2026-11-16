@@ -110,9 +110,18 @@ public final class CompanionSkillsScreen extends Screen {
         for (CompanionSkill skill : CompanionSkill.forClassAndSpecialization(
                 classes[data.classId], getSelectedSpecialization())) {
             int rank = skill.ordinal() < data.ranks.length ? data.ranks[skill.ordinal()] : 0;
+            boolean[] confirmationPending = {false};
             Button upgrade = Button.builder(Component.literal(rank >= skill.getMaximumRank()
-                            ? "MAXED" : "Upgrade"), button ->
-                    CompanionNetwork.requestSkillUpgrade(data.entityId, skill.getId()))
+                            ? "MAXED" : "Upgrade"), button -> {
+                    if (!confirmationPending[0]) {
+                        confirmationPending[0] = true;
+                        button.setMessage(Component.literal("Confirm?"));
+                    } else {
+                        confirmationPending[0] = false;
+                        CompanionNetwork.requestSkillUpgrade(data.entityId, skill.getId());
+                        button.setMessage(Component.literal("Sent"));
+                    }
+                })
                     .bounds(buttonX, this.listTop, buttonWidth, 22).build();
             upgrade.active = canUpgrade(skill, rank);
             this.upgradeButtons.add(upgrade);
@@ -218,8 +227,11 @@ public final class CompanionSkillsScreen extends Screen {
                 int rowY = this.listTop + i * (ROW_HEIGHT + ROW_GAP) - this.scrollOffset;
                 int rowBottom = rowY + ROW_HEIGHT;
                 graphics.fill(left + 8, rowY, right - 8, rowBottom, 0xFF252A31);
+                boolean locked = data.level < skill.getUnlockLevel();
+                if (locked) graphics.fill(left + 8, rowY, right - 8, rowBottom, 0x884B2525);
 
                 graphics.renderItem(skillIcon(skill), left + 16, rowY + 24);
+                if (locked) graphics.drawString(this.font, "L", left + 30, rowY + 39, 0xFFFFA070, false);
                 int textX = left + 44;
                 int textRight = textX + descriptionWidth;
                 graphics.drawString(this.font, skill.getDisplayName() + "  [" + skill.getType().name()
