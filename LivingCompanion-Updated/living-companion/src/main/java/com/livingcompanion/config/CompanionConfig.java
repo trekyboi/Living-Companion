@@ -16,6 +16,9 @@ public final class CompanionConfig {
     public static final ForgeConfigSpec.DoubleValue TELEPORT_DISTANCE;
     public static final ForgeConfigSpec.DoubleValue HOSTILE_SCAN_RANGE;
     public static final ForgeConfigSpec.BooleanValue PROACTIVE_COMBAT_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue HEALING_ENABLED;
+    public static final ForgeConfigSpec.DoubleValue HEALING_HEALTH_THRESHOLD;
+    public static final ForgeConfigSpec.IntValue HEALING_COOLDOWN_SECONDS;
     public static final ForgeConfigSpec.IntValue RESURRECTION_DELAY_SECONDS;
     public static final ForgeConfigSpec.BooleanValue DIALOGUE_ENABLED;
     public static final ForgeConfigSpec.IntValue DIALOGUE_COOLDOWN_SECONDS;
@@ -48,6 +51,15 @@ public final class CompanionConfig {
                 .defineInRange("hostileScanRange", 16.0D, 4.0D, 48.0D);
         PROACTIVE_COMBAT_ENABLED = b.comment("Allow the companion to proactively acquire nearby hostile targets. Direct retaliation and owner defense remain active.")
                 .define("proactiveCombatEnabled", true);
+        b.pop();
+
+        b.push("healing");
+        HEALING_ENABLED = b.comment("Allow the companion to drink restorative potions from carried storage when injured.")
+                .define("enabled", true);
+        HEALING_HEALTH_THRESHOLD = b.comment("Drink a restorative potion when health falls to or below this fraction of maximum health.")
+                .defineInRange("healthThreshold", 0.5D, 0.1D, 0.9D);
+        HEALING_COOLDOWN_SECONDS = b.comment("Minimum delay between restorative potion uses.")
+                .defineInRange("cooldownSeconds", 20, 1, 300);
         b.pop();
 
         b.push("loot");
