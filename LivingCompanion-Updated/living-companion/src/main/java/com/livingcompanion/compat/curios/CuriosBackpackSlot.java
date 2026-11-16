@@ -1,5 +1,6 @@
 package com.livingcompanion.compat.curios;
 
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -17,12 +18,30 @@ public final class CuriosBackpackSlot {
                 .resolve()
                 .flatMap(handler -> handler.getStacksHandler("back"))
                 .orElse(null);
-        if (backHandler == null || backHandler.getStacks().getSlots() < 1) return null;
+        if (backHandler != null && backHandler.getStacks().getSlots() > 0) {
+            return new SlotItemHandler(backHandler.getStacks(), 0, x, y) {
+                @Override
+                public boolean mayPlace(ItemStack stack) {
+                    return CuriosApi.isStackValid(new SlotContext("back", companion, 0, false, true), stack);
+                }
 
-        return new SlotItemHandler(backHandler.getStacks(), 0, x, y) {
+                @Override
+                public int getMaxStackSize() { return 1; }
+            };
+        }
+
+        // Keep client/server menu indices identical while Curios capability data
+        // is still synchronizing. The client may predict a placement; the server
+        // rejects it until the real Curios handler exists.
+        return new Slot(new SimpleContainer(1), 0, x, y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return CuriosApi.isStackValid(new SlotContext("back", companion, 0, false, true), stack);
+                return companion.level().isClientSide && !stack.isEmpty();
+            }
+
+            @Override
+            public boolean mayPickup(net.minecraft.world.entity.player.Player player) {
+                return companion.level().isClientSide;
             }
 
             @Override
