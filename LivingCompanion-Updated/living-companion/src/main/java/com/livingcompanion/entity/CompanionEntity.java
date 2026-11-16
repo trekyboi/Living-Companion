@@ -4,6 +4,7 @@ import com.livingcompanion.config.CompanionConfig;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionProgression;
 import com.livingcompanion.progression.CompanionAttribute;
+import com.livingcompanion.progression.CompanionRelationship;
 import com.livingcompanion.ai.FollowOwnerGoal;
 import com.livingcompanion.ai.CompanionIdleRoutineGoal;
 import com.livingcompanion.inventory.CompanionInventory;
@@ -92,6 +93,8 @@ public class CompanionEntity extends PathfinderMob {
     /** Persistent carried inventory shown through the companion's player-style menu. */
     private final CompanionInventory companionInventory = new CompanionInventory(this);
     private final CompanionProgression progression = new CompanionProgression();
+    private final CompanionRelationship relationship = new CompanionRelationship();
+    private int relationshipInteractionCooldownTicks = 0;
     private final CompanionSkillRuntime skillRuntime = new CompanionSkillRuntime(this);
     private CompanionClass companionClass = CompanionClass.UNASSIGNED;
 
@@ -284,6 +287,37 @@ public class CompanionEntity extends PathfinderMob {
 
     public CompanionProgression getProgression() {
         return this.progression;
+    }
+
+    public CompanionRelationship getRelationship() {
+        return this.relationship;
+    }
+
+    /** Awards familiarity for meaningful shared events. */
+    public void addRelationshipExperience(int amount) {
+        if (this.level().isClientSide || amount <= 0) return;
+        int gained = this.relationship.addExperience(amount);
+        if (gained > 0) {
+            Player owner = getOwnerPlayer();
+            if (owner != null) {
+                owner.sendSystemMessage(Component.literal(this.getName().getString()
+                        + " feels closer to you. Relationship: " + this.relationship.getTitle() + "."));
+            }
+            commentOnEvent(
+                    "We've grown into a good team. I trust your judgement.",
+                    "I know your ways by now. That makes the road easier.",
+                    "Somewhere along the way, this stopped feeling like an assignment."
+            );
+        }
+    }
+
+    private void tickRelationship() {
+        if (this.relationshipInteractionCooldownTicks > 0) this.relationshipInteractionCooldownTicks--;
+        Player owner = getOwnerPlayer();
+        if (owner != null && owner.isAlive() && owner.level() == this.level()
+                && this.distanceToSqr(owner) <= 12.0D * 12.0D) {
+            this.relationship.tickNearOwner();
+        }
     }
 
     public CompanionSkillRuntime getSkillRuntime() {
@@ -529,6 +563,7 @@ public class CompanionEntity extends PathfinderMob {
         if (!this.level().isClientSide) {
             this.skillRuntime.tick();
             tickFoodSystem();
+            tickRelationship();
             if (this.tickCount % 20 == 0) speakOccasionally();
         }
     }
@@ -665,6 +700,8 @@ public class CompanionEntity extends PathfinderMob {
         tag.putString("Command", this.command.name());
         tag.putString("CompanionClass", this.companionClass.name());
         tag.put("Progression", this.progression.save());
+        tag.put("Relationship", this.relationship.save());
+        tag.putInt("RelationshipInteractionCooldown", this.relationshipInteractionCooldownTicks);
         tag.put("SkillRuntime", this.skillRuntime.save());
         tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
         tag.putInt("FoodLevel", this.foodLevel);
@@ -696,6 +733,10 @@ public class CompanionEntity extends PathfinderMob {
         if (tag.contains("Progression", Tag.TAG_COMPOUND)) {
             this.progression.load(tag.getCompound("Progression"), this.companionClass);
         }
+        if (tag.contains("Relationship", Tag.TAG_COMPOUND)) {
+            this.relationship.load(tag.getCompound("Relationship"));
+        }
+        this.relationshipInteractionCooldownTicks = Math.max(0, tag.getInt("RelationshipInteractionCooldown"));
         if (tag.contains("SkillRuntime", Tag.TAG_COMPOUND)) {
             this.skillRuntime.load(tag.getCompound("SkillRuntime"));
         }
@@ -785,6 +826,10 @@ public class CompanionEntity extends PathfinderMob {
                 player.sendSystemMessage(Component.translatable("message.livingcompanion.not_yours",
                         this.ownerNameCache.isEmpty() ? "someone" : this.ownerNameCache));
             } else if (player.isShiftKeyDown()) {
+                if (this.relationshipInteractionCooldownTicks <= 0) {
+                    addRelationshipExperience(5);
+                    this.relationshipInteractionCooldownTicks = 600;
+                }
                 Command next = switch (this.command) {
                     case FOLLOW -> Command.STAY;
                     case STAY -> Command.DEFEND;
@@ -797,6 +842,10 @@ public class CompanionEntity extends PathfinderMob {
                     case DEFEND -> "I'll stay close and protect you.";
                 }));
             } else if (player instanceof ServerPlayer serverPlayer) {
+                if (this.relationshipInteractionCooldownTicks <= 0) {
+                    addRelationshipExperience(5);
+                    this.relationshipInteractionCooldownTicks = 600;
+                }
                 NetworkHooks.openScreen(serverPlayer,
                         new SimpleMenuProvider((id, inventory, opener) ->
                                 new CompanionInventoryMenu(id, inventory, this),
