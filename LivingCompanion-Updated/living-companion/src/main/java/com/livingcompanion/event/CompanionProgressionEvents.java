@@ -16,7 +16,7 @@ public final class CompanionProgressionEvents {
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         if (!(event.getSource().getEntity() instanceof CompanionEntity companion)) return;
-        if (!(event.getEntity() instanceof LivingEntity defeated)) return;
+        LivingEntity defeated = event.getEntity();
         if (defeated == companion || defeated.getMaxHealth() <= 0.0F) return;
 
         int experience;
