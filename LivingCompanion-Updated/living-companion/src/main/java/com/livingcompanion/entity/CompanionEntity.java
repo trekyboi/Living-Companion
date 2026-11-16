@@ -59,6 +59,9 @@ import net.minecraft.tags.StructureTags;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.item.PotionItem;
+import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraftforge.network.NetworkHooks;
 
@@ -119,6 +122,7 @@ public class CompanionEntity extends PathfinderMob {
     private int foodDrainTicks = 0;
     private int starvationTicks = 0;
     private int eatingCooldownTicks = 0;
+    private int healingCooldownTicks = 0;
     private boolean warnedLowFood = false;
     private static final int MAX_FOOD_LEVEL = 20;
     private static final int PASSIVE_FOOD_INTERVAL = 3600; // one point every three minutes
@@ -666,6 +670,7 @@ public class CompanionEntity extends PathfinderMob {
         if (!this.level().isClientSide) {
             this.skillRuntime.tick();
             tickFoodSystem();
+            tickHealingSystem();
             tickRelationship();
             if (this.tickCount % 10 == 0) tickCombatCooperation();
             tickWorldAwareness();
@@ -935,6 +940,52 @@ public class CompanionEntity extends PathfinderMob {
         }
     }
 
+    /**
+     * Uses a carried drinkable healing or regeneration potion when health crosses
+     * the configured threshold. Splash/lingering potions and unrelated effects are ignored.
+     */
+    private void tickHealingSystem() {
+        if (this.healingCooldownTicks > 0) this.healingCooldownTicks--;
+        if (!CompanionConfig.HEALING_ENABLED.get() || this.tickCount % 10 != 0
+                || this.healingCooldownTicks > 0 || this.getHealth() <= 0.0F) return;
+
+        float threshold = (float) CompanionConfig.HEALING_HEALTH_THRESHOLD.get();
+        if (this.getHealth() > this.getMaxHealth() * threshold) return;
+
+        int bestSlot = -1;
+        int bestScore = -1;
+        for (int slot = 0; slot < CompanionInventory.STORAGE_SIZE; slot++) {
+            ItemStack stack = this.companionInventory.getItem(slot);
+            if (stack.isEmpty() || !(stack.getItem() instanceof PotionItem)) continue;
+
+            int score = 0;
+            for (var effect : PotionUtils.getPotion(stack).getEffects()) {
+                if (effect.getEffect() == MobEffects.INSTANT_HEALTH) {
+                    score = Math.max(score, 100 + effect.getAmplifier());
+                } else if (effect.getEffect() == MobEffects.REGENERATION) {
+                    score = Math.max(score, 50 + effect.getAmplifier());
+                }
+            }
+            if (score > bestScore) {
+                bestScore = score;
+                bestSlot = slot;
+            }
+        }
+
+        if (bestSlot < 0) return;
+
+        ItemStack potion = this.companionInventory.getItem(bestSlot);
+        ItemStack remainder = potion.finishUsingItem(this.level(), this);
+        this.companionInventory.setItem(bestSlot, remainder);
+        this.healingCooldownTicks = CompanionConfig.HEALING_COOLDOWN_SECONDS.get() * 20;
+        this.inventoryChanged();
+        commentOnEvent(
+                "I'll take a moment to recover. Keep watch.",
+                "That should help. I'm back on my feet.",
+                "A healing draught. Good thinking keeping one in reserve."
+        );
+    }
+
     /** Selects the most nutritious food stack in the companion's carried storage. */
     private void consumeCarriedFood() {
         int bestSlot = -1;
@@ -1035,6 +1086,7 @@ public class CompanionEntity extends PathfinderMob {
         tag.putInt("FoodDrainTicks", this.foodDrainTicks);
         tag.putInt("StarvationTicks", this.starvationTicks);
         tag.putBoolean("WarnedLowFood", this.warnedLowFood);
+        tag.putInt("HealingCooldownTicks", this.healingCooldownTicks);
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
         tag.put("Memories", savedMemories);
@@ -1081,6 +1133,7 @@ public class CompanionEntity extends PathfinderMob {
         this.foodDrainTicks = Math.max(0, tag.getInt("FoodDrainTicks"));
         this.starvationTicks = Math.max(0, tag.getInt("StarvationTicks"));
         this.warnedLowFood = tag.getBoolean("WarnedLowFood");
+        this.healingCooldownTicks = Math.max(0, tag.getInt("HealingCooldownTicks"));
         if (tag.contains("Command")) {
             try {
                 this.command = Command.valueOf(tag.getString("Command"));
