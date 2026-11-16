@@ -4,6 +4,7 @@ import com.livingcompanion.config.CompanionConfig;
 import com.livingcompanion.registry.ModCreativeTabs;
 import com.livingcompanion.registry.ModEntities;
 import com.livingcompanion.registry.ModItems;
+import com.livingcompanion.registry.ModMenus;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -41,6 +42,7 @@ public final class LivingCompanion {
         ModEntities.ENTITIES.register(modBus);
         ModItems.ITEMS.register(modBus);
         ModCreativeTabs.TABS.register(modBus);
+        ModMenus.MENUS.register(modBus);
 
         // --- Lifecycle listeners ---
         modBus.addListener(this::onCommonSetup);
