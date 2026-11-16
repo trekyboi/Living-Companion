@@ -132,12 +132,22 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     }
 
     private String equipmentTooltip(int x, int y) {
-        if (x >= 8 && x < 26 && y >= 20 && y < 38) return "Helmet slot — head protection";
-        if (x >= 8 && x < 26 && y >= 38 && y < 56) return "Chest slot — chest armor";
-        if (x >= 8 && x < 26 && y >= 56 && y < 74) return "Leg slot — leg armor";
-        if (x >= 8 && x < 26 && y >= 74 && y < 92) return "Boot slot — movement and fall protection";
-        if (x >= 26 && x < 44 && y >= 20 && y < 38) return "Main hand — weapon or utility item";
-        if (x >= 26 && x < 44 && y >= 56 && y < 74) return "Off hand — shield or utility item";
-        return null;
+        int slot = -1;
+        String description = null;
+        if (x >= 8 && x < 26 && y >= 20 && y < 38) {
+            slot = 0; description = "Helmet slot — head armor";
+        } else if (x >= 8 && x < 26 && y >= 38 && y < 56) {
+            slot = 1; description = "Chest slot — chest armor";
+        } else if (x >= 8 && x < 26 && y >= 56 && y < 74) {
+            slot = 2; description = "Leg slot — leg armor";
+        } else if (x >= 8 && x < 26 && y >= 74 && y < 92) {
+            slot = 3; description = "Boot slot — foot armor";
+        } else if (x >= 26 && x < 44 && y >= 20 && y < 38) {
+            slot = 4; description = "Main hand — weapon or utility item";
+        } else if (x >= 26 && x < 44 && y >= 56 && y < 74) {
+            slot = 5; description = "Off hand — shield or utility item";
+        }
+        // Preserve vanilla item tooltips whenever the slot contains an item.
+        return slot >= 0 && !this.menu.getSlot(slot).hasItem() ? description : null;
     }
 }
