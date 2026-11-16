@@ -143,7 +143,7 @@ public final class CompanionNetwork {
         }
         public static SkillDataMessage decode(FriendlyByteBuf buffer) {
             return new SkillDataMessage(buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
+                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
                     buffer.readVarIntArray(CompanionSkill.values().length),
                     buffer.readVarIntArray(CompanionSkill.values().length),
                     buffer.readVarIntArray(CompanionSkill.values().length),
