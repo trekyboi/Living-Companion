@@ -186,9 +186,16 @@ final class CompanionSkillRuntime {
 
     float mitigateOwnerDamage(net.minecraft.server.level.ServerPlayer owner,
                               net.minecraft.world.damagesource.DamageSource source, float amount) {
+        if (!companion.isAlive() || companion.distanceToSqr(owner) > 144.0D) return amount;
+
+        if (companion.getCompanionClass() == CompanionClass.PALADIN) {
+            if (divineProtectionTicks > 0) amount *= 0.65F;
+            if (aegisTicks > 0) amount *= 0.35F;
+            return amount;
+        }
+
         int rank = rank(CompanionSkill.TANK_INTERCEPT);
         if (companion.getCompanionClass() != CompanionClass.TANK || rank <= 0
-                || !companion.isAlive() || companion.distanceToSqr(owner) > 144.0D
                 || !isReady(CompanionSkill.TANK_INTERCEPT)) return amount;
         if (!startCooldown(CompanionSkill.TANK_INTERCEPT)) return amount;
 
