@@ -104,7 +104,8 @@ public final class CompanionNetwork {
                         companion.getProgression().getLevel(), companion.getProgression().getExperience(),
                         companion.getProgression().getExperienceToNextLevel(), stats, attributes, ranks,
                         companion.getRelationship().getLevel(), companion.getRelationship().getExperience(),
-                        companion.getRelationship().getExperienceToNextLevel(), companion.getRelationship().getTitle()));
+                        companion.getRelationship().getExperienceToNextLevel(), companion.getRelationship().getTitle(),
+                        companion.getProgression().getTitle(), companion.getProgression().getAchievements().size()));
     }
 
     public static final class RequestStatsMessage {
@@ -132,19 +133,22 @@ public final class CompanionNetwork {
     public static final class StatsDataMessage {
         public final int entityId, classId, level, experience, experienceToNext;
         public final int relationshipLevel, relationshipExperience, relationshipExperienceToNext;
-        public final String relationshipTitle;
+        public final String relationshipTitle, companionTitle;
+        public final int achievementCount;
         public final double[] stats;
         public final int[] attributes, ranks;
         public StatsDataMessage(int entityId, int classId, int level, int experience,
                                 int experienceToNext, double[] stats, int[] attributes, int[] ranks,
                                 int relationshipLevel, int relationshipExperience,
-                                int relationshipExperienceToNext, String relationshipTitle) {
+                                int relationshipExperienceToNext, String relationshipTitle,
+                                String companionTitle, int achievementCount) {
             this.entityId=entityId; this.classId=classId; this.level=level;
             this.experience=experience; this.experienceToNext=experienceToNext;
             this.stats=stats; this.attributes=attributes; this.ranks=ranks;
             this.relationshipLevel=relationshipLevel; this.relationshipExperience=relationshipExperience;
             this.relationshipExperienceToNext=relationshipExperienceToNext;
             this.relationshipTitle=relationshipTitle;
+            this.companionTitle=companionTitle; this.achievementCount=achievementCount;
         }
         public static void encode(StatsDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
@@ -158,6 +162,8 @@ public final class CompanionNetwork {
             buffer.writeVarInt(message.relationshipExperience);
             buffer.writeVarInt(message.relationshipExperienceToNext);
             buffer.writeUtf(message.relationshipTitle, 64);
+            buffer.writeUtf(message.companionTitle, 64);
+            buffer.writeVarInt(message.achievementCount);
         }
         public static StatsDataMessage decode(FriendlyByteBuf buffer) {
             int entityId=buffer.readVarInt(), classId=buffer.readVarInt(), level=buffer.readVarInt();
@@ -171,8 +177,11 @@ public final class CompanionNetwork {
             int relationshipExperience=buffer.readVarInt();
             int relationshipNext=buffer.readVarInt();
             String relationshipTitle=buffer.readUtf(64);
+            String companionTitle=buffer.readUtf(64);
+            int achievementCount=buffer.readVarInt();
             return new StatsDataMessage(entityId,classId,level,experience,next,stats,
-                    attributes,ranks,relationshipLevel,relationshipExperience,relationshipNext,relationshipTitle);
+                    attributes,ranks,relationshipLevel,relationshipExperience,relationshipNext,
+                    relationshipTitle,companionTitle,achievementCount);
         }
         public static void handle(StatsDataMessage message, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context=supplier.get();
