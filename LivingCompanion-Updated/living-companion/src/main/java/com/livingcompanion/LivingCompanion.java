@@ -1,6 +1,7 @@
 package com.livingcompanion;
 
 import com.livingcompanion.config.CompanionConfig;
+import com.livingcompanion.network.CompanionNetwork;
 import com.livingcompanion.registry.ModCreativeTabs;
 import com.livingcompanion.registry.ModEntities;
 import com.livingcompanion.registry.ModItems;
@@ -39,6 +40,7 @@ public final class LivingCompanion {
         final IEventBus modBus = context.getModEventBus();
 
         // --- Registration (DeferredRegisters fire in vanilla registry order) ---
+        CompanionNetwork.register();
         ModEntities.ENTITIES.register(modBus);
         ModItems.ITEMS.register(modBus);
         ModCreativeTabs.TABS.register(modBus);
