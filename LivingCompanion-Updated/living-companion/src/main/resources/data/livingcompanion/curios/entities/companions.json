@@ -1,0 +1,8 @@
+{
+  "entities": [
+    "livingcompanion:companion"
+  ],
+  "slots": [
+    "back"
+  ]
+}
