@@ -809,7 +809,7 @@ public class CompanionEntity extends PathfinderMob {
             ItemStack stack = drop.getItem();
             if (stack.isEmpty()) continue;
 
-            if (stack.getRarity() == net.minecraft.world.item.Rarity.EPIC
+            if (stack.getRarity() != net.minecraft.world.item.Rarity.COMMON
                     && !drop.getPersistentData().getBoolean("LivingCompanionNoticed")) {
                 drop.getPersistentData().putBoolean("LivingCompanionNoticed", true);
                 String itemName = stack.getHoverName().getString();
