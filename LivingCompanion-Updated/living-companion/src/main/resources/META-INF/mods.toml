@@ -59,3 +59,12 @@ description='''${mod_description}'''
     versionRange="[1.3.0,2)"
     ordering="AFTER"
     side="BOTH"
+
+# Curios provides the optional accessory slot used by compatible backpacks.
+# Living Companion remains fully functional when Curios is absent.
+[[dependencies.${mod_id}]]
+    modId="curios"
+    mandatory=false
+    versionRange="[5.14.1,)"
+    ordering="AFTER"
+    side="BOTH"
