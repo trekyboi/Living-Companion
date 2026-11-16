@@ -15,7 +15,8 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     private static final int SLOT_EDGE_LIGHT = 0xFF55565A;
     private static final int SLOT_EDGE_DARK = 0xFF08090B;
     private Button protectionButton;
-    private Button skillsButton;\n    private Button statsButton;
+    private Button skillsButton;
+    private Button statsButton;
 
     public CompanionInventoryScreen(CompanionInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
