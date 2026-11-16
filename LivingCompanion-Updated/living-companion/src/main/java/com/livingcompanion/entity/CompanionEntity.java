@@ -3,6 +3,7 @@ package com.livingcompanion.entity;
 import com.livingcompanion.config.CompanionConfig;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionProgression;
+import com.livingcompanion.progression.CompanionAttribute;
 import com.livingcompanion.ai.FollowOwnerGoal;
 import com.livingcompanion.inventory.CompanionInventory;
 import com.livingcompanion.menu.CompanionInventoryMenu;
@@ -288,23 +289,29 @@ public class CompanionEntity extends PathfinderMob {
         float oldHealth = this.getHealth();
         float oldMaxHealth = this.getMaxHealth();
         double levelBonus = this.progression.getLevel() - 1;
-        double health = CompanionConfig.MAX_HEALTH.get();
-        double attack = CompanionConfig.ATTACK_DAMAGE.get();
-        double armor = 0.0D;
+        double vigor = this.progression.getAttribute(CompanionAttribute.VIGOR);
+        double might = this.progression.getAttribute(CompanionAttribute.MIGHT);
+        double fortitude = this.progression.getAttribute(CompanionAttribute.FORTITUDE);
+        double agility = this.progression.getAttribute(CompanionAttribute.AGILITY);
+
+        double health = CompanionConfig.MAX_HEALTH.get() + vigor * 1.0D;
+        double attack = CompanionConfig.ATTACK_DAMAGE.get() + might * 0.15D;
+        double armor = fortitude * 0.4D;
         double toughness = 0.0D;
         double knockback = 0.2D;
+        double movement = CompanionConfig.MOVEMENT_SPEED.get() + agility * 0.002D;
 
         switch (this.companionClass) {
             case PALADIN -> {
                 health += 8.0D + levelBonus * 0.8D;
                 attack += 1.0D + levelBonus * 0.18D;
-                armor = 3.0D + levelBonus * 0.08D;
+                armor += 3.0D + levelBonus * 0.08D;
                 toughness = 1.0D + levelBonus * 0.04D;
             }
             case TANK -> {
                 health += 16.0D + levelBonus * 1.2D;
                 attack += levelBonus * 0.12D;
-                armor = 6.0D + levelBonus * 0.16D;
+                armor += 6.0D + levelBonus * 0.16D;
                 toughness = 2.0D + levelBonus * 0.06D;
                 knockback = Math.min(0.85D, 0.5D + levelBonus * 0.006D);
             }
@@ -319,6 +326,7 @@ public class CompanionEntity extends PathfinderMob {
         setBase(Attributes.ARMOR, armor);
         setBase(Attributes.ARMOR_TOUGHNESS, toughness);
         setBase(Attributes.KNOCKBACK_RESISTANCE, knockback);
+        setBase(Attributes.MOVEMENT_SPEED, movement);
         if (preserveHealthRatio && oldMaxHealth > 0.0F) {
             this.setHealth(Math.min((oldHealth / oldMaxHealth) * this.getMaxHealth(), this.getMaxHealth()));
         } else {
