@@ -85,10 +85,6 @@ public final class CompanionResurrectionData extends SavedData {
         long delay = creativeOwner ? 0L : CompanionConfig.RESURRECTION_DELAY_SECONDS.get() * 20L;
         pending.add(new PendingResurrection(ownerId, dimension, respawnPos,
                 server.overworld().getGameTime() + delay, entityTag));
-        if (owner != null && !creativeOwner && delay > 0L) {
-            owner.sendSystemMessage(Component.literal("Knight: I'll be back in "
-                    + ((delay + 19L) / 20L) + " seconds."), true);
-        }
         setDirty();
     }
 
