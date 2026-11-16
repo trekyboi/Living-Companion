@@ -70,9 +70,8 @@ public final class CompanionSkillVisualLayer
             renderHalo(poseStack, out, time, 1.95F, 0.28F, 255, 245, 195);
         }
         if ((flags & TAUNT) != 0) {
-            renderRing(poseStack, out, 0.055F, 1.65F, 0.055F, 64, 255, 65, 35, 220, time * -0.07F);
-            renderRing(poseStack, out, 0.075F, 1.18F, 0.025F, 48, 255, 145, 45, 185, time * 0.09F);
-            renderVerticalBurst(poseStack, out, time, 1.18F, 255, 80, 35, 150);
+            // A broad, readable ground sigil replaces the thin debug-like rings.
+            renderTauntSigil(poseStack, out, time);
         }
         if ((flags & INTERCEPT) != 0) {
             renderInterceptTether(poseStack, out, companion, time);
@@ -89,6 +88,102 @@ public final class CompanionSkillVisualLayer
             renderHalo(poseStack, out, time, 1.94F, 0.24F, 255, 240, 175);
             renderRing(poseStack, out, 1.38F, 0.36F, 0.012F, 32, 255, 235, 165, 85, time * 0.018F);
         }
+    }
+
+    
+    /**
+     * Layered Tank taunt rune: filled segmented ground seal, heavy outer bands,
+     * radial glyphs and a raised expanding shockwave. Geometry is camera-visible
+     * from above and remains anchored to the companion's moving model origin.
+     */
+    private static void renderTauntSigil(PoseStack pose, VertexConsumer out, float time) {
+        Matrix4f m = pose.last().pose();
+        float pulse = 0.88F + (float)Math.sin(time * 0.18F) * 0.12F;
+        float rotation = -time * 0.025F;
+
+        // Broad, low-opacity central seal.
+        renderDisc(pose, out, 0.035F, 0.72F, 48, 255, 72, 28, 42);
+        renderRing(pose, out, 0.052F, 1.55F, 0.105F, 72,
+                255, 70, 28, (int)(205 * pulse), rotation);
+        renderRing(pose, out, 0.060F, 1.34F, 0.035F, 64,
+                255, 175, 70, 230, -rotation * 1.4F);
+        renderRing(pose, out, 0.064F, 0.78F, 0.065F, 56,
+                220, 38, 20, 190, rotation * 1.8F);
+        renderRing(pose, out, 0.070F, 0.48F, 0.025F, 48,
+                255, 205, 105, 235, -rotation * 2.0F);
+
+        // Segmented radial spokes and angular rune marks.
+        for (int i = 0; i < 12; i++) {
+            double a = rotation + Math.PI * 2.0D * i / 12.0D;
+            float c = (float)Math.cos(a), s = (float)Math.sin(a);
+            float inner = 0.86F, outer = (i % 3 == 0) ? 1.27F : 1.12F;
+            bar3D(out, m, c * inner, 0.073F, s * inner,
+                    c * outer, 0.073F, s * outer, 0.035F,
+                    255, 145, 48, 220);
+            float tx = c * 1.43F, tz = s * 1.43F;
+            float px = -s * 0.085F, pz = c * 0.085F;
+            quad(out, m, tx-px,0.076F,tz-pz, tx+c*0.075F,0.076F,tz+s*0.075F,
+                    tx+px,0.076F,tz+pz, tx-c*0.075F,0.076F,tz-s*0.075F,
+                    255,205,105,235);
+        }
+
+        // Three rotating triangular seals give the circle a deliberate rune design.
+        for (int layer = 0; layer < 3; layer++) {
+            float radius = 0.96F + layer * 0.12F;
+            double offset = rotation * (layer % 2 == 0 ? 1.0D : -1.0D)
+                    + layer * Math.PI / 3.0D;
+            for (int i = 0; i < 3; i++) {
+                double a = offset + Math.PI * 2.0D * i / 3.0D;
+                double b = offset + Math.PI * 2.0D * (i + 1) / 3.0D;
+                bar3D(out, m, (float)Math.cos(a)*radius,0.078F,(float)Math.sin(a)*radius,
+                        (float)Math.cos(b)*radius,0.078F,(float)Math.sin(b)*radius,
+                        0.018F,255,105 + layer*25,45,180);
+            }
+        }
+
+        // A broad shockwave travels outward and fades over its short cycle.
+        float wave = (time * 0.045F) % 1.0F;
+        float waveRadius = 0.55F + wave * 1.30F;
+        int waveAlpha = (int)(185 * (1.0F - wave));
+        renderRing(pose, out, 0.105F, waveRadius, 0.085F, 64,
+                255, 105, 38, waveAlpha, -time * 0.018F);
+
+        // Short energy pillars rise from the outer runes, with varied heights.
+        for (int i = 0; i < 8; i++) {
+            double a = rotation + Math.PI * 2.0D * i / 8.0D;
+            float x = (float)Math.cos(a) * 1.18F;
+            float z = (float)Math.sin(a) * 1.18F;
+            float height = 0.48F + (float)Math.sin(time*0.14F+i*1.7F)*0.16F;
+            float width = 0.035F;
+            quad(out,m,x-width,0.09F,z,x-width,height,z,x+width,height,z,x+width,0.09F,z,
+                    255,105,35,135);
+            quad(out,m,x,0.09F,z-width,x,height,z-width,x,height,z+width,x,0.09F,z+width,
+                    255,195,90,105);
+        }
+    }
+
+    private static void renderDisc(PoseStack pose, VertexConsumer out, float y, float radius,
+                                   int segments, int red, int green, int blue, int alpha) {
+        Matrix4f m = pose.last().pose();
+        for (int i = 0; i < segments; i++) {
+            double a = Math.PI * 2.0D * i / segments;
+            double b = Math.PI * 2.0D * (i + 1) / segments;
+            quad(out, m, 0,y,0,
+                    (float)Math.cos(a)*radius,y,(float)Math.sin(a)*radius,
+                    (float)Math.cos(b)*radius,y,(float)Math.sin(b)*radius,
+                    255, red, green, blue, alpha);
+        }
+    }
+
+    private static void bar3D(VertexConsumer out, Matrix4f m,
+                              float x1,float y1,float z1,float x2,float y2,float z2,
+                              float width,int r,int g,int b,int a) {
+        float dx=x2-x1, dz=z2-z1;
+        float length=(float)Math.sqrt(dx*dx+dz*dz);
+        if(length<0.0001F) return;
+        float ox=-dz/length*width, oz=dx/length*width;
+        quad(out,m,x1+ox,y1,z1+oz,x2+ox,y2,z2+oz,
+                x2-ox,y2,z2-oz,x1-ox,y1,z1-oz,r,g,b,a);
     }
 
     private static void renderOrbitingShields(PoseStack pose, VertexConsumer out, float time,
