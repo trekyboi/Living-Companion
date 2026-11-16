@@ -95,7 +95,18 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         graphics.fill(left + 6, top + 126, left + this.imageWidth - 6, top + 127, 0xFF51483C);
         graphics.drawString(this.font, "Equipment", left + 8, top + 116, 0xFFE6D3B0, false);
         graphics.drawString(this.font, "Companion Storage", left + 62, top + 116, 0xFFE6D3B0, false);
-        
+        graphics.drawString(this.font, "Your Inventory", left + 8, top + 132, 0xFFE6D3B0, false);
+
+        // Small slot glyphs remain visible only while their equipment slots are empty.
+        String[] equipmentGlyphs = {"H", "C", "L", "B", "M", "O"};
+        int[][] equipmentPositions = {{8, 20}, {8, 38}, {8, 56}, {8, 74}, {26, 20}, {26, 56}};
+        for (int i = 0; i < equipmentPositions.length; i++) {
+            int sx = left + equipmentPositions[i][0];
+            int sy = top + equipmentPositions[i][1];
+            if (!this.menu.getSlot(i).hasItem()) {
+                graphics.drawCenteredString(this.font, equipmentGlyphs[i], sx + 9, sy + 5, 0xFF777D86);
+            }
+        }
     }
 
     @Override
@@ -104,5 +115,19 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         if (this.protectionButton != null) this.protectionButton.setMessage(protectionLabel());
         super.render(graphics, mouseX, mouseY, partialTick);
         this.renderTooltip(graphics, mouseX, mouseY);
+        String equipmentTip = equipmentTooltip(mouseX - this.leftPos, mouseY - this.topPos);
+        if (equipmentTip != null) {
+            graphics.renderTooltip(this.font, Component.literal(equipmentTip), mouseX, mouseY);
+        }
+    }
+
+    private String equipmentTooltip(int x, int y) {
+        if (x >= 8 && x < 26 && y >= 20 && y < 38) return "Helmet slot — head protection";
+        if (x >= 8 && x < 26 && y >= 38 && y < 56) return "Chest slot — chest armor";
+        if (x >= 8 && x < 26 && y >= 56 && y < 74) return "Leg slot — leg armor";
+        if (x >= 8 && x < 26 && y >= 74 && y < 92) return "Boot slot — movement and fall protection";
+        if (x >= 26 && x < 44 && y >= 20 && y < 38) return "Main hand — weapon or utility item";
+        if (x >= 26 && x < 44 && y >= 56 && y < 74) return "Off hand — shield or utility item";
+        return null;
     }
 }
