@@ -71,3 +71,4 @@ AI memory or relationship system.
 - Fixed spawn-egg consumption so failed spawns do not consume the item and Creative players keep their egg.
 - Added a GitHub Actions workflow at `.github/workflows/forge-build.yml` to run the ForgeGradle build on pushes, pull requests, and manual dispatches. This provides a remote build check; it does not replace in-game testing.
 - These changes are committed to the `main` branch. Full local Forge build and gameplay verification remain pending.
+- Fixed a resurrection health edge case: resurrected entities now receive the configured maximum health after their first-tick attribute configuration is applied, including when the server's max-health setting differs from the default.
