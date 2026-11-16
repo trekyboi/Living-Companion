@@ -2,6 +2,7 @@ package com.livingcompanion.event;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
+import com.livingcompanion.progression.CompanionAchievement;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -73,6 +74,8 @@ public final class CompanionMemoryEvents {
             if (companion != null) {
                 companion.remember(memory);
                 companion.addRelationshipExperience(30);
+                companion.awardAchievement(event.getEntity() instanceof EnderDragon
+                        ? CompanionAchievement.DRAGON_SLAYER : CompanionAchievement.WITHER_SLAYER);
                 if (event.getEntity() instanceof EnderDragon) {
                     companion.commentOnEvent("Well. That's the biggest problem dealt with.",
                             "I was expecting a longer argument.",
@@ -86,6 +89,8 @@ public final class CompanionMemoryEvents {
         } else if (attacker instanceof CompanionEntity companion) {
             companion.remember(memory);
             companion.addRelationshipExperience(30);
+            companion.awardAchievement(event.getEntity() instanceof EnderDragon
+                    ? CompanionAchievement.DRAGON_SLAYER : CompanionAchievement.WITHER_SLAYER);
             companion.commentOnEvent("Well. That's the biggest problem dealt with.",
                     "I was expecting a longer argument.",
                     "Remind me never to do that twice in one afternoon.");
@@ -106,6 +111,10 @@ public final class CompanionMemoryEvents {
         if (companion != null) {
             companion.remember(memory);
             companion.addRelationshipExperience(8);
+            if (event.getState().is(Blocks.DIAMOND_ORE)
+                    || event.getState().is(Blocks.DEEPSLATE_DIAMOND_ORE)) {
+                companion.awardAchievement(CompanionAchievement.DIAMOND_SEEKER);
+            }
             if (event.getState().is(Blocks.DIAMOND_ORE)
                     || event.getState().is(Blocks.DEEPSLATE_DIAMOND_ORE)) {
                 companion.commentOnEvent("Diamonds. Excellent. Try not to spend them all at once.",
@@ -131,6 +140,8 @@ public final class CompanionMemoryEvents {
         if (memory != null) {
             companion.remember(memory);
             companion.addRelationshipExperience(10);
+            companion.awardAchievement(event.getTo() == Level.NETHER
+                    ? CompanionAchievement.NETHER_EXPLORER : CompanionAchievement.END_EXPLORER);
         }
 
         // FOLLOW and DEFEND companions travel with their owner. STAY companions
