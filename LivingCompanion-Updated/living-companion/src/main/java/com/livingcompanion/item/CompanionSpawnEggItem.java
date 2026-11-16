@@ -11,29 +11,26 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.common.ForgeSpawnEggItem;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
- * Spawn egg that explicitly binds the using player as the companion's owner.
- *
- * <p>Vanilla {@link SpawnEggItem#useOn} cannot hand us the spawned entity, so we
- * replicate its spawn call (including the vanilla Y-offset rule for upward
- * faces) and bind ownership directly. Using the egg on a mob spawner
- * intentionally does NOT convert the spawner — a companion spawner would be
- * exploitable; eggs always spawn one companion.</p>
- *
- * <p>Tint colors are handled automatically: {@code SpawnEggItem}'s constructor
- * registers into {@code BY_ID}, which vanilla's {@code ItemColors} iterates.</p>
+ * Spawn egg that defers entity type resolution until Forge has completed
+ * registration, then binds the using player as the companion's owner.
  */
-public class CompanionSpawnEggItem extends SpawnEggItem {
+public class CompanionSpawnEggItem extends ForgeSpawnEggItem {
 
-    public CompanionSpawnEggItem(EntityType<? extends Mob> type, int backgroundColor,
-                                 int highlightColor, Properties properties) {
+    private final Supplier<? extends EntityType<? extends Mob>> entityTypeSupplier;
+
+    public CompanionSpawnEggItem(Supplier<? extends EntityType<? extends Mob>> type,
+                                 int backgroundColor, int highlightColor,
+                                 Properties properties) {
         super(type, backgroundColor, highlightColor, properties);
+        this.entityTypeSupplier = type;
     }
 
     @Override
@@ -46,7 +43,7 @@ public class CompanionSpawnEggItem extends SpawnEggItem {
             BlockPos spawnPos = clicked.relative(face);
             Player player = context.getPlayer();
 
-            EntityType<?> type = com.livingcompanion.registry.ModEntities.COMPANION.get();
+            EntityType<?> type = entityTypeSupplier.get();
             Entity entity = type.spawn((ServerLevel) level, stack, player, spawnPos,
                     MobSpawnType.SPAWN_EGG, true,
                     !Objects.equals(clicked, spawnPos) && face == Direction.UP);
