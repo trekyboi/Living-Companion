@@ -21,7 +21,14 @@ public final class CompanionSkillsScreen extends Screen {
     }
 
     public static void open(Screen parent, SkillDataMessage data) {
-        net.minecraft.client.Minecraft.getInstance().setScreen(new CompanionSkillsScreen(parent, data));
+        net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+        if (minecraft.screen instanceof CompanionSkillsScreen current) {
+            current.data = data;
+            current.init(minecraft, current.width, current.height);
+            minecraft.setScreen(current);
+        } else {
+            minecraft.setScreen(new CompanionSkillsScreen(parent, data));
+        }
     }
 
     @Override
