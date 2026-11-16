@@ -9,25 +9,29 @@ import java.util.Map;
 /** Persistent RPG progression for one companion. All mutations are server-authoritative. */
 public final class CompanionProgression {
     public static final int MAX_LEVEL = 50;
+    public static final int ATTRIBUTE_POINT_CAP = 20;
     private int level = 1;
     private int experience = 0;
     private int skillPoints = 1;
+    private int attributePoints = 0;
     private final Map<String, Integer> skillRanks = new HashMap<>();
+    private final Map<String, Integer> attributes = new HashMap<>();
 
     public int getLevel() { return level; }
     public int getExperience() { return experience; }
     public int getSkillPoints() { return skillPoints; }
+    public int getAttributePoints() { return attributePoints; }
+    public int getAttribute(CompanionAttribute attribute) {
+        return attribute == null ? 0 : attributes.getOrDefault(attribute.getId(), 0);
+    }
+    public Map<String, Integer> getAttributes() { return Collections.unmodifiableMap(attributes); }
     public int getExperienceToNextLevel() {
         return level >= MAX_LEVEL ? 0 : 100 + level * 35;
     }
-    public Map<String, Integer> getSkillRanks() {
-        return Collections.unmodifiableMap(skillRanks);
-    }
-    public int getSkillRank(String skillId) {
-        return skillRanks.getOrDefault(skillId, 0);
-    }
+    public Map<String, Integer> getSkillRanks() { return Collections.unmodifiableMap(skillRanks); }
+    public int getSkillRank(String skillId) { return skillRanks.getOrDefault(skillId, 0); }
 
-    /** Adds XP and returns the number of levels gained. XP carries across level thresholds. */
+    /** Adds XP and returns the number of levels gained. Each level grants one skill and two attribute points. */
     public int addExperience(int amount) {
         if (amount <= 0 || level >= MAX_LEVEL) return 0;
         experience += amount;
@@ -36,10 +40,19 @@ public final class CompanionProgression {
             experience -= getExperienceToNextLevel();
             level++;
             skillPoints++;
+            attributePoints += 2;
             gained++;
         }
         if (level >= MAX_LEVEL) experience = 0;
         return gained;
+    }
+
+    public boolean spendAttributePoint(CompanionAttribute attribute) {
+        if (attribute == null || attributePoints <= 0
+                || getAttribute(attribute) >= ATTRIBUTE_POINT_CAP) return false;
+        attributes.put(attribute.getId(), getAttribute(attribute) + 1);
+        attributePoints--;
+        return true;
     }
 
     /** Spends one point after validating class, level gate, and maximum rank. */
@@ -58,9 +71,13 @@ public final class CompanionProgression {
         tag.putInt("Level", level);
         tag.putInt("Experience", experience);
         tag.putInt("SkillPoints", skillPoints);
+        tag.putInt("AttributePoints", attributePoints);
         CompoundTag skills = new CompoundTag();
         skillRanks.forEach(skills::putInt);
         tag.put("Skills", skills);
+        CompoundTag savedAttributes = new CompoundTag();
+        attributes.forEach(savedAttributes::putInt);
+        tag.put("Attributes", savedAttributes);
         return tag;
     }
 
@@ -68,6 +85,7 @@ public final class CompanionProgression {
         level = Math.max(1, Math.min(MAX_LEVEL, tag.getInt("Level")));
         experience = Math.max(0, tag.getInt("Experience"));
         skillPoints = Math.max(0, tag.getInt("SkillPoints"));
+        attributePoints = Math.max(0, tag.getInt("AttributePoints"));
         skillRanks.clear();
         if (tag.contains("Skills", 10)) {
             CompoundTag skills = tag.getCompound("Skills");
@@ -78,7 +96,19 @@ public final class CompanionProgression {
                         && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
             }
         }
-        // Migration: a fresh level-1 companion starts with its first level's skill point.
+        attributes.clear();
+        if (tag.contains("Attributes", 10)) {
+            CompoundTag savedAttributes = tag.getCompound("Attributes");
+            for (CompanionAttribute attribute : CompanionAttribute.values()) {
+                int value = Math.max(0, Math.min(ATTRIBUTE_POINT_CAP,
+                        savedAttributes.getInt(attribute.getId())));
+                if (value > 0) attributes.put(attribute.getId(), value);
+            }
+        }
+        // Migration for companions created before attribute points existed.
+        if (!tag.contains("AttributePoints")) {
+            attributePoints = Math.max(0, (level - 1) * 2);
+        }
         if (level == 1 && skillPoints == 0 && skillRanks.isEmpty()) skillPoints = 1;
         if (level >= MAX_LEVEL) experience = 0;
         else experience = Math.min(experience, getExperienceToNextLevel() - 1);
