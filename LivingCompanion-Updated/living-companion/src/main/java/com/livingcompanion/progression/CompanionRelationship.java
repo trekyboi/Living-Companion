@@ -62,7 +62,7 @@ public final class CompanionRelationship {
     public void load(CompoundTag tag) {
         level = Math.max(1, Math.min(MAX_LEVEL, tag.getInt("Level")));
         experience = Math.max(0, tag.getInt("Experience"));
-        proximityTicks = Math.max(0, Math.min(5999, tag.getInt("ProximityTicks")));
+        proximityTicks = Math.max(0, Math.min(1199, tag.getInt("ProximityTicks")));
         if (level >= MAX_LEVEL) experience = 0;
         else experience = Math.min(experience, getExperienceToNextLevel() - 1);
     }
