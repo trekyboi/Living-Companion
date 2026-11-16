@@ -91,13 +91,31 @@ public final class CompanionNetwork {
     }
 
     private static void sendStatsData(ServerPlayer player, CompanionEntity companion) {
+        net.minecraft.world.entity.ai.attributes.AttributeInstance maxHealth =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance attack =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance armor =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance toughness =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance movement =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        net.minecraft.world.entity.ai.attributes.AttributeInstance knockback =
+                companion.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE);
         double[] stats = {
                 companion.getHealth(), companion.getMaxHealth(),
                 companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE),
                 companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR),
                 companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS),
                 companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED),
-                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE)
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE),
+                maxHealth == null ? companion.getMaxHealth() : maxHealth.getBaseValue(),
+                attack == null ? 0.0D : attack.getBaseValue(),
+                armor == null ? 0.0D : armor.getBaseValue(),
+                toughness == null ? 0.0D : toughness.getBaseValue(),
+                movement == null ? 0.0D : movement.getBaseValue(),
+                knockback == null ? 0.0D : knockback.getBaseValue()
         };
         int[] attributes = new int[CompanionAttribute.values().length];
         for (CompanionAttribute attribute : CompanionAttribute.values()) {
