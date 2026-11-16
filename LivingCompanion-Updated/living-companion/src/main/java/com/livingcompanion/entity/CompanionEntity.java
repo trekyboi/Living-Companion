@@ -1190,9 +1190,33 @@ public class CompanionEntity extends PathfinderMob {
 
         List<String> pool;
         if (this.getTarget() != null && this.getTarget().isAlive()) {
-            if (this.companionClass == CompanionClass.PALADIN) pool = PALADIN_COMBAT_LINES;
+            if (this.personality.getCombatConfidence() >= 0.60D) {
+                pool = List.of(
+                        "I've learned their habits. This should be quick.",
+                        "I've seen worse. Keep your eyes on the next one.",
+                        "They are making the same mistake. I'll make sure they regret it."
+                );
+            } else if (this.personality.getProtectiveInstinct() >= 0.50D) {
+                pool = List.of(
+                        "Stay close. I know what happens when they get through.",
+                        "I'll keep the pressure away from you. Focus on staying alive.",
+                        "They came for you. That makes this personal."
+                );
+            } else if (this.companionClass == CompanionClass.PALADIN) pool = PALADIN_COMBAT_LINES;
             else if (this.companionClass == CompanionClass.TANK) pool = TANK_COMBAT_LINES;
             else pool = COMBAT_LINES;
+        } else if (this.personality.getPeacefulInteractions() >= 20 && this.random.nextInt(3) == 0) {
+            pool = List.of(
+                    "There are decent people out here. Worth remembering.",
+                    "A quiet word can do more than a drawn sword.",
+                    "I used to think every stranger was trouble. Experience has softened that view."
+            );
+        } else if (this.personality.getCuriosity() >= 0.40D && this.random.nextInt(3) == 0) {
+            pool = List.of(
+                    "There's always another corner of this world worth seeing.",
+                    "I keep wondering what lies beyond the next ridge.",
+                    "We've found a great deal already. I suspect the world has more to show us."
+            );
         } else if (this.foodLevel <= 5) {
             pool = List.of(
                     "We should find food soon. I'm running on fumes.",
