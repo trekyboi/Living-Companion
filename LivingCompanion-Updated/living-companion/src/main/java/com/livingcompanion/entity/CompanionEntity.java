@@ -49,6 +49,7 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.TamableAnimal;
@@ -663,6 +664,7 @@ public class CompanionEntity extends PathfinderMob {
             tickFoodSystem();
             tickRelationship();
             tickWorldAwareness();
+            tickLootAwareness();
             if (this.tickCount % 20 == 0) speakOccasionally();
         }
     }
@@ -790,6 +792,65 @@ public class CompanionEntity extends PathfinderMob {
                     "I'll let you do the talking. I have a face for guarding.");
             remember("we crossed paths with another player");
             this.nextSocialInteractionTick = serverLevel.getGameTime() + 600L;
+        }
+    }
+
+    /**
+     * Notices rare drops and collects only item IDs explicitly approved in server config.
+     * Pickup is disabled by default; an empty whitelist always means no collection.
+     */
+    private void tickLootAwareness() {
+        if (this.tickCount % 10 != 0 || !(this.level() instanceof ServerLevel serverLevel)) return;
+        List<ItemEntity> nearbyDrops = serverLevel.getEntitiesOfClass(ItemEntity.class,
+                this.getBoundingBox().inflate(4.0D), ItemEntity::isAlive);
+        List<? extends String> whitelist = CompanionConfig.LOOT_PICKUP_WHITELIST.get();
+
+        for (ItemEntity drop : nearbyDrops) {
+            ItemStack stack = drop.getItem();
+            if (stack.isEmpty()) continue;
+
+            if (stack.getRarity() == net.minecraft.world.item.Rarity.EPIC
+                    && !drop.getPersistentData().getBoolean("LivingCompanionNoticed")) {
+                drop.getPersistentData().putBoolean("LivingCompanionNoticed", true);
+                String itemName = stack.getHoverName().getString();
+                commentOnEvent("That's a rare find: " + itemName + ". Keep it safe.",
+                        "Well now. " + itemName + " is worth remembering.",
+                        "I've seen plenty of loot. " + itemName + " deserves a closer look.");
+                remember("we discovered " + itemName);
+                this.personality.recordDiscovery();
+            }
+
+            if (!CompanionConfig.LOOT_PICKUP_ENABLED.get()) continue;
+            net.minecraft.resources.ResourceLocation itemId =
+                    net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
+            if (itemId == null || !whitelist.contains(itemId.toString())) continue;
+
+            ItemStack remaining = stack.copy();
+            for (int slot = 0; slot < CompanionInventory.STORAGE_SIZE && !remaining.isEmpty(); slot++) {
+                ItemStack stored = this.companionInventory.getItem(slot);
+                if (stored.isEmpty()) {
+                    this.companionInventory.setItem(slot, remaining.copy());
+                    remaining = ItemStack.EMPTY;
+                } else if (ItemStack.isSameItemSameTags(stored, remaining)) {
+                    int room = Math.max(0, stored.getMaxStackSize() - stored.getCount());
+                    int moved = Math.min(room, remaining.getCount());
+                    if (moved > 0) {
+                        stored.grow(moved);
+                        remaining.shrink(moved);
+                    }
+                }
+            }
+
+            if (remaining.getCount() != stack.getCount()) {
+                drop.setItem(remaining);
+                this.inventoryChanged();
+                if (remaining.isEmpty()) {
+                    drop.discard();
+                    commentOnEvent("I'll carry that. One less thing for you to manage.",
+                            "Picked it up. I'll keep it safe.",
+                            "Added to our supplies. Let's keep moving.");
+                }
+            }
         }
     }
 
