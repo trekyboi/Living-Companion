@@ -110,6 +110,7 @@ public final class CompanionResurrectionData extends SavedData {
             entityTag.putShort("HurtTime", (short) 0);
             companion.load(entityTag);
             companion.setOwnerUUID(entry.owner);
+            companion.markForFullHealthRestore();
             companion.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(),
                     spawnPos.getZ() + 0.5D, destination.random.nextFloat() * 360.0F, 0.0F);
             companion.setHealth(companion.getMaxHealth());
