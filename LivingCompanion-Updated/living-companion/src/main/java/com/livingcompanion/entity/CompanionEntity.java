@@ -458,6 +458,20 @@ public class CompanionEntity extends PathfinderMob {
             }
         }
 
+        CompanionSpecialization specialization = this.progression.getSpecialization();
+        if (specialization == CompanionSpecialization.PALADIN_WARDEN) {
+            health += 4.0D;
+            armor += 1.0D;
+        } else if (specialization == CompanionSpecialization.PALADIN_CRUSADER) {
+            attack += 1.5D;
+        } else if (specialization == CompanionSpecialization.TANK_BULWARK) {
+            armor += 2.0D;
+            toughness += 1.0D;
+        } else if (specialization == CompanionSpecialization.TANK_VANGUARD) {
+            attack += 1.0D;
+            movement += 0.01D;
+        }
+
         setBase(Attributes.MAX_HEALTH, health);
         setBase(Attributes.ATTACK_DAMAGE, attack);
         setBase(Attributes.ARMOR, armor);
