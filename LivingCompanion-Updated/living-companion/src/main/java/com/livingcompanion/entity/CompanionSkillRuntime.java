@@ -4,6 +4,7 @@ import com.livingcompanion.progression.CompanionAttribute;
 
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
+import com.livingcompanion.progression.CompanionSpecialization;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -69,7 +70,8 @@ public final class CompanionSkillRuntime {
         if (companion.getCompanionClass() == CompanionClass.PALADIN && divineRank > 0
                 && companion.getHealth() <= companion.getMaxHealth() * 0.55F
                 && isReady(CompanionSkill.PALADIN_DIVINE_PROTECTION)) {
-            divineProtectionTicks = 60 + divineRank * 40;
+            divineProtectionTicks = 60 + divineRank * 40
+                    + (companion.getProgression().getSpecialization() == CompanionSpecialization.PALADIN_WARDEN ? 40 : 0);
             startCooldown(CompanionSkill.PALADIN_DIVINE_PROTECTION);
             playDivineWardEffect(); battleLine("Behind me. This is where the armor is.", "Please stop standing where the arrows go.", "I've got this. Probably.", "I was hoping to avoid paperwork today.", "Everyone still attached to their limbs? Good.", "I can hold this. Keep moving.", "That was close. For you, mostly.");
         }
@@ -78,7 +80,8 @@ public final class CompanionSkillRuntime {
         if (companion.getCompanionClass() == CompanionClass.TANK && shieldRank > 0
                 && companion.getHealth() <= companion.getMaxHealth() * 0.45F
                 && isReady(CompanionSkill.TANK_SHIELD_WALL)) {
-            shieldWallTicks = 60 + shieldRank * 40;
+            shieldWallTicks = 60 + shieldRank * 40
+                    + (companion.getProgression().getSpecialization() == CompanionSpecialization.TANK_BULWARK ? 40 : 0);
             startCooldown(CompanionSkill.TANK_SHIELD_WALL);
             playShieldWallEffect(); battleLine("I've had worse. I think.", "That sounded expensive. For you.", "I'll add that to the list of things that didn't work.", "Still standing. Excellent start.", "Was that meant to hurt?", "I would appreciate a quieter opponent.", "Armor review: still worth it.");
         }
@@ -97,7 +100,8 @@ public final class CompanionSkillRuntime {
         if (companion.getCompanionClass() == CompanionClass.PALADIN && aegisRank > 0
                 && companion.getHealth() <= companion.getMaxHealth() * 0.20F
                 && aegisTicks <= 0 && isReady(CompanionSkill.PALADIN_AEGIS_OF_DAWN)) {
-            aegisTicks = 160;
+            aegisTicks = 160
+                    + (companion.getProgression().getSpecialization() == CompanionSpecialization.PALADIN_WARDEN ? 40 : 0);
             startCooldown(CompanionSkill.PALADIN_AEGIS_OF_DAWN);
             playAegisEffect(); battleLine("Still alive. That's inconvenient for them.", "I am beginning to find this personal.", "I've got at least one more fight in me. Maybe two.", "Right. That got my attention.", "I was saving that for a worse day.", "You'll have to be more convincing than that.", "I am officially done being patient.");
         }
@@ -106,7 +110,8 @@ public final class CompanionSkillRuntime {
         if (companion.getCompanionClass() == CompanionClass.TANK && bastionRank > 0
                 && companion.getHealth() <= companion.getMaxHealth() * 0.20F
                 && lastBastionTicks <= 0 && isReady(CompanionSkill.TANK_LAST_BASTION)) {
-            lastBastionTicks = 160;
+            lastBastionTicks = 160
+                    + (companion.getProgression().getSpecialization() == CompanionSpecialization.TANK_BULWARK ? 40 : 0);
             startCooldown(CompanionSkill.TANK_LAST_BASTION);
             playLastBastionEffect(); battleLine("No.", "You'll have to go through me. Sorry about the queue.", "I was standing here first.", "I'm afraid that's a very short conversation.", "You can try. I've got time.", "This is becoming a habit.", "Find someone else. I'm occupied.");
             this.tauntRange = 12.0D;
@@ -155,12 +160,25 @@ public final class CompanionSkillRuntime {
         if (!target.isAlive()) {
             battleLine("Well, that's sorted.", "One less problem.", "I expected more trouble, honestly.", "Right. Who's next?", "That went about as expected.", "Could've been worse. For me, anyway.", "I should probably check the armor.");
         }
+        if (companion.getCompanionClass() == CompanionClass.TANK) {
+            int furyRank = rank(CompanionSkill.TANK_VANGUARD_FURY);
+            if (companion.getProgression().getSpecialization() == CompanionSpecialization.TANK_VANGUARD
+                    && furyRank > 0 && target.isAlive()) {
+                target.hurt(companion.damageSources().mobAttack(companion), 0.5F * furyRank);
+            }
+            return;
+        }
         if (companion.getCompanionClass() != CompanionClass.PALADIN) return;
         int rank = rank(CompanionSkill.PALADIN_HOLY_STRIKE);
         if (rank <= 0 || !isReady(CompanionSkill.PALADIN_HOLY_STRIKE)) return;
 
         if (!startCooldown(CompanionSkill.PALADIN_HOLY_STRIKE)) return;
         float bonusDamage = 2.0F * rank;
+        if (companion.getProgression().getSpecialization() == CompanionSpecialization.PALADIN_CRUSADER) {
+            bonusDamage *= 1.30F;
+        }
+        int judgmentRank = companion.getProgression().getSkillRank(CompanionSkill.PALADIN_JUDGMENT.getId());
+        if (judgmentRank > 0) bonusDamage += 0.75F * judgmentRank;
         boolean damaged = target.hurt(companion.damageSources().mobAttack(companion), bonusDamage);
         if (damaged && companion.level() instanceof ServerLevel serverLevel) {
             holyStrikeVisualTicks = 10;
@@ -188,6 +206,9 @@ public final class CompanionSkillRuntime {
     private void activatePrayer(int rank) {
         if (!startCooldown(CompanionSkill.PALADIN_PRAYER)) return;
         float amount = (3.0F + rank * 2.0F) * (1.0F + companion.getProgression().getAttribute(CompanionAttribute.WISDOM) * 0.01F);
+        int sanctuaryRank = rank(CompanionSkill.PALADIN_SANCTUARY);
+        if (companion.getProgression().getSpecialization() == CompanionSpecialization.PALADIN_WARDEN
+                && sanctuaryRank > 0) amount *= 1.0F + 0.15F * sanctuaryRank;
         companion.heal(amount);
         LivingEntity owner = companion.getOwnerPlayer();
         if (owner != null && owner.isAlive() && companion.distanceToSqr(owner) <= 144.0D) {
@@ -296,6 +317,13 @@ public final class CompanionSkillRuntime {
             return amount;
         }
 
+        int bulwarkRank = rank(CompanionSkill.TANK_BULWARK_OATH);
+        if (companion.getCompanionClass() == CompanionClass.TANK
+                && companion.getProgression().getSpecialization() == CompanionSpecialization.TANK_BULWARK
+                && bulwarkRank > 0) {
+            amount *= 1.0F - Math.min(0.15F, 0.05F * bulwarkRank);
+        }
+
         int rank = rank(CompanionSkill.TANK_INTERCEPT);
         if (companion.getCompanionClass() != CompanionClass.TANK || rank <= 0
                 || !isReady(CompanionSkill.TANK_INTERCEPT)) return amount;
@@ -321,6 +349,10 @@ public final class CompanionSkillRuntime {
         if (!startCooldown(CompanionSkill.TANK_TAUNT)) return;
         this.tauntRange = 6.0D + rank * 2.0D;
         this.tauntTicksRemaining = 40 + rank * 20;
+        if (companion.getProgression().getSpecialization() == CompanionSpecialization.TANK_VANGUARD) {
+            this.tauntRange += 2.0D;
+            this.tauntTicksRemaining += 20;
+        }
         applyTauntTargets();
         if (companion.level() instanceof ServerLevel serverLevel) {
             serverLevel.sendParticles(ParticleTypes.ANGRY_VILLAGER,
