@@ -76,13 +76,26 @@ public final class CompanionStatsScreen extends Screen {
         graphics.drawString(font,"Title: " + data.companionTitle + "  |  Achievements: "
                 + data.achievementCount + "/12",left+16,top+57,0xFFFFD58A,false);
 
-        int y=top+75;
+        int healthBarX=left+16, healthBarY=top+75, healthBarWidth=panelWidth-32;
+        graphics.drawString(font,"HEALTH  "+number(stat(0))+" / "+number(stat(1)),
+                healthBarX,healthBarY-11,0xFFFFE6BE,false);
+        graphics.fill(healthBarX,healthBarY,healthBarX+healthBarWidth,healthBarY+7,0xFF090B0E);
+        int healthFill=stat(1)>0?(int)(healthBarWidth*Math.max(0.0D,Math.min(1.0D,stat(0)/stat(1)))):0;
+        graphics.fill(healthBarX,healthBarY,healthBarX+healthFill,healthBarY+7,0xFFB94D4D);
+
+        int y=top+94;
         graphics.drawString(font,"COMBAT",col1,y,0xFFFFE6BE,false);
         graphics.drawString(font,"PROGRESSION",col2,y,0xFFFFE6BE,false);
         y+=18;
-        String[] labels={"Health","Attack Damage","Armor","Armor Toughness","Movement Speed","Knockback Resistance"};
-        String[] values={number(stat(0))+" / "+number(stat(1)),number(stat(2)),number(stat(3)),
-                number(stat(4)),number(stat(5)),number(stat(6)*100.0D)+"%"};
+        String[] labels={"Max Health","Attack Damage","Armor","Armor Toughness","Movement Speed","Knockback Resistance"};
+        String[] values={
+                number(stat(1))+" | gear +"+number(stat(1)-stat(7)),
+                number(stat(2))+" | gear +"+number(stat(2)-stat(8)),
+                number(stat(3))+" | gear +"+number(stat(3)-stat(9)),
+                number(stat(4))+" | gear +"+number(stat(4)-stat(10)),
+                number(stat(5))+" | gear +"+number(stat(5)-stat(11)),
+                number(stat(6)*100.0D)+"% | gear +"+number((stat(6)-stat(12))*100.0D)+"%"
+        };
         for(int i=0;i<labels.length;i++) {
             graphics.drawString(font,labels[i],col1,y+i*17,0xFFBFC5CC,false);
             graphics.drawString(font,values[i],col1+112,y+i*17,0xFFFFFFFF,false);
@@ -96,7 +109,7 @@ public final class CompanionStatsScreen extends Screen {
             ay+=17;
         }
 
-        int skillsY=top+210;
+        int skillsY=top+220;
         int skillRowStep=panelHeight<300?12:15;
         graphics.drawString(font,"UNLOCKED SKILLS",col1,skillsY,0xFFFFE6BE,false);
         int shown=0;
@@ -119,7 +132,7 @@ public final class CompanionStatsScreen extends Screen {
             graphics.drawString(font, "+" + (data.achievementTitles.length - achievementRows) + " more",
                     col2 + 8, skillsY + 17 + achievementRows * skillRowStep, 0xFF9BA5AF, false);
         }
-        graphics.drawCenteredString(font,"Values include equipped item modifiers",
+        graphics.drawCenteredString(font,"Total values include equipment; gear column shows its contribution",
                 width/2,top+panelHeight-18,0xFF858B94);
         super.render(graphics,mouseX,mouseY,partialTick);
     }
