@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.client.gui.components.Button;
 
 /** Player-style companion inventory with explicit slot wells and section labels. */
 public final class CompanionInventoryScreen extends AbstractContainerScreen<CompanionInventoryMenu> {
@@ -16,10 +17,30 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     public CompanionInventoryScreen(CompanionInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 236;
-        this.imageHeight = 222;
-        this.inventoryLabelY = 120;
+        this.imageHeight = 232;
+        this.inventoryLabelY = 130;
         this.titleLabelX = 8;
         this.titleLabelY = 6;
+        this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
+            if (this.minecraft != null && this.minecraft.gameMode != null) {
+                this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
+            }
+        }).bounds( this.leftPos + 62, this.topPos + 94, 166, 18).build());
+    }
+
+    private Component protectionLabel() {
+        return Component.literal("Protect from owner: " + (this.menu.getCompanion().isProtectedFromOwner() ? "ON" : "OFF"));
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        this.clearWidgets();
+        this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
+            if (this.minecraft != null && this.minecraft.gameMode != null) {
+                this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
+            }
+        }).bounds(this.leftPos + 62, this.topPos + 94, 166, 18).build());
     }
 
     private static void drawSlot(GuiGraphics graphics, int x, int y) {
@@ -58,18 +79,18 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         // Player inventory and hotbar.
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                drawSlot(graphics, left + 8 + col * SLOT_SIZE, top + 132 + row * SLOT_SIZE);
+                drawSlot(graphics, left + 8 + col * SLOT_SIZE, top + 142 + row * SLOT_SIZE);
             }
         }
         for (int col = 0; col < 9; col++) {
-            drawSlot(graphics, left + 8 + col * SLOT_SIZE, top + 190);
+            drawSlot(graphics, left + 8 + col * SLOT_SIZE, top + 200);
         }
 
         graphics.fill(left + 52, top + 14, left + 53, top + 104, 0xFF51483C);
-        graphics.fill(left + 6, top + 112, left + this.imageWidth - 6, top + 113, 0xFF51483C);
-        graphics.drawString(this.font, "Equipment", left + 8, top + 106, 0xFFE6D3B0, false);
-        graphics.drawString(this.font, "Companion Storage", left + 62, top + 106, 0xFFE6D3B0, false);
-        graphics.drawString(this.font, "Your Inventory", left + 8, top + 120, 0xFFE6D3B0, false);
+        graphics.fill(left + 6, top + 126, left + this.imageWidth - 6, top + 127, 0xFF51483C);
+        graphics.drawString(this.font, "Equipment", left + 8, top + 116, 0xFFE6D3B0, false);
+        graphics.drawString(this.font, "Companion Storage", left + 62, top + 116, 0xFFE6D3B0, false);
+        graphics.drawString(this.font, "Your Inventory", left + 8, top + 130, 0xFFE6D3B0, false);
     }
 
     @Override
@@ -77,5 +98,8 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
         this.renderTooltip(graphics, mouseX, mouseY);
+        for (var widget : this.renderables) {
+            if (widget instanceof Button button) button.setMessage(protectionLabel());
+        }
     }
 }
