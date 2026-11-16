@@ -4,7 +4,6 @@ import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.client.ModModelLayers;
 import com.livingcompanion.entity.CompanionEntity;
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
@@ -20,7 +19,7 @@ public final class CompanionPlayerRenderer
             new ResourceLocation(LivingCompanion.MOD_ID, "textures/entity/companion_knight.png");
 
     public CompanionPlayerRenderer(EntityRendererProvider.Context context) {
-        super(context, new PlayerModel<>(context.bakeLayer(ModModelLayers.COMPANION), false), 0.5F);
+        super(context, new CompanionKnightModel(context.bakeLayer(ModModelLayers.COMPANION)), 0.5F);
         this.addLayer(new ItemInHandLayer<>(this, context.getItemInHandRenderer()));
         this.addLayer(new HumanoidArmorLayer<>(this,
                 new HumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_INNER_ARMOR)),
