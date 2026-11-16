@@ -4,6 +4,7 @@ import com.livingcompanion.config.CompanionConfig;
 import com.livingcompanion.entity.CompanionEntity;
 import com.livingcompanion.registry.ModEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -144,15 +145,50 @@ public final class CompanionResurrectionData extends SavedData {
 
     private static BlockPos resolveSpawnPosition(ServerLevel level, PendingResurrection entry) {
         BlockPos requested = entry.position;
-        if (level.dimension().equals(entry.dimension) && level.hasChunkAt(requested)) {
-            BlockPos candidate = level.getBlockState(requested).getBlock() instanceof BedBlock
-                    ? requested.above() : requested;
-            if (level.getBlockState(candidate).isAir()
-                    && level.getBlockState(candidate.above()).isAir()) {
-                return candidate;
+
+        // Force-load the saved respawn chunk before checking it. The old
+        // hasChunkAt() guard sent companions to world spawn whenever the
+        // owner's bed chunk happened to be unloaded.
+        if (level.dimension().equals(entry.dimension)) {
+            level.getChunkAt(requested);
+            if (level.getBlockState(requested).getBlock() instanceof BedBlock) {
+                // Try the bed first, then the four adjacent blocks. This also
+                // handles the head half of a double bed and obstructed bed tops.
+                BlockPos[] candidates = new BlockPos[] {
+                        requested.above(),
+                        requested.north(), requested.south(),
+                        requested.east(), requested.west(),
+                        requested.north().above(), requested.south().above(),
+                        requested.east().above(), requested.west().above()
+                };
+                for (BlockPos candidate : candidates) {
+                    if (isSafeSpawnPosition(level, candidate)) return candidate;
+                }
             }
         }
-        return level.getSharedSpawnPos().above();
+
+        // A missing, broken, or obstructed bed uses the dimension's safe
+        // shared spawn area. Search nearby positions before using the exact
+        // spawn point as a final fallback.
+        BlockPos worldSpawn = level.getSharedSpawnPos();
+        level.getChunkAt(worldSpawn);
+        for (int radius = 0; radius <= 8; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    BlockPos candidate = worldSpawn.offset(dx, 0, dz).above();
+                    if (isSafeSpawnPosition(level, candidate)) return candidate;
+                }
+            }
+        }
+        return worldSpawn.above();
+    }
+
+    private static boolean isSafeSpawnPosition(ServerLevel level, BlockPos position) {
+        BlockPos below = position.below();
+        return level.getBlockState(position).isAir()
+                && level.getBlockState(position.above()).isAir()
+                && level.getBlockState(below).isSolidRender(level, below);
     }
 
     private static final class PendingResurrection {
