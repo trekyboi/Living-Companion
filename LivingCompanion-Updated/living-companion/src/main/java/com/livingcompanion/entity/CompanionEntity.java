@@ -1156,7 +1156,9 @@ public class CompanionEntity extends PathfinderMob {
             if (owner == null) {
                 bindOwner(player);
                 setCommand(Command.FOLLOW);
-            } else if (!owner.equals(player.getUUID())) {
+                owner = player.getUUID();
+            }
+            if (!owner.equals(player.getUUID())) {
                 player.sendSystemMessage(Component.translatable("message.livingcompanion.not_yours",
                         this.ownerNameCache.isEmpty() ? "someone" : this.ownerNameCache));
             } else if (player.isShiftKeyDown()) {
