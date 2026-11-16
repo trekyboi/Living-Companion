@@ -29,4 +29,4 @@ jobs:
 
       - name: Build Forge mod
         working-directory: LivingCompanion-Updated/living-companion
-        run: ./gradlew --no-daemon build
+        run: bash ./gradlew --no-daemon build
