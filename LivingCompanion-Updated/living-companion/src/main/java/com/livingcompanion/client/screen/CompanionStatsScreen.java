@@ -69,7 +69,7 @@ public final class CompanionStatsScreen extends Screen {
         graphics.drawString(font,xp,left+panelWidth-16-font.width(xp),top+31,0xFFBFC5CC,false);
 
         int col1=left+18, col2=left+panelWidth/2+8;
-        String bond = "Bond: " + data.relationshipTitle + "  |  " + data.relationshipExperience
+        String bond = "Bond Lv. " + data.relationshipLevel + " — " + data.relationshipTitle + "  |  " + data.relationshipExperience
                 + (data.relationshipExperienceToNext > 0 ? " / " + data.relationshipExperienceToNext + " XP" : "  |  MAX");
         graphics.drawString(font,bond,left+16,top+45,0xFFE6C58E,false);
 
