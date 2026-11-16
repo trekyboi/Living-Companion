@@ -1275,7 +1275,6 @@ public class CompanionEntity extends PathfinderMob {
         boolean hit = super.doHurtTarget(target);
         if (hit && target instanceof LivingEntity livingTarget) {
             this.skillRuntime.onSuccessfulMeleeHit(livingTarget);
-            this.personality.recordCombat();
         }
         return hit;
     }
