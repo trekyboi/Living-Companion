@@ -334,6 +334,11 @@ public class CompanionEntity extends PathfinderMob {
         }
     }
 
+    public void refreshProgressionAttributes() {
+        if (!this.level().isClientSide) applyProgressionAttributes(true);
+        inventoryChanged();
+    }
+
     /** Marks the entity chunk dirty when carried inventory contents change. */
     public void inventoryChanged() {
         if (this.level() instanceof ServerLevel serverLevel) {
