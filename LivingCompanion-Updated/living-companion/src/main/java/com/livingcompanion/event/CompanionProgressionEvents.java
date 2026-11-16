@@ -28,11 +28,11 @@ public final class CompanionProgressionEvents {
         LivingEntity defeated = event.getEntity();
         if (defeated.getMaxHealth() <= 0.0F) return;
 
-        int experience = calculateExperience(defeated);
+        int baseExperience = calculateExperience(defeated);
         Entity attacker = event.getSource().getEntity();
 
         if (attacker instanceof CompanionEntity companion) {
-            if (companion.isAlive()) companion.awardExperience(experience);
+            if (companion.isAlive()) companion.awardExperience(scaleExperience(baseExperience, companion, defeated));
             return;
         }
 
@@ -49,9 +49,18 @@ public final class CompanionProgressionEvents {
         if (companion != null) {
             // The companion receives a meaningful share while the owner remains
             // the primary combatant. Boss rewards remain substantial.
-            int sharedExperience = Math.max(1, Math.round(experience * 0.75F));
+            int sharedExperience = Math.max(1, Math.round(scaleExperience(baseExperience, companion, defeated) * 0.75F));
             companion.awardExperience(sharedExperience);
         }
+    }
+
+    /** Weak enemies lose value as the companion outlevels them; dangerous enemies retain better rewards. */
+    private static int scaleExperience(int baseExperience, CompanionEntity companion, LivingEntity defeated) {
+        int companionLevel = companion.getProgression().getLevel();
+        int threatLevel = Math.max(1, (int) Math.ceil(defeated.getMaxHealth() / 4.0D));
+        int levelGap = Math.max(0, companionLevel - threatLevel);
+        double multiplier = Math.max(0.25D, 1.0D - levelGap * 0.025D);
+        return Math.max(1, (int) Math.round(baseExperience * multiplier));
     }
 
     private static int calculateExperience(LivingEntity defeated) {
