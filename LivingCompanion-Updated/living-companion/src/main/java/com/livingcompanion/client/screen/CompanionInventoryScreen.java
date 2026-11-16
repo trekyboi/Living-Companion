@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.client.gui.components.Button;
 
 /** Player-style companion inventory with explicit slot wells and section labels. */
@@ -28,7 +30,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     }
 
     private Component protectionLabel() {
-        return Component.literal("Protect from owner: " + (this.menu.getCompanion().isProtectedFromOwner() ? "ON" : "OFF"));
+        return Component.literal("Owner damage blocked: " + (this.menu.getCompanion().isProtectedFromOwner() ? "ON" : "OFF"));
     }
 
     @Override
@@ -97,14 +99,22 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         graphics.drawString(this.font, "Companion Storage", left + 62, top + 116, 0xFFE6D3B0, false);
         graphics.drawString(this.font, "Your Inventory", left + 8, top + 132, 0xFFE6D3B0, false);
 
-        // Small slot glyphs remain visible only while their equipment slots are empty.
-        String[] equipmentGlyphs = {"H", "C", "L", "B", "M", "O"};
+        // Recognizable vanilla item silhouettes identify each empty equipment slot.
+        ItemStack[] equipmentIcons = {
+                new ItemStack(Items.IRON_HELMET),
+                new ItemStack(Items.IRON_CHESTPLATE),
+                new ItemStack(Items.IRON_LEGGINGS),
+                new ItemStack(Items.IRON_BOOTS),
+                new ItemStack(Items.IRON_SWORD),
+                new ItemStack(Items.SHIELD)
+        };
         int[][] equipmentPositions = {{8, 20}, {8, 38}, {8, 56}, {8, 74}, {26, 20}, {26, 56}};
         for (int i = 0; i < equipmentPositions.length; i++) {
             int sx = left + equipmentPositions[i][0];
             int sy = top + equipmentPositions[i][1];
             if (!this.menu.getSlot(i).hasItem()) {
-                graphics.drawCenteredString(this.font, equipmentGlyphs[i], sx + 9, sy + 5, 0xFF777D86);
+                graphics.renderItem(equipmentIcons[i], sx + 1, sy + 1);
+                graphics.fill(sx + 2, sy + 15, sx + 16, sy + 16, 0x88777D86);
             }
         }
     }
