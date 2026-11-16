@@ -325,6 +325,21 @@ public class CompanionEntity extends PathfinderMob {
         if (!this.level().isClientSide) this.personality.recordProtection();
     }
 
+    /** Prioritizes the hostile target deliberately attacked by the owner. */
+    public void focusOwnerTarget(LivingEntity target) {
+        if (this.level().isClientSide || target == null || !target.isAlive()
+                || this.command == Command.STAY
+                || (!(target instanceof Monster) && !(target instanceof EnderDragon)
+                && !(target instanceof WitherBoss))) return;
+        Player owner = getOwnerPlayer();
+        if (owner == null || !owner.isAlive() || owner.level() != this.level()
+                || target.level() != this.level()
+                || target.distanceToSqr(owner) > 32.0D * 32.0D
+                || target.distanceToSqr(this) > 40.0D * 40.0D) return;
+        this.setTarget(target);
+        this.getNavigation().moveTo(target, 1.2D);
+    }
+
     /** Immediately redirects the companion toward a hostile attacking its owner. */
     public void assistOwnerAgainst(LivingEntity attacker) {
         if (this.level().isClientSide || attacker == null || !attacker.isAlive()
