@@ -160,7 +160,6 @@ public final class CompanionNetwork {
         }
         public static void encode(StatsDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
-            buffer.writeVarInt(message.specializationId);
             buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
             buffer.writeVarInt(message.experienceToNext);
             buffer.writeVarInt(message.stats.length);
@@ -270,6 +269,7 @@ public final class CompanionNetwork {
         }
         public static void encode(SkillDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
+            buffer.writeVarInt(message.specializationId);
             buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
             buffer.writeVarInt(message.experienceToNext); buffer.writeVarInt(message.skillPoints);
             buffer.writeVarInt(message.attributePoints);
