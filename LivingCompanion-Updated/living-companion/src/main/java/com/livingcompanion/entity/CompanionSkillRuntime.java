@@ -32,6 +32,7 @@ public final class CompanionSkillRuntime {
     private int prayerTicks;
     private int aegisTicks;
     private int lastBastionTicks;
+    private long nextBattleLineTick;
 
     CompanionSkillRuntime(CompanionEntity companion) {
         this.companion = companion;
@@ -64,7 +65,7 @@ public final class CompanionSkillRuntime {
                 && isReady(CompanionSkill.PALADIN_DIVINE_PROTECTION)) {
             divineProtectionTicks = 60 + divineRank * 40;
             startCooldown(CompanionSkill.PALADIN_DIVINE_PROTECTION);
-            playDefensiveEffect(ParticleTypes.HAPPY_VILLAGER, SoundEvents.AMETHYST_BLOCK_CHIME);
+            playDivineWardEffect(); battleLine("Stay behind me. I've got this.");
         }
 
         int shieldRank = rank(CompanionSkill.TANK_SHIELD_WALL);
@@ -73,7 +74,7 @@ public final class CompanionSkillRuntime {
                 && isReady(CompanionSkill.TANK_SHIELD_WALL)) {
             shieldWallTicks = 60 + shieldRank * 40;
             startCooldown(CompanionSkill.TANK_SHIELD_WALL);
-            playDefensiveEffect(ParticleTypes.CLOUD, SoundEvents.SHIELD_BLOCK);
+            playShieldWallEffect(); battleLine("Hit me harder. I dare you.");
         }
 
         int prayerRank = rank(CompanionSkill.PALADIN_PRAYER);
@@ -92,7 +93,7 @@ public final class CompanionSkillRuntime {
                 && aegisTicks <= 0 && isReady(CompanionSkill.PALADIN_AEGIS_OF_DAWN)) {
             aegisTicks = 160;
             startCooldown(CompanionSkill.PALADIN_AEGIS_OF_DAWN);
-            playDefensiveEffect(ParticleTypes.END_ROD, SoundEvents.TOTEM_USE);
+            playAegisEffect(); battleLine("The light still has work for me.");
         }
 
         int bastionRank = rank(CompanionSkill.TANK_LAST_BASTION);
@@ -101,7 +102,7 @@ public final class CompanionSkillRuntime {
                 && lastBastionTicks <= 0 && isReady(CompanionSkill.TANK_LAST_BASTION)) {
             lastBastionTicks = 160;
             startCooldown(CompanionSkill.TANK_LAST_BASTION);
-            playDefensiveEffect(ParticleTypes.CRIT, SoundEvents.SHIELD_BLOCK);
+            playLastBastionEffect(); battleLine("You shall pass through me first.");
             this.tauntRange = 12.0D;
             this.tauntTicksRemaining = 160;
             applyTauntTargets();
@@ -158,9 +159,63 @@ public final class CompanionSkillRuntime {
             owner.heal(amount);
         }
         prayerTicks = 20;
-        playDefensiveEffect(ParticleTypes.HEART, SoundEvents.AMETHYST_BLOCK_CHIME);
+        playPrayerEffect(); battleLine("A little divine assistance. You're welcome.");
     }
 
+    private void battleLine(String line) {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        long now = level.getGameTime();
+        if (now < nextBattleLineTick) return;
+        LivingEntity owner = companion.getOwnerPlayer();
+        if (owner == null || !owner.isAlive() || companion.distanceToSqr(owner) > 576.0D) return;
+        owner.sendSystemMessage(net.minecraft.network.chat.Component.literal(companion.getName().getString() + ": " + line));
+        nextBattleLineTick = now + 180L;
+    }
+
+    private void playDivineWardEffect() {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        double x=companion.getX(), y=companion.getY()+0.5D, z=companion.getZ();
+        for(int i=0;i<32;i++){ double a=Math.PI*2*i/32.0D; level.sendParticles(ParticleTypes.END_ROD,x+Math.cos(a)*1.15D,y,z+Math.sin(a)*1.15D,1,0,0.3D,0,0.01D); }
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER,x,y+0.5D,z,24,0.55D,0.8D,0.55D,0.08D);
+        level.playSound(null,companion.blockPosition(),SoundEvents.AMETHYST_BLOCK_CHIME,SoundSource.PLAYERS,1.0F,1.25F);
+    }
+    private void playShieldWallEffect() {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        double x=companion.getX(), y=companion.getY()+0.8D, z=companion.getZ();
+        level.sendParticles(ParticleTypes.CLOUD,x,y,z,24,0.7D,0.2D,0.7D,0.02D);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK,x,y,z,18,0.55D,0.8D,0.55D,0.04D);
+        level.playSound(null,companion.blockPosition(),SoundEvents.SHIELD_BLOCK,SoundSource.PLAYERS,1.0F,0.8F);
+    }
+    private void playPrayerEffect() {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        double x=companion.getX(), y=companion.getY()+1.0D, z=companion.getZ();
+        level.sendParticles(ParticleTypes.HEART,x,y,z,10,0.55D,0.65D,0.55D,0.02D);
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER,x,y,z,24,0.7D,0.8D,0.7D,0.08D);
+        level.sendParticles(ParticleTypes.END_ROD,x,y+0.3D,z,14,0.35D,0.7D,0.35D,0.025D);
+        level.playSound(null,companion.blockPosition(),SoundEvents.AMETHYST_BLOCK_CHIME,SoundSource.PLAYERS,0.9F,1.5F);
+    }
+    private void playAegisEffect() {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        double x=companion.getX(), y=companion.getY()+1.0D, z=companion.getZ();
+        level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING,x,y,z,45,0.7D,1.0D,0.7D,0.12D);
+        level.sendParticles(ParticleTypes.END_ROD,x,y,z,30,0.85D,1.1D,0.85D,0.06D);
+        level.playSound(null,companion.blockPosition(),SoundEvents.TOTEM_USE,SoundSource.PLAYERS,1.0F,1.0F);
+    }
+    private void playLastBastionEffect() {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        double x=companion.getX(), y=companion.getY()+0.25D, z=companion.getZ();
+        level.sendParticles(ParticleTypes.CRIT,x,y+0.8D,z,32,0.75D,0.9D,0.75D,0.12D);
+        level.sendParticles(ParticleTypes.CLOUD,x,y,z,28,0.75D,0.15D,0.75D,0.03D);
+        level.playSound(null,companion.blockPosition(),SoundEvents.SHIELD_BLOCK,SoundSource.PLAYERS,1.0F,0.55F);
+    }
+    private void playInterceptEffect() {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        double x=companion.getX(), y=companion.getY()+1.0D, z=companion.getZ();
+        level.sendParticles(ParticleTypes.SWEEP_ATTACK,x,y,z,1,0,0,0,0);
+        level.sendParticles(ParticleTypes.CRIT,x,y,z,18,0.45D,0.65D,0.45D,0.1D);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK,x,y,z,14,0.45D,0.6D,0.45D,0.08D);
+        level.playSound(null,companion.blockPosition(),SoundEvents.SHIELD_BLOCK,SoundSource.PLAYERS,1.0F,1.2F);
+    }
     private void playDefensiveEffect(net.minecraft.core.particles.ParticleOptions particle,
                                      net.minecraft.sounds.SoundEvent sound) {
         if (companion.level() instanceof ServerLevel serverLevel) {
@@ -211,7 +266,7 @@ public final class CompanionSkillRuntime {
         companion.setTarget(livingAttacker);
         float redirected = amount * (0.20F + 0.10F * rank);
         companion.hurt(source, redirected);
-        playDefensiveEffect(ParticleTypes.SWEEP_ATTACK, SoundEvents.SHIELD_BLOCK);
+        playInterceptEffect(); battleLine("I believe that was meant for me.");
         return amount - redirected;
     }
 
