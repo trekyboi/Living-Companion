@@ -49,6 +49,14 @@ final class CompanionSkillRuntime {
 
         tickDurations();
 
+        if (companion.tickCount % 20 == 0) {
+            int graceRank = rank(CompanionSkill.PALADIN_DIVINE_GRACE);
+            if (companion.getCompanionClass() == CompanionClass.PALADIN && graceRank > 0
+                    && companion.getHealth() < companion.getMaxHealth()) {
+                companion.heal(0.25F * graceRank);
+            }
+        }
+
         int divineRank = rank(CompanionSkill.PALADIN_DIVINE_PROTECTION);
         if (companion.getCompanionClass() == CompanionClass.PALADIN && divineRank > 0
                 && companion.getHealth() <= companion.getMaxHealth() * 0.55F
@@ -167,7 +175,30 @@ final class CompanionSkillRuntime {
         if (shieldWallTicks > 0) multiplier *= 0.50F;
         if (aegisTicks > 0) multiplier *= 0.35F;
         if (lastBastionTicks > 0) multiplier *= 0.25F;
+        int unyieldingRank = rank(CompanionSkill.TANK_UNYIELDING);
+        if (companion.getCompanionClass() == CompanionClass.TANK && unyieldingRank > 0) {
+            float missingHealth = 1.0F - companion.getHealth() / companion.getMaxHealth();
+            multiplier *= 1.0F - Math.min(0.30F, missingHealth * 0.10F * unyieldingRank);
+        }
         return amount * multiplier;
+    }
+
+    float mitigateOwnerDamage(net.minecraft.server.level.ServerPlayer owner,
+                              net.minecraft.world.damagesource.DamageSource source, float amount) {
+        int rank = rank(CompanionSkill.TANK_INTERCEPT);
+        if (companion.getCompanionClass() != CompanionClass.TANK || rank <= 0
+                || !companion.isAlive() || companion.distanceToSqr(owner) > 144.0D
+                || !isReady(CompanionSkill.TANK_INTERCEPT)) return amount;
+        if (!startCooldown(CompanionSkill.TANK_INTERCEPT)) return amount;
+
+        Entity attacker = source.getEntity();
+        if (attacker instanceof LivingEntity livingAttacker && livingAttacker != owner) {
+            companion.setTarget(livingAttacker);
+        }
+        float redirected = amount * (0.20F + 0.10F * rank);
+        companion.hurt(source, redirected);
+        playDefensiveEffect(ParticleTypes.SWEEP_ATTACK, SoundEvents.SHIELD_BLOCK);
+        return amount - redirected;
     }
 
     private void activateTaunt(int rank) {
