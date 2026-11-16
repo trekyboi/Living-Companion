@@ -66,6 +66,6 @@ public final class LivingCompanion {
 
     private void onCommonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(() ->
-                LOGGER.info("[LivingCompanion] Common setup complete. Mod id '{}', targeting MC 1.20.1 / Forge 47.x.", MOD_ID));
+                LOGGER.info("[LivingCompanion] Common setup complete. Mod id '{}', targeting MC 1.20.1 / Forge 47.x.", MOD_ID);\n        });
     }
 }
