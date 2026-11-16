@@ -22,7 +22,7 @@ import java.util.Map;
  * <p>Cooldowns and short-lived skill states are persisted with the companion.
  * Skill ranks remain owned by CompanionProgression.</p>
  */
-final class CompanionSkillRuntime {
+public final class CompanionSkillRuntime {
     private final CompanionEntity companion;
     private final Map<String, Integer> cooldowns = new HashMap<>();
     private int tauntTicksRemaining;
@@ -238,11 +238,11 @@ final class CompanionSkillRuntime {
         }
     }
 
-    int getCooldownRemaining(CompanionSkill skill) {
+    public int getCooldownRemaining(CompanionSkill skill) {
         return Math.max(0, cooldowns.getOrDefault(skill.getId(), 0));
     }
 
-    int getActiveTicksRemaining(CompanionSkill skill) {
+    public int getActiveTicksRemaining(CompanionSkill skill) {
         return switch (skill) {
             case PALADIN_DIVINE_PROTECTION -> divineProtectionTicks;
             case TANK_SHIELD_WALL -> shieldWallTicks;
