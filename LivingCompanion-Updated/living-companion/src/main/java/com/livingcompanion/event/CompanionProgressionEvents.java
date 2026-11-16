@@ -2,6 +2,7 @@ package com.livingcompanion.event;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
+import com.livingcompanion.progression.CompanionAchievement;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -35,6 +36,7 @@ public final class CompanionProgressionEvents {
             if (companion.isAlive()) {
                 companion.awardExperience(scaleExperience(baseExperience, companion, defeated));
                 companion.addRelationshipExperience(2);
+                companion.awardAchievement(CompanionAchievement.FIRST_BLOOD);
                 companion.commentOnEvent(
                         "That's one less threat on the road.",
                         "Good. Let's make sure there aren't any more.",
@@ -56,6 +58,7 @@ public final class CompanionProgressionEvents {
 
         if (companion != null) {
             companion.addRelationshipExperience(1);
+            companion.awardAchievement(CompanionAchievement.FIRST_BLOOD);
             companion.commentOnEvent(
                     "You handled that well.",
                     "Good strike. I'll keep the next one off you.",
