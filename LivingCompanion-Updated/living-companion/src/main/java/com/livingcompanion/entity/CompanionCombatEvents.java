@@ -3,6 +3,8 @@ package com.livingcompanion.entity;
 import com.livingcompanion.LivingCompanion;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -39,8 +41,17 @@ public final class CompanionCombatEvents {
                 ? livingAttacker : null;
         for (CompanionEntity companion : nearbyCompanions) {
             companion.assistOwnerAgainst(attacker);
-            if (attacker instanceof net.minecraft.world.entity.monster.Monster) {
+            if (attacker instanceof net.minecraft.world.entity.monster.Monster || attacker instanceof EnderDragon) {
                 companion.recordProtectionEvent();
+            }
+            if (attacker instanceof EnderDragon) {
+                companion.commentOnEvent("Dragon incoming. Watch the sky and keep moving.",
+                        "The dragon has turned its attention to us. Stay sharp.",
+                        "That thing hits hard. I'll draw its attention where I can.");
+            } else if (attacker instanceof WitherBoss) {
+                companion.commentOnEvent("The Wither is targeting us. Keep clear of its skulls.",
+                        "Wither fire incoming. Move before it finds its mark.",
+                        "I'll keep it occupied. Watch for the next blast.");
             }
             float remaining = companion.interceptOwnerDamage(owner, event.getSource(), event.getAmount());
             companion.commentOnEvent(
