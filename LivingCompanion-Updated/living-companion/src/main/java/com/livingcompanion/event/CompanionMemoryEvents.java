@@ -32,6 +32,30 @@ public final class CompanionMemoryEvents {
         }
     }
 
+    /** A quiet acknowledgement when the owner returns after a death. */
+    @SubscribeEvent
+    public static void onOwnerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        CompanionEntity companion = findCompanion(player);
+        if (companion == null) return;
+        companion.remember("you came back after falling in battle");
+        if (companion.getCompanionClass() == com.livingcompanion.progression.CompanionClass.PALADIN) {
+            companion.commentOnEvent(
+                    "You're back. Take your time; I'll keep watch.",
+                    "I'm glad to see you standing again. We continue when you're ready.",
+                    "That was a hard fall. You don't have to face the next one alone."
+            );
+        } else if (companion.getCompanionClass() == com.livingcompanion.progression.CompanionClass.TANK) {
+            companion.commentOnEvent(
+                    "There you are. I was beginning to run out of things to hit.",
+                    "Back on your feet? Good. Stay close this time.",
+                    "We'll get your things back. Then we settle the score."
+            );
+        } else {
+            companion.commentOnEvent("There you are. Take a moment; I'll keep watch.");
+        }
+    }
+
     @SubscribeEvent
     public static void onBossDeath(LivingDeathEvent event) {
         String memory = null;
