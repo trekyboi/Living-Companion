@@ -66,7 +66,7 @@ public final class CompanionSkillRuntime {
                 && isReady(CompanionSkill.PALADIN_DIVINE_PROTECTION)) {
             divineProtectionTicks = 60 + divineRank * 40;
             startCooldown(CompanionSkill.PALADIN_DIVINE_PROTECTION);
-            playDivineWardEffect(); battleLine("Stay behind me. I charge extra for heroic rescues.", "I would say get behind me, but you already seem to be doing that.", "Relax. I have a shield and a deeply unreasonable amount of confidence.");
+            playDivineWardEffect(); battleLine("Behind me. This is where the armor is.", "Please stop standing where the arrows go.", "I've got this. Probably.");
         }
 
         int shieldRank = rank(CompanionSkill.TANK_SHIELD_WALL);
@@ -75,7 +75,7 @@ public final class CompanionSkillRuntime {
                 && isReady(CompanionSkill.TANK_SHIELD_WALL)) {
             shieldWallTicks = 60 + shieldRank * 40;
             startCooldown(CompanionSkill.TANK_SHIELD_WALL);
-            playShieldWallEffect(); battleLine("Was that your attack? I thought a skeleton sneezed.", "I have taken worse damage from a poorly made sandwich.", "Go on. My armor enjoys the attention.");
+            playShieldWallEffect(); battleLine("I've had worse. I think.", "That sounded expensive. For you.", "I'll add that to the list of things that didn't work.");
         }
 
         int prayerRank = rank(CompanionSkill.PALADIN_PRAYER);
@@ -94,7 +94,7 @@ public final class CompanionSkillRuntime {
                 && aegisTicks <= 0 && isReady(CompanionSkill.PALADIN_AEGIS_OF_DAWN)) {
             aegisTicks = 160;
             startCooldown(CompanionSkill.PALADIN_AEGIS_OF_DAWN);
-            playAegisEffect(); battleLine("Death will have to take a number. I am busy.", "I did not survive this long to become floor decoration.", "The afterlife can wait. I have unfinished business.");
+            playAegisEffect(); battleLine("Still alive. That's inconvenient for them.", "I am beginning to find this personal.", "I've got at least one more fight in me. Maybe two.");
         }
 
         int bastionRank = rank(CompanionSkill.TANK_LAST_BASTION);
@@ -103,7 +103,7 @@ public final class CompanionSkillRuntime {
                 && lastBastionTicks <= 0 && isReady(CompanionSkill.TANK_LAST_BASTION)) {
             lastBastionTicks = 160;
             startCooldown(CompanionSkill.TANK_LAST_BASTION);
-            playLastBastionEffect(); battleLine("You shall pass through me first. Bring a ladder.", "I am the wall. You are the questionable decoration.", "Have you tried attacking someone your own size? Actually, do not.");
+            playLastBastionEffect(); battleLine("No.", "You'll have to go through me. Sorry about the queue.", "I was standing here first.");
             this.tauntRange = 12.0D;
             this.tauntTicksRemaining = 160;
             applyTauntTargets();
@@ -128,7 +128,7 @@ public final class CompanionSkillRuntime {
 
     void onSuccessfulMeleeHit(LivingEntity target) {
         if (!target.isAlive()) {
-            battleLine("And stay down. I dislike repeating myself.", "Another monster discovers consequences.", "That went about as well as expected. For me, obviously.");
+            battleLine("Well, that's sorted.", "One less problem.", "I expected more trouble, honestly.");
         }
         if (companion.getCompanionClass() != CompanionClass.PALADIN) return;
         int rank = rank(CompanionSkill.PALADIN_HOLY_STRIKE);
@@ -145,7 +145,7 @@ public final class CompanionSkillRuntime {
             serverLevel.sendParticles(ParticleTypes.ENCHANT, target.getX(), target.getY() + target.getBbHeight() * 0.7D, target.getZ(), 14 + rank * 4, 0.35D, 0.45D, 0.35D, 0.5D);
             serverLevel.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT,
                     SoundSource.PLAYERS, 0.95F, 0.85F);
-            battleLine("Consider that a strongly worded blessing.", "I put a little faith into that one. And elbow.", "That hit came with express delivery.");
+            battleLine("That one had some weight behind it.", "A little encouragement from above. And my sword.", "There. Feel better? Good.");
         }
     }
 
@@ -166,7 +166,7 @@ public final class CompanionSkillRuntime {
             owner.heal(amount);
         }
         prayerTicks = 20;
-        playPrayerEffect(); battleLine("Healing is complimentary. Gratitude is expected.", "There. Try to stay in one piece for five minutes.", "I can mend wounds. Your decision-making remains beyond me.");
+        playPrayerEffect(); battleLine("There. Try not to undo that immediately.", "You're welcome. Try the dodging thing next time.", "Patched up. Your survival instincts are still a work in progress.");
     }
 
     private void battleLine(String... lines) {
@@ -274,7 +274,7 @@ public final class CompanionSkillRuntime {
         companion.setTarget(livingAttacker);
         float redirected = amount * (0.20F + 0.10F * rank);
         companion.hurt(source, redirected);
-        playInterceptEffect(); battleLine("Excuse you. The owner is under my protection.", "I believe you ordered a beating. I will handle that.", "Touch my human again and we will have a very educational afternoon.");
+        playInterceptEffect(); battleLine("Pick on someone your own size. Actually, pick on me.", "I saw that. Bad choice.", "The person behind me is off limits.");
         return amount - redirected;
     }
 
@@ -290,7 +290,7 @@ public final class CompanionSkillRuntime {
             serverLevel.sendParticles(ParticleTypes.CRIT, companion.getX(), companion.getY() + 1.0D, companion.getZ(), 20 + rank * 4, 0.75D, 0.7D, 0.75D, 0.12D);
             serverLevel.playSound(null, companion.blockPosition(), SoundEvents.SHIELD_BLOCK,
                     SoundSource.PLAYERS, 1.0F, 0.65F);
-            battleLine("Over here, you walking pile of bad decisions!", "Come on then! I have all day and questionable patience.", "Look at me! I am clearly the most handsome target here.");
+            battleLine("Oi. I'm over here.", "You. Yes, the ugly one. Come here.", "Let's get this over with. I was enjoying the quiet.");
         }
     }
 
