@@ -632,6 +632,8 @@ public class CompanionEntity extends PathfinderMob {
     }
 
     private boolean shouldTargetHostile(Monster hostile) {
+        // This setting disables proactive target acquisition while preserving direct retaliation.
+        if (!CompanionConfig.PROACTIVE_COMBAT_ENABLED.get()) return false;
         // STAY disables proactive target acquisition. HurtByTargetGoal remains active,
         // so the companion can still respond when directly attacked.
         if (this.command == Command.STAY) return false;
@@ -677,7 +679,7 @@ public class CompanionEntity extends PathfinderMob {
      * the owner or companion. This reduces target switching and helps finish threats.
      */
     private void tickCombatCooperation() {
-        if (this.command == Command.STAY) return;
+        if (!CompanionConfig.PROACTIVE_COMBAT_ENABLED.get() || this.command == Command.STAY) return;
         Player owner = getOwnerPlayer();
         if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
         LivingEntity current = this.getTarget();
