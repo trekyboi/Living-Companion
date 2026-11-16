@@ -61,15 +61,15 @@ public final class CompanionStatsScreen extends Screen {
 
         // Render the complete panel in a smaller virtual coordinate space. This
         // keeps the pixel font legible while giving every section room to breathe.
-        final float uiScale=0.86F;
+        final float uiScale=0.72F;
         graphics.pose().pushPose();
         graphics.pose().translate(width*(1.0F-uiScale)/2.0F,height*(1.0F-uiScale)/2.0F,0);
         graphics.pose().scale(uiScale,uiScale,1.0F);
 
         int virtualWidth=(int)(width/uiScale);
         int virtualHeight=(int)(height/uiScale);
-        int panelWidth=Math.min(520,Math.max(220,virtualWidth-24));
-        int panelHeight=Math.min(340,Math.max(250,virtualHeight-20));
+        int panelWidth=Math.min(470,Math.max(220,virtualWidth-24));
+        int panelHeight=Math.min(310,Math.max(250,virtualHeight-20));
         int left=(virtualWidth-panelWidth)/2, top=(virtualHeight-panelHeight)/2;
         graphics.fill(left,top,left+panelWidth,top+panelHeight,0xF0181B20);
         graphics.fill(left,top,left+panelWidth,top+2,0xFF9A784A);
@@ -129,7 +129,7 @@ public final class CompanionStatsScreen extends Screen {
             attributeY+=17;
         }
 
-        int lowerY=top+207;
+        int lowerY=top+198;
         graphics.drawString(font,"UNLOCKED SKILLS",col1,lowerY,0xFFFFE6BE,false);
         int shown=0;
         for(CompanionSkill skill:CompanionSkill.values()) {
