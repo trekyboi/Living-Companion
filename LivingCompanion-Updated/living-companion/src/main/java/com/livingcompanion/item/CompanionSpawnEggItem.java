@@ -4,6 +4,7 @@ import com.livingcompanion.entity.CompanionEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -42,9 +43,17 @@ public class CompanionSpawnEggItem extends ForgeSpawnEggItem {
             Direction face = context.getClickedFace();
             BlockPos spawnPos = clicked.relative(face);
             Player player = context.getPlayer();
+            ServerLevel serverLevel = (ServerLevel) level;
+
+            // One owned companion per player. Check every dimension so a second
+            // spawn egg cannot create a duplicate while the first is elsewhere.
+            if (player != null && hasOwnedCompanion(serverLevel, player)) {
+                player.sendSystemMessage(Component.literal("You already have a companion. He is still out there."));
+                return InteractionResult.FAIL;
+            }
 
             EntityType<?> type = entityTypeSupplier.get();
-            Entity entity = type.spawn((ServerLevel) level, stack, player, spawnPos,
+            Entity entity = type.spawn(serverLevel, stack, player, spawnPos,
                     MobSpawnType.SPAWN_EGG, true,
                     !Objects.equals(clicked, spawnPos) && face == Direction.UP);
 
@@ -58,5 +67,17 @@ public class CompanionSpawnEggItem extends ForgeSpawnEggItem {
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    private static boolean hasOwnedCompanion(ServerLevel level, Player owner) {
+        for (ServerLevel serverLevel : level.getServer().getAllLevels()) {
+            for (Entity entity : serverLevel.getAllEntities()) {
+                if (entity instanceof CompanionEntity companion
+                        && companion.isAlive() && companion.isOwnedBy(owner)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
