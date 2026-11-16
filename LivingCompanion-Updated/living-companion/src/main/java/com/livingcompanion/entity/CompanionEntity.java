@@ -437,6 +437,13 @@ public class CompanionEntity extends PathfinderMob {
         nextDialogueTick = now + (cooldown + this.random.nextInt(Math.max(1, cooldown / 2 + 1))) * 20L;
     }
 
+    /** Explicitly broadcasts a vanilla arm-swing animation whenever this companion attacks. */
+    @Override
+    public boolean doHurtTarget(Entity target) {
+        this.swing(InteractionHand.MAIN_HAND);
+        return super.doHurtTarget(target);
+    }
+
     // ------------------------------------------------------------------
     // Sound (humanoid, not monster)
     // ------------------------------------------------------------------
