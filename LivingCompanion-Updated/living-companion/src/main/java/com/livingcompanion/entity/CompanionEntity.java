@@ -5,6 +5,7 @@ import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionProgression;
 import com.livingcompanion.progression.CompanionAttribute;
 import com.livingcompanion.progression.CompanionRelationship;
+import com.livingcompanion.progression.CompanionAchievement;
 import com.livingcompanion.ai.FollowOwnerGoal;
 import com.livingcompanion.ai.CompanionIdleRoutineGoal;
 import com.livingcompanion.inventory.CompanionInventory;
@@ -301,6 +302,7 @@ public class CompanionEntity extends PathfinderMob {
     public void addRelationshipExperience(int amount) {
         if (this.level().isClientSide || amount <= 0) return;
         int gained = this.relationship.addExperience(amount);
+        updateRelationshipAchievements();
         if (gained > 0) {
             Player owner = getOwnerPlayer();
             if (owner != null) {
@@ -315,6 +317,23 @@ public class CompanionEntity extends PathfinderMob {
         }
     }
 
+    public void awardAchievement(CompanionAchievement achievement) {
+        if (this.level().isClientSide || achievement == null) return;
+        if (this.progression.awardAchievement(achievement)) {
+            Player owner = getOwnerPlayer();
+            if (owner != null) {
+                owner.sendSystemMessage(Component.literal("Achievement unlocked: "
+                        + achievement.getTitle() + " — " + achievement.getDescription()));
+            }
+        }
+    }
+
+    private void updateRelationshipAchievements() {
+        if (this.relationship.getLevel() >= 5) awardAchievement(CompanionAchievement.TRUSTED);
+        if (this.relationship.getLevel() >= 8) awardAchievement(CompanionAchievement.DEVOTED);
+        if (this.relationship.getLevel() >= 10) awardAchievement(CompanionAchievement.UNBREAKABLE);
+    }
+
     private void tickRelationship() {
         if (this.relationshipInteractionCooldownTicks > 0) this.relationshipInteractionCooldownTicks--;
         Player owner = getOwnerPlayer();
@@ -322,6 +341,7 @@ public class CompanionEntity extends PathfinderMob {
                 && this.distanceToSqr(owner) <= 12.0D * 12.0D) {
             int previousLevel = this.relationship.getLevel();
             this.relationship.tickNearOwner();
+            updateRelationshipAchievements();
             if (this.relationship.getLevel() > previousLevel) {
                 owner.sendSystemMessage(Component.literal(this.getName().getString()
                         + " feels closer to you. Relationship: " + this.relationship.getTitle() + "."));
