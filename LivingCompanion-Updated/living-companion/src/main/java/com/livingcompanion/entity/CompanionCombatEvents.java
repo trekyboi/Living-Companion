@@ -28,6 +28,19 @@ public final class CompanionCombatEvents {
             );
             return;
         }
+
+        // Mirror the owner's deliberate target choice to nearby owned companions.
+        if (event.getSource().getEntity() instanceof ServerPlayer owner
+                && (event.getEntity() instanceof net.minecraft.world.entity.monster.Monster
+                || event.getEntity() instanceof EnderDragon
+                || event.getEntity() instanceof WitherBoss)) {
+            var focusedCompanions = owner.serverLevel().getEntitiesOfClass(
+                    CompanionEntity.class, owner.getBoundingBox().inflate(24.0D),
+                    companion -> companion.isAlive() && companion.isOwnedBy(owner));
+            for (CompanionEntity companion : focusedCompanions) {
+                companion.focusOwnerTarget(event.getEntity());
+            }
+        }
         if (!(event.getEntity() instanceof ServerPlayer owner)) return;
         if (owner.level().isClientSide) return;
 
