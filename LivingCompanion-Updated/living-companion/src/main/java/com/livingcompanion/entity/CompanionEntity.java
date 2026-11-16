@@ -172,6 +172,10 @@ public class CompanionEntity extends PathfinderMob {
         return this.progression;
     }
 
+    public CompanionSkillRuntime getSkillRuntime() {
+        return this.skillRuntime;
+    }
+
     public float interceptOwnerDamage(ServerPlayer owner, DamageSource source, float amount) {
         return this.skillRuntime.mitigateOwnerDamage(owner, source, amount);
     }
