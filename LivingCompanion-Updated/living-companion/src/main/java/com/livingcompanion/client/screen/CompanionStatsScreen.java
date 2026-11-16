@@ -89,11 +89,11 @@ public final class CompanionStatsScreen extends Screen {
         y+=18;
         String[] labels={"Max Health","Attack Damage","Armor","Armor Toughness","Movement Speed","Knockback Resistance"};
         String[] values={
-                number(stat(1))+" | gear +"+number(stat(1)-stat(7)),
-                number(stat(2))+" | gear +"+number(stat(2)-stat(8)),
-                number(stat(3))+" | gear +"+number(stat(3)-stat(9)),
-                number(stat(4))+" | gear +"+number(stat(4)-stat(10)),
-                number(stat(5))+" | gear +"+number(stat(5)-stat(11)),
+                number(stat(1))+" | modifiers +"+number(stat(1)-stat(7)),
+                number(stat(2))+" | modifiers +"+number(stat(2)-stat(8)),
+                number(stat(3))+" | modifiers +"+number(stat(3)-stat(9)),
+                number(stat(4))+" | modifiers +"+number(stat(4)-stat(10)),
+                number(stat(5))+" | modifiers +"+number(stat(5)-stat(11)),
                 number(stat(6)*100.0D)+"% | gear +"+number((stat(6)-stat(12))*100.0D)+"%"
         };
         for(int i=0;i<labels.length;i++) {
@@ -132,7 +132,7 @@ public final class CompanionStatsScreen extends Screen {
             graphics.drawString(font, "+" + (data.achievementTitles.length - achievementRows) + " more",
                     col2 + 8, skillsY + 17 + achievementRows * skillRowStep, 0xFF9BA5AF, false);
         }
-        graphics.drawCenteredString(font,"Total values include equipment; gear column shows its contribution",
+        graphics.drawCenteredString(font,"Total values include class, progression, and equipment modifiers; modifier column shows their combined effect",
                 width/2,top+panelHeight-18,0xFF858B94);
         super.render(graphics,mouseX,mouseY,partialTick);
     }
