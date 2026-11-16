@@ -32,7 +32,6 @@ jobs:
         run: bash ./gradlew --no-daemon build
 
       - name: Upload Forge mod JAR
-        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: living-companion-forge-1.20.1
