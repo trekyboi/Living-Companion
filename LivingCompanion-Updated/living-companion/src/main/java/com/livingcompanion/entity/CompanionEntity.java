@@ -73,6 +73,9 @@ public class CompanionEntity extends PathfinderMob {
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Boolean> DATA_OWNER_PROTECTION =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Bit flags for currently active skill visuals; synchronized for client rendering. */
+    private static final EntityDataAccessor<Integer> DATA_SKILL_VISUAL_FLAGS =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
     /** Cached owner name for messages; survives owner logout. */
     private String ownerNameCache = "";
 
@@ -222,6 +225,7 @@ public class CompanionEntity extends PathfinderMob {
         super.defineSynchedData();
         this.entityData.define(DATA_OWNER_UUID, Optional.empty());
         this.entityData.define(DATA_OWNER_PROTECTION, false);
+        this.entityData.define(DATA_SKILL_VISUAL_FLAGS, 0);
     }
 
     public CompanionInventory getCompanionInventory() {
@@ -238,6 +242,18 @@ public class CompanionEntity extends PathfinderMob {
 
     public CompanionSkillRuntime getSkillRuntime() {
         return this.skillRuntime;
+    }
+
+    /** Client-readable flags describing which persistent skill effects are active. */
+    public int getSkillVisualFlags() {
+        return this.entityData.get(DATA_SKILL_VISUAL_FLAGS);
+    }
+
+    /** Server-authoritative update; SynchedEntityData distributes changes to tracking clients. */
+    public void setSkillVisualFlags(int flags) {
+        if (!this.level().isClientSide && this.entityData.get(DATA_SKILL_VISUAL_FLAGS) != flags) {
+            this.entityData.set(DATA_SKILL_VISUAL_FLAGS, flags);
+        }
     }
 
     public float interceptOwnerDamage(ServerPlayer owner, DamageSource source, float amount) {
