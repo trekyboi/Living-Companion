@@ -1,0 +1,105 @@
+package com.livingcompanion.client.screen;
+
+import com.livingcompanion.network.CompanionNetwork;
+import com.livingcompanion.progression.CompanionClass;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+/** First-join creation screen for the player's one persistent knight companion. */
+public final class CompanionCreationScreen extends Screen {
+    private EditBox nameField;
+    private CompanionClass selectedClass = CompanionClass.PALADIN;
+    private Button paladinButton;
+    private Button tankButton;
+
+    public CompanionCreationScreen() {
+        super(Component.literal("Create Your Companion"));
+    }
+
+    public static void open() {
+        Minecraft.getInstance().setScreen(new CompanionCreationScreen());
+    }
+
+    @Override
+    protected void init() {
+        int center = this.width / 2;
+        this.nameField = new EditBox(this.font, center - 100, this.height / 2 - 62,
+                200, 20, Component.literal("Companion name"));
+        this.nameField.setMaxLength(24);
+        this.nameField.setValue("Aldric");
+        this.addRenderableWidget(this.nameField);
+
+        this.paladinButton = this.addRenderableWidget(Button.builder(
+                Component.literal("Paladin"), button -> selectClass(CompanionClass.PALADIN))
+                .bounds(center - 102, this.height / 2 - 22, 98, 20).build());
+        this.tankButton = this.addRenderableWidget(Button.builder(
+                Component.literal("Tank"), button -> selectClass(CompanionClass.TANK))
+                .bounds(center + 4, this.height / 2 - 22, 98, 20).build());
+
+        this.addRenderableWidget(Button.builder(Component.literal("Begin Adventure"), button -> confirm())
+                .bounds(center - 100, this.height / 2 + 65, 200, 20).build());
+        refreshClassButtons();
+        this.setInitialFocus(this.nameField);
+    }
+
+    private void selectClass(CompanionClass type) {
+        this.selectedClass = type;
+        refreshClassButtons();
+    }
+
+    private void refreshClassButtons() {
+        if (this.paladinButton != null) {
+            this.paladinButton.setMessage(Component.literal(
+                    (selectedClass == CompanionClass.PALADIN ? "✓ " : "") + "Paladin"));
+        }
+        if (this.tankButton != null) {
+            this.tankButton.setMessage(Component.literal(
+                    (selectedClass == CompanionClass.TANK ? "✓ " : "") + "Tank"));
+        }
+    }
+
+    private void confirm() {
+        String name = this.nameField.getValue().trim();
+        if (name.isEmpty() || name.length() > 24) {
+            this.nameField.setFocused(true);
+            return;
+        }
+        CompanionNetwork.CHANNEL.sendToServer(
+                new CompanionNetwork.CreateCompanionMessage(name, selectedClass.ordinal()));
+        Minecraft.getInstance().setScreen(null);
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(graphics);
+        int center = this.width / 2;
+        int top = this.height / 2 - 112;
+        graphics.fill(center - 126, top, center + 126, top + 226, 0xE0181B20);
+        graphics.fill(center - 126, top, center + 126, top + 2, 0xFFB18A55);
+        graphics.fill(center - 126, top + 224, center + 126, top + 226, 0xFFB18A55);
+        graphics.drawCenteredString(this.font, "A COMPANION FOR THE JOURNEY",
+                center, top + 12, 0xFFE8D5B5);
+        graphics.drawCenteredString(this.font, "Choose his name and calling.",
+                center, top + 29, 0xFFB8B0A2);
+        graphics.drawString(this.font, "NAME", center - 100, this.height / 2 - 76, 0xFFE8D5B5);
+        graphics.drawCenteredString(this.font, selectedClass.getDescription(),
+                center, this.height / 2 + 6, 0xFFD5C6AA);
+        if (selectedClass == CompanionClass.PALADIN) {
+            graphics.drawCenteredString(this.font, "Healing • protection • holy strikes",
+                    center, this.height / 2 + 23, 0xFFD9C38F);
+        } else {
+            graphics.drawCenteredString(this.font, "Taunts • resilience • frontline defense",
+                    center, this.height / 2 + 23, 0xFFD9C38F);
+        }
+        super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return false;
+    }
+}
