@@ -11,7 +11,7 @@ public final class CompanionProgression {
     public static final int MAX_LEVEL = 50;
     private int level = 1;
     private int experience = 0;
-    private int skillPoints = 0;
+    private int skillPoints = 1;
     private final Map<String, Integer> skillRanks = new HashMap<>();
 
     public int getLevel() { return level; }
@@ -77,6 +77,8 @@ public final class CompanionProgression {
                 if (skill != null && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
             }
         }
+        // Migration: a fresh level-1 companion starts with its first level's skill point.
+        if (level == 1 && skillPoints == 0 && skillRanks.isEmpty()) skillPoints = 1;
         if (level >= MAX_LEVEL) experience = 0;
         else experience = Math.min(experience, getExperienceToNextLevel() - 1);
     }
