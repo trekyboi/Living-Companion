@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -413,10 +414,15 @@ public class CompanionEntity extends PathfinderMob {
             if (this.progression.getLevel() >= 50) awardAchievement(CompanionAchievement.LEGEND);
             Player owner = getOwnerPlayer();
             if (owner != null) {
-                owner.sendSystemMessage(Component.literal(this.getName().getString()
+                owner.sendSystemMessage(Component.literal("LEVEL UP — " + this.getName().getString()
                         + " reached level " + this.progression.getLevel()
-                        + "! +" + gained + " skill point" + (gained == 1 ? "" : "s")
-                        + " and +" + (gained * 2) + " attribute points."));
+                        + ". +" + gained + " skill point" + (gained == 1 ? "" : "s")
+                        + ", +" + (gained * 2) + " attribute points. "
+                        + (this.progression.getLevel() >= CompanionProgression.MAX_LEVEL
+                        ? "Maximum level reached." : this.progression.getExperienceToNextLevel()
+                        + " XP to the next level.")));
+                owner.level().playSound(null, owner.blockPosition(), SoundEvents.PLAYER_LEVELUP,
+                        SoundSource.PLAYERS, 0.65F, 1.1F);
             }
         }
         inventoryChanged();
