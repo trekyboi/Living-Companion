@@ -15,6 +15,9 @@ public final class CompanionCombatEvents {
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         if (event.getAmount() <= 0.0F) return;
+        if (event.getSource().getEntity() instanceof CompanionEntity attacker) {
+            attacker.recordCombatExperience();
+        }
         if (event.getEntity() instanceof CompanionEntity companion) {
             companion.commentOnEvent(
                     "That one got through. I'll be more careful.",
