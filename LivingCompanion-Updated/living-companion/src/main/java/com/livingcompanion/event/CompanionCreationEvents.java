@@ -2,6 +2,7 @@ package com.livingcompanion.event;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
+import com.livingcompanion.resurrection.CompanionResurrectionData;
 import com.livingcompanion.network.CompanionNetwork;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,7 +21,8 @@ public final class CompanionCreationEvents {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.getServer() == null) return;
         if (player.getPersistentData().getBoolean(CREATION_COMPLETE)) return;
 
-        if (findCompanion(player) != null) {
+        if (findCompanion(player) != null
+                || CompanionResurrectionData.get(player.getServer()).hasPendingResurrection(player.getUUID())) {
             player.getPersistentData().putBoolean(CREATION_COMPLETE, true);
             return;
         }
