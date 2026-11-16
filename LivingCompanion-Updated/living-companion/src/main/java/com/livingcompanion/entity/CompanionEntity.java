@@ -163,6 +163,40 @@ public class CompanionEntity extends PathfinderMob {
             "A scratch. A rather enthusiastic scratch.",
             "I'll be fine. Keep your attention on the fight."
     );
+    /** Paladin dialogue: measured, reassuring, and guided by a quiet sense of duty. */
+    private static final List<String> PALADIN_LINES = List.of(
+            "A little patience can save a great deal of blood.",
+            "Keep your courage. Fear is useful when it reminds us to pay attention.",
+            "There are easier roads. I suspect we would find trouble on those too.",
+            "If someone needs help out here, we have the strength to give it.",
+            "I keep watch because someone has to. I happen to be good at it.",
+            "Take a moment to breathe. The next challenge will still be there.",
+            "A blade can end a fight. A steady hand can prevent one.",
+            "I would like to see this world with fewer graves and more lanterns."
+    );
+    /** Tank dialogue: practical, dry-humoured, and quietly protective. */
+    private static final List<String> TANK_LINES = List.of(
+            "The plan is simple. We stand here, and trouble breaks itself against us.",
+            "I checked the route. It has the usual number of things trying to kill us.",
+            "You handle the clever part. I'll handle anything that gets too close.",
+            "Good armor, a clear path, and a sensible amount of violence. That's a fine day.",
+            "I don't mind carrying the front line. Just keep the supplies coming.",
+            "That noise was probably harmless. I intend to hit it anyway.",
+            "We should rest soon. Even steel gets tired of being hit.",
+            "If the world insists on throwing monsters at us, the world can expect a sore fist."
+    );
+    private static final List<String> PALADIN_COMBAT_LINES = List.of(
+            "Stand firm. I will keep them away from you.",
+            "Hold your ground. We leave together.",
+            "I will give you room. Move when you see it.",
+            "Stay behind my shield. This ends here."
+    );
+    private static final List<String> TANK_COMBAT_LINES = List.of(
+            "Behind me. I'll make a wall out of myself.",
+            "Come on, then. I've got room for all of you.",
+            "Keep swinging. My armor enjoys the attention.",
+            "I've had doors hit harder. Keep moving."
+    );
     private static final List<String> MEMORY_LINES = List.of(
             "I still remember when %s. That was a day worth keeping.",
             "Funny how a journey stays with you. Especially the part where %s.",
@@ -684,7 +718,9 @@ public class CompanionEntity extends PathfinderMob {
 
         List<String> pool;
         if (this.getTarget() != null && this.getTarget().isAlive()) {
-            pool = COMBAT_LINES;
+            if (this.companionClass == CompanionClass.PALADIN) pool = PALADIN_COMBAT_LINES;
+            else if (this.companionClass == CompanionClass.TANK) pool = TANK_COMBAT_LINES;
+            else pool = COMBAT_LINES;
         } else if (owner.getHealth() <= owner.getMaxHealth() * 0.35F) {
             pool = OWNER_HURT_LINES;
         } else if (this.getHealth() <= this.getMaxHealth() * 0.35F) {
@@ -699,8 +735,12 @@ public class CompanionEntity extends PathfinderMob {
             String template = MEMORY_LINES.get(this.random.nextInt(MEMORY_LINES.size()));
             speakLine(String.format(template, memory), now);
             return;
-        } else if (this.random.nextInt(5) == 0) {
+        } else if (this.random.nextInt(4) == 0) {
             pool = EXPLORATION_LINES;
+        } else if (this.random.nextInt(3) == 0 && this.companionClass == CompanionClass.PALADIN) {
+            pool = PALADIN_LINES;
+        } else if (this.random.nextInt(3) == 0 && this.companionClass == CompanionClass.TANK) {
+            pool = TANK_LINES;
         } else {
             pool = IDLE_LINES;
         }
