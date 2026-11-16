@@ -5,6 +5,7 @@ import com.livingcompanion.entity.CompanionEntity;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
 import com.livingcompanion.progression.CompanionAttribute;
+import com.livingcompanion.progression.CompanionSpecialization;
 import net.minecraft.client.Minecraft;
 import com.livingcompanion.registry.ModEntities;
 import net.minecraft.network.FriendlyByteBuf;
@@ -59,6 +60,9 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(7, StatsDataMessage.class,
                 StatsDataMessage::encode, StatsDataMessage::decode,
                 StatsDataMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(8, ChooseSpecializationMessage.class,
+                ChooseSpecializationMessage::encode, ChooseSpecializationMessage::decode,
+                ChooseSpecializationMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -68,6 +72,10 @@ public final class CompanionNetwork {
     /** Sends a skill-rank purchase request; the server validates all requirements. */
     public static void requestSkillUpgrade(int companionEntityId, String skillId) {
         CHANNEL.sendToServer(new UpgradeSkillMessage(companionEntityId, skillId));
+    }
+
+    public static void requestSpecialization(int companionEntityId, String specializationId) {
+        CHANNEL.sendToServer(new ChooseSpecializationMessage(companionEntityId, specializationId));
     }
 
     public static void requestAttributeUpgrade(int companionEntityId, String attributeId) {
@@ -152,6 +160,7 @@ public final class CompanionNetwork {
         }
         public static void encode(StatsDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
+            buffer.writeVarInt(message.specializationId);
             buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
             buffer.writeVarInt(message.experienceToNext);
             buffer.writeVarInt(message.stats.length);
@@ -215,6 +224,8 @@ public final class CompanionNetwork {
         }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                 new SkillDataMessage(companion.getId(), companion.getCompanionClass().ordinal(),
+                        companion.getProgression().getSpecialization() == null ? -1
+                                : companion.getProgression().getSpecialization().ordinal(),
                         companion.getProgression().getLevel(), companion.getProgression().getExperience(),
                         companion.getProgression().getExperienceToNextLevel(),
                         companion.getProgression().getSkillPoints(), companion.getProgression().getAttributePoints(),
@@ -244,15 +255,15 @@ public final class CompanionNetwork {
     }
 
     public static final class SkillDataMessage {
-        public final int entityId, classId, level, experience, experienceToNext, skillPoints, attributePoints;
+        public final int entityId, classId, specializationId, level, experience, experienceToNext, skillPoints, attributePoints;
         public final int[] ranks;
         public final int[] cooldowns;
         public final int[] activeTicks;
         public final int[] attributes;
-        public SkillDataMessage(int entityId, int classId, int level, int experience,
+        public SkillDataMessage(int entityId, int classId, int specializationId, int level, int experience,
                                 int experienceToNext, int skillPoints, int attributePoints, int[] ranks,
                                 int[] cooldowns, int[] activeTicks, int[] attributes) {
-            this.entityId = entityId; this.classId = classId; this.level = level;
+            this.entityId = entityId; this.classId = classId; this.specializationId = specializationId; this.level = level;
             this.experience = experience; this.experienceToNext = experienceToNext;
             this.skillPoints = skillPoints; this.attributePoints = attributePoints; this.ranks = ranks;
             this.cooldowns = cooldowns; this.activeTicks = activeTicks; this.attributes = attributes;
@@ -269,7 +280,7 @@ public final class CompanionNetwork {
         }
         public static SkillDataMessage decode(FriendlyByteBuf buffer) {
             return new SkillDataMessage(buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
+                    buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
                     buffer.readVarIntArray(CompanionSkill.values().length),
                     buffer.readVarIntArray(CompanionSkill.values().length),
                     buffer.readVarIntArray(CompanionSkill.values().length),
@@ -288,6 +299,46 @@ public final class CompanionNetwork {
                     com.livingcompanion.client.screen.CompanionSkillsScreen.open(parent, message);
                 }
             }));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public static final class ChooseSpecializationMessage {
+        private final int companionEntityId;
+        private final String specializationId;
+
+        public ChooseSpecializationMessage(int companionEntityId, String specializationId) {
+            this.companionEntityId = companionEntityId;
+            this.specializationId = specializationId;
+        }
+
+        public static void encode(ChooseSpecializationMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.companionEntityId);
+            buffer.writeUtf(message.specializationId, 32);
+        }
+
+        public static ChooseSpecializationMessage decode(FriendlyByteBuf buffer) {
+            return new ChooseSpecializationMessage(buffer.readVarInt(), buffer.readUtf(32));
+        }
+
+        public static void handle(ChooseSpecializationMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null) return;
+                Entity entity = player.serverLevel().getEntity(message.companionEntityId);
+                if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
+                        || companion.distanceToSqr(player) > 64.0D) return;
+                CompanionSpecialization choice = CompanionSpecialization.byId(message.specializationId);
+                if (!companion.getProgression().chooseSpecialization(choice, companion.getCompanionClass())) {
+                    player.sendSystemMessage(Component.literal("That specialization is unavailable. Reach level 15 and choose a path for your class."));
+                    return;
+                }
+                companion.refreshProgressionAttributes();
+                player.sendSystemMessage(Component.literal(companion.getName().getString()
+                        + " has chosen the " + choice.getDisplayName() + " path."));
+                sendSkillData(player, companion);
+            });
             context.setPacketHandled(true);
         }
     }
