@@ -10,7 +10,8 @@ import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterMenuScreensEvent;
+import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -29,8 +30,9 @@ public final class ClientModEvents {
     }
 
     @SubscribeEvent
-    public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
-        event.register(ModMenus.COMPANION_INVENTORY.get(), CompanionInventoryScreen::new);
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() ->
+                MenuScreens.register(ModMenus.COMPANION_INVENTORY.get(), CompanionInventoryScreen::new));
     }
 
     private ClientModEvents() { }
