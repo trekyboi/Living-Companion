@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 
 /** Vanilla player-shaped renderer with a knight skin, held items, and armor layers. */
 public final class CompanionPlayerRenderer
-        extends HumanoidMobRenderer<CompanionEntity, PlayerModel<CompanionEntity>> {
+        extends HumanoidMobRenderer<CompanionEntity, CompanionKnightModel> {
 
     private static final ResourceLocation KNIGHT_TEXTURE =
             new ResourceLocation(LivingCompanion.MOD_ID, "textures/entity/companion_knight.png");
