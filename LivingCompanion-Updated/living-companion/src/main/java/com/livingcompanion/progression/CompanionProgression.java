@@ -74,7 +74,8 @@ public final class CompanionProgression {
             for (String key : skills.getAllKeys()) {
                 int rank = skills.getInt(key);
                 CompanionSkill skill = CompanionSkill.byId(key);
-                if (skill != null && archetype != null && skill.getArchetype() == archetype\n                        && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
+                if (skill != null && archetype != null && skill.getArchetype() == archetype
+                        && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
             }
         }
         // Migration: a fresh level-1 companion starts with its first level's skill point.
