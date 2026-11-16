@@ -3,6 +3,7 @@ package com.livingcompanion.client.screen;
 import com.livingcompanion.network.CompanionNetwork;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
+import com.livingcompanion.progression.CompanionSpecialization;
 import com.livingcompanion.network.CompanionNetwork.SkillDataMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -18,11 +19,12 @@ public final class CompanionSkillsScreen extends Screen {
     private static final int PANEL_MAX_HEIGHT = 430;
     private static final int ROW_HEIGHT = 68;
     private static final int ROW_GAP = 6;
-    private static final int HEADER_HEIGHT = 76;
+    private static final int HEADER_HEIGHT = 102;
 
     private final Screen parent;
     private SkillDataMessage data;
     private final List<Button> upgradeButtons = new ArrayList<>();
+    private final List<Button> specializationButtons = new ArrayList<>();
     private int scrollOffset;
     private int panelLeft;
     private int panelTop;
@@ -51,7 +53,7 @@ public final class CompanionSkillsScreen extends Screen {
     public void updateData(SkillDataMessage data) {
         if (data.entityId != this.data.entityId) return;
         this.data = data;
-        updateButtonPositions();
+        if (this.minecraft != null) this.init(this.minecraft, this.width, this.height);
     }
 
     @Override
@@ -68,6 +70,7 @@ public final class CompanionSkillsScreen extends Screen {
         super.init();
         this.clearWidgets();
         this.upgradeButtons.clear();
+        this.specializationButtons.clear();
 
         this.panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(220, this.width - 16));
         this.panelHeight = Math.min(PANEL_MAX_HEIGHT, Math.max(200, this.height - 16));
@@ -84,7 +87,21 @@ public final class CompanionSkillsScreen extends Screen {
 
         int buttonWidth = Math.min(96, Math.max(76, this.panelWidth / 6));
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
-        for (CompanionSkill skill : CompanionSkill.forClass(classes[data.classId])) {
+        if (data.level >= 15 && data.specializationId < 0) {
+            CompanionSpecialization[] choices = CompanionSpecialization.forClass(classes[data.classId]);
+            int choiceWidth = Math.min(120, Math.max(80, (this.panelWidth - 48) / 2));
+            for (int i = 0; i < choices.length; i++) {
+                CompanionSpecialization choice = choices[i];
+                Button select = Button.builder(Component.literal(choice.getDisplayName()), button ->
+                        CompanionNetwork.requestSpecialization(data.entityId, choice.getId()))
+                        .bounds(this.panelLeft + 16 + i * (choiceWidth + 8), this.panelTop + 72,
+                                choiceWidth, 20).build();
+                this.specializationButtons.add(select);
+                this.addRenderableWidget(select);
+            }
+        }
+        for (CompanionSkill skill : CompanionSkill.forClassAndSpecialization(
+                classes[data.classId], getSelectedSpecialization())) {
             int rank = skill.ordinal() < data.ranks.length ? data.ranks[skill.ordinal()] : 0;
             Button upgrade = Button.builder(Component.literal(rank >= skill.getMaximumRank()
                             ? "MAXED" : "Upgrade"), button ->
@@ -95,6 +112,12 @@ public final class CompanionSkillsScreen extends Screen {
             this.addRenderableWidget(upgrade);
         }
         updateButtonPositions();
+    }
+
+    private CompanionSpecialization getSelectedSpecialization() {
+        CompanionSpecialization[] values = CompanionSpecialization.values();
+        return data.specializationId >= 0 && data.specializationId < values.length
+                ? values[data.specializationId] : null;
     }
 
     private boolean canUpgrade(CompanionSkill skill, int rank) {
@@ -108,7 +131,8 @@ public final class CompanionSkillsScreen extends Screen {
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
         CompanionClass[] classes = CompanionClass.values();
         if (data.classId <= 0 || data.classId >= classes.length) return;
-        List<CompanionSkill> skills = CompanionSkill.forClass(classes[data.classId]);
+        List<CompanionSkill> skills = CompanionSkill.forClassAndSpecialization(
+                classes[data.classId], getSelectedSpecialization());
         for (int i = 0; i < this.upgradeButtons.size(); i++) {
             Button button = this.upgradeButtons.get(i);
             int rowY = this.listTop + i * rowStep - this.scrollOffset;
@@ -166,8 +190,19 @@ public final class CompanionSkillsScreen extends Screen {
             String xp = data.level >= CompanionProgressionMaxLevel.VALUE
                     ? "Maximum level reached" : "XP: " + data.experience + " / " + data.experienceToNext;
             graphics.drawString(this.font, xp, left + 16, top + 49, 0xFFB9B9B9, false);
+            if (getSelectedSpecialization() != null) {
+                graphics.drawString(this.font, "Path: " + getSelectedSpecialization().getDisplayName(),
+                        left + 16, top + 70, 0xFFFFD58A, false);
+            } else if (data.level < 15) {
+                graphics.drawString(this.font, "Specialization unlocks at level 15",
+                        left + 16, top + 70, 0xFF9BA5AF, false);
+            } else {
+                graphics.drawString(this.font, "Choose your permanent class specialization:",
+                        left + 16, top + 70, 0xFFFFD58A, false);
+            }
 
-            List<CompanionSkill> skills = CompanionSkill.forClass(classes[data.classId]);
+            List<CompanionSkill> skills = CompanionSkill.forClassAndSpecialization(
+                    classes[data.classId], getSelectedSpecialization());
             int descriptionWidth = Math.max(90, this.panelWidth - Math.min(96, Math.max(76, this.panelWidth / 6)) - 54);
             graphics.enableScissor(left + 8, this.listTop, right - 8, this.listBottom);
             for (int i = 0; i < skills.size(); i++) {
