@@ -15,6 +15,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.GameType;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.saveddata.SavedData;
 
 import java.util.ArrayList;
@@ -78,9 +80,15 @@ public final class CompanionResurrectionData extends SavedData {
             }
         }
 
-        long delay = CompanionConfig.RESURRECTION_DELAY_SECONDS.get() * 20L;
+        // Creative owners get an immediate return. Survival owners receive a short countdown.
+        boolean creativeOwner = owner != null && owner.gameMode.getGameMode() == GameType.CREATIVE;
+        long delay = creativeOwner ? 0L : CompanionConfig.RESURRECTION_DELAY_SECONDS.get() * 20L;
         pending.add(new PendingResurrection(ownerId, dimension, respawnPos,
                 server.overworld().getGameTime() + delay, entityTag));
+        if (owner != null && !creativeOwner && delay > 0L) {
+            owner.sendSystemMessage(Component.literal("Knight: I'll be back in "
+                    + ((delay + 19L) / 20L) + " seconds."), true);
+        }
         setDirty();
     }
 
@@ -91,7 +99,19 @@ public final class CompanionResurrectionData extends SavedData {
         boolean changed = false;
         while (iterator.hasNext()) {
             PendingResurrection entry = iterator.next();
-            if (now < entry.resurrectAt) continue;
+            if (now < entry.resurrectAt) {
+                ServerPlayer owner = server.getPlayerList().getPlayer(entry.owner);
+                if (owner != null) {
+                    long remainingTicks = entry.resurrectAt - now;
+                    int remainingSeconds = (int) ((remainingTicks + 19L) / 20L);
+                    if (remainingSeconds > 0 && remainingSeconds != entry.lastAnnouncedSecond) {
+                        owner.sendSystemMessage(Component.literal("Knight respawns in "
+                                + remainingSeconds + "s"), true);
+                        entry.lastAnnouncedSecond = remainingSeconds;
+                    }
+                }
+                continue;
+            }
             if (hasLivingCompanion(server, entry.owner)) {
                 iterator.remove();
                 changed = true;
@@ -118,7 +138,7 @@ public final class CompanionResurrectionData extends SavedData {
 
             if (destination.addFreshEntity(companion)) {
                 ServerPlayer owner = server.getPlayerList().getPlayer(entry.owner);
-                if (owner != null) owner.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                if (owner != null) owner.sendSystemMessage(Component.literal(
                         "Knight: I'm back. That bed was a welcome sight."));
                 iterator.remove();
                 changed = true;
@@ -197,6 +217,7 @@ public final class CompanionResurrectionData extends SavedData {
         private final BlockPos position;
         private final long resurrectAt;
         private final CompoundTag entityData;
+        private int lastAnnouncedSecond = -1;
 
         private PendingResurrection(UUID owner, ResourceKey<Level> dimension, BlockPos position,
                                     long resurrectAt, CompoundTag entityData) {
