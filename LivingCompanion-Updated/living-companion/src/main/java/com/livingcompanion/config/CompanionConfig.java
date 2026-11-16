@@ -31,11 +31,11 @@ public final class CompanionConfig {
 
         b.push("following");
         FOLLOW_START_DISTANCE = b.comment("Start following beyond this distance.")
-                .defineInRange("startDistance", 5.0D, 2.0D, 32.0D);
+                .defineInRange("startDistance", 2.5D, 1.0D, 32.0D);
         FOLLOW_STOP_DISTANCE = b.comment("Stop moving toward the owner inside this distance.")
-                .defineInRange("stopDistance", 2.5D, 1.0D, 16.0D);
+                .defineInRange("stopDistance", 1.5D, 0.5D, 16.0D);
         TELEPORT_DISTANCE = b.comment("Catch-up teleport distance. Set to 0 to disable.")
-                .defineInRange("teleportDistance", 32.0D, 0.0D, 128.0D);
+                .defineInRange("teleportDistance", 24.0D, 0.0D, 128.0D);
         b.pop();
 
         b.push("combat");
