@@ -22,11 +22,21 @@ public final class CompanionProgression {
     private final Map<String, Integer> skillRanks = new HashMap<>();
     private final Map<String, Integer> attributes = new HashMap<>();
     private final Set<CompanionAchievement> achievements = EnumSet.noneOf(CompanionAchievement.class);
+    private CompanionSpecialization specialization;
 
     public int getLevel() { return level; }
     public int getExperience() { return experience; }
     public int getSkillPoints() { return skillPoints; }
     public int getAttributePoints() { return attributePoints; }
+    public CompanionSpecialization getSpecialization() { return specialization; }
+
+    /** Specialization is a permanent level-15 choice validated against the base class. */
+    public boolean chooseSpecialization(CompanionSpecialization choice, CompanionClass archetype) {
+        if (choice == null || archetype == null || specialization != null || level < 15
+                || choice.getArchetype() != archetype) return false;
+        specialization = choice;
+        return true;
+    }
     public Set<CompanionAchievement> getAchievements() { return Collections.unmodifiableSet(achievements); }
     public boolean hasAchievement(CompanionAchievement achievement) { return achievements.contains(achievement); }
 
@@ -100,6 +110,7 @@ public final class CompanionProgression {
         tag.putInt("Experience", experience);
         tag.putInt("SkillPoints", skillPoints);
         tag.putInt("AttributePoints", attributePoints);
+        if (specialization != null) tag.putString("Specialization", specialization.getId());
         CompoundTag skills = new CompoundTag();
         skillRanks.forEach(skills::putInt);
         tag.put("Skills", skills);
@@ -129,6 +140,8 @@ public final class CompanionProgression {
                         && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
             }
         }
+        specialization = CompanionSpecialization.byId(tag.getString("Specialization"));
+        if (specialization != null && specialization.getArchetype() != archetype) specialization = null;
         achievements.clear();
         if (tag.contains("Achievements", Tag.TAG_LIST)) {
             ListTag savedAchievements = tag.getList("Achievements", Tag.TAG_STRING);
