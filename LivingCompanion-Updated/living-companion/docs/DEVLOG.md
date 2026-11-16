@@ -64,3 +64,10 @@ AI memory or relationship system.
 - If the saved bed location is unavailable or obstructed, the companion returns at the destination dimension's shared spawn. If the owner's bed is unknown when death occurs, the Overworld shared spawn is used.
 - Full Gradle verification could not run in this environment: Gradle 8.1.1 download failed because `services.gradle.org` could not be resolved (network/DNS unavailable).
 - Better Combat remains optional and unverified for NPC-specific animations. The companion's vanilla melee path remains the fallback.
+
+## Maintenance pass — 2026-11-16
+
+- Fixed STAY behavior so the companion drops an existing hunt target and stops proactively acquiring nearby hostile targets. The retaliation goal remains enabled.
+- Fixed spawn-egg consumption so failed spawns do not consume the item and Creative players keep their egg.
+- Added a GitHub Actions workflow at `.github/workflows/forge-build.yml` to run the ForgeGradle build on pushes, pull requests, and manual dispatches. This provides a remote build check; it does not replace in-game testing.
+- These changes are committed to the `main` branch. Full local Forge build and gameplay verification remain pending.
