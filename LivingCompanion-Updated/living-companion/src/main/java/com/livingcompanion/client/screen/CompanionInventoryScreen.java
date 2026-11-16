@@ -1,6 +1,7 @@
 package com.livingcompanion.client.screen;
 
 import com.livingcompanion.menu.CompanionInventoryMenu;
+import com.livingcompanion.network.CompanionNetwork;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -14,6 +15,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     private static final int SLOT_EDGE_LIGHT = 0xFF55565A;
     private static final int SLOT_EDGE_DARK = 0xFF08090B;
     private Button protectionButton;
+    private Button skillsButton;
 
     public CompanionInventoryScreen(CompanionInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -32,6 +34,9 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     protected void init() {
         super.init();
         this.clearWidgets();
+        this.skillsButton = this.addRenderableWidget(Button.builder(Component.literal("Skills"), button -> {
+            CompanionNetwork.requestSkillData(this.menu.getCompanion().getId());
+        }).bounds(this.leftPos + 62, this.topPos + 2, 72, 18).build());
         this.protectionButton = this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
             if (this.minecraft != null && this.minecraft.gameMode != null) {
                 this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
