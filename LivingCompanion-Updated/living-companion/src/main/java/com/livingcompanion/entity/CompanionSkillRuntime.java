@@ -118,7 +118,8 @@ final class CompanionSkillRuntime {
         }
 
         if (tauntTicksRemaining > 0) {
-            applyTauntTargets();
+            // Reassert aggro periodically instead of scanning every tick.
+            if (tauntTicksRemaining % 10 == 0) applyTauntTargets();
             tauntTicksRemaining--;
         }
     }
@@ -197,12 +198,17 @@ final class CompanionSkillRuntime {
         int rank = rank(CompanionSkill.TANK_INTERCEPT);
         if (companion.getCompanionClass() != CompanionClass.TANK || rank <= 0
                 || !isReady(CompanionSkill.TANK_INTERCEPT)) return amount;
+
+        // Intercept is a bodyguard ability. It only redirects damage caused by
+        // another living attacker; falls, fire, drowning, starvation, and self-damage
+        // must remain the owner's responsibility.
+        Entity attacker = source.getEntity();
+        if (!(attacker instanceof LivingEntity livingAttacker) || livingAttacker == owner) {
+            return amount;
+        }
         if (!startCooldown(CompanionSkill.TANK_INTERCEPT)) return amount;
 
-        Entity attacker = source.getEntity();
-        if (attacker instanceof LivingEntity livingAttacker && livingAttacker != owner) {
-            companion.setTarget(livingAttacker);
-        }
+        companion.setTarget(livingAttacker);
         float redirected = amount * (0.20F + 0.10F * rank);
         companion.hurt(source, redirected);
         playDefensiveEffect(ParticleTypes.SWEEP_ATTACK, SoundEvents.SHIELD_BLOCK);
