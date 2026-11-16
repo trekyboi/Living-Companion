@@ -77,6 +77,20 @@ the fix mod's release metadata lists it as a dependency. The combat addons
 must be installed on the client and server where required by their mod pages.
 Without the addon stack, Living Companion continues using vanilla combat.
 
+### Preventing friendly-fire sweeps
+
+Better Mob Combat's default sweep relation is HOSTILE when no relation is
+configured. To keep the companion's wide attacks from hitting players standing
+near its target, add this entry inside the `mob_relations` object in
+`config/bettermobcombat/server.json`:
+
+```json
+"livingcompanion:companion": "{\\"minecraft:player\\":\\"FRIENDLY\\"}"
+```
+
+Keep the existing entries in that object. This marks all players as friendly
+targets for the companion's Better Combat sweep checks.
+
 ## In-game use
 
 1. Find **Living Companion** in the creative inventory tab.
