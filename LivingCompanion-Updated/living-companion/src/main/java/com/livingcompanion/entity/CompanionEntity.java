@@ -665,9 +665,41 @@ public class CompanionEntity extends PathfinderMob {
             this.skillRuntime.tick();
             tickFoodSystem();
             tickRelationship();
+            if (this.tickCount % 10 == 0) tickCombatCooperation();
             tickWorldAwareness();
             tickLootAwareness();
             if (this.tickCount % 20 == 0) speakOccasionally();
+        }
+    }
+
+    /**
+     * During an active fight, prioritizes nearly defeated hostiles already engaging
+     * the owner or companion. This reduces target switching and helps finish threats.
+     */
+    private void tickCombatCooperation() {
+        if (this.command == Command.STAY) return;
+        Player owner = getOwnerPlayer();
+        if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
+        LivingEntity current = this.getTarget();
+        if ((current == null || !current.isAlive())
+                && owner.getHealth() > owner.getMaxHealth() * 0.55F) return;
+
+        List<Monster> threats = this.level().getEntitiesOfClass(Monster.class,
+                this.getBoundingBox().inflate(12.0D), mob -> mob.isAlive()
+                        && (mob == current || mob.getTarget() == owner || mob.getTarget() == this));
+        Monster weakest = null;
+        double weakestRatio = 1.0D;
+        for (Monster threat : threats) {
+            double ratio = threat.getHealth() / Math.max(1.0D, threat.getMaxHealth());
+            if (ratio < weakestRatio) {
+                weakestRatio = ratio;
+                weakest = threat;
+            }
+        }
+
+        if (weakest != null && weakestRatio <= 0.35D
+                && (current == null || weakest != current)) {
+            this.setTarget(weakest);
         }
     }
 
