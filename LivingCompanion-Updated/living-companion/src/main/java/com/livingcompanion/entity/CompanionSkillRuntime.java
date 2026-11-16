@@ -26,6 +26,11 @@ final class CompanionSkillRuntime {
     private final Map<String, Integer> cooldowns = new HashMap<>();
     private int tauntTicksRemaining;
     private double tauntRange;
+    private int divineProtectionTicks;
+    private int shieldWallTicks;
+    private int prayerTicks;
+    private int aegisTicks;
+    private int lastBastionTicks;
 
     CompanionSkillRuntime(CompanionEntity companion) {
         this.companion = companion;
@@ -40,6 +45,57 @@ final class CompanionSkillRuntime {
             int remaining = entry.getValue() - 1;
             if (remaining <= 0) iterator.remove();
             else entry.setValue(remaining);
+        }
+
+        tickDurations();
+
+        int divineRank = rank(CompanionSkill.PALADIN_DIVINE_PROTECTION);
+        if (companion.getCompanionClass() == CompanionClass.PALADIN && divineRank > 0
+                && companion.getHealth() <= companion.getMaxHealth() * 0.55F
+                && isReady(CompanionSkill.PALADIN_DIVINE_PROTECTION)) {
+            divineProtectionTicks = 60 + divineRank * 40;
+            startCooldown(CompanionSkill.PALADIN_DIVINE_PROTECTION);
+            playDefensiveEffect(ParticleTypes.HAPPY_VILLAGER, SoundEvents.AMETHYST_BLOCK_CHIME);
+        }
+
+        int shieldRank = rank(CompanionSkill.TANK_SHIELD_WALL);
+        if (companion.getCompanionClass() == CompanionClass.TANK && shieldRank > 0
+                && companion.getHealth() <= companion.getMaxHealth() * 0.45F
+                && isReady(CompanionSkill.TANK_SHIELD_WALL)) {
+            shieldWallTicks = 60 + shieldRank * 40;
+            startCooldown(CompanionSkill.TANK_SHIELD_WALL);
+            playDefensiveEffect(ParticleTypes.CLOUD, SoundEvents.SHIELD_BLOCK);
+        }
+
+        int prayerRank = rank(CompanionSkill.PALADIN_PRAYER);
+        if (companion.getCompanionClass() == CompanionClass.PALADIN && prayerRank > 0
+                && isReady(CompanionSkill.PALADIN_PRAYER)) {
+            LivingEntity owner = companion.getOwnerPlayer();
+            boolean needsHealing = companion.getHealth() <= companion.getMaxHealth() * 0.70F
+                    || (owner != null && owner.isAlive() && owner.getHealth() <= owner.getMaxHealth() * 0.65F
+                    && companion.distanceToSqr(owner) <= 144.0D);
+            if (needsHealing) activatePrayer(prayerRank);
+        }
+
+        int aegisRank = rank(CompanionSkill.PALADIN_AEGIS_OF_DAWN);
+        if (companion.getCompanionClass() == CompanionClass.PALADIN && aegisRank > 0
+                && companion.getHealth() <= companion.getMaxHealth() * 0.20F
+                && aegisTicks <= 0 && isReady(CompanionSkill.PALADIN_AEGIS_OF_DAWN)) {
+            aegisTicks = 160;
+            startCooldown(CompanionSkill.PALADIN_AEGIS_OF_DAWN);
+            playDefensiveEffect(ParticleTypes.END_ROD, SoundEvents.TOTEM_USE);
+        }
+
+        int bastionRank = rank(CompanionSkill.TANK_LAST_BASTION);
+        if (companion.getCompanionClass() == CompanionClass.TANK && bastionRank > 0
+                && companion.getHealth() <= companion.getMaxHealth() * 0.20F
+                && lastBastionTicks <= 0 && isReady(CompanionSkill.TANK_LAST_BASTION)) {
+            lastBastionTicks = 160;
+            startCooldown(CompanionSkill.TANK_LAST_BASTION);
+            playDefensiveEffect(ParticleTypes.CRIT, SoundEvents.SHIELD_BLOCK);
+            this.tauntRange = 12.0D;
+            this.tauntTicksRemaining = 160;
+            applyTauntTargets();
         }
 
         // Tank Taunt is an automatic combat skill. It activates when the Tank
@@ -73,6 +129,45 @@ final class CompanionSkillRuntime {
             serverLevel.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT,
                     SoundSource.PLAYERS, 0.8F, 1.15F);
         }
+    }
+
+    private void tickDurations() {
+        if (divineProtectionTicks > 0) divineProtectionTicks--;
+        if (shieldWallTicks > 0) shieldWallTicks--;
+        if (prayerTicks > 0) prayerTicks--;
+        if (aegisTicks > 0) aegisTicks--;
+        if (lastBastionTicks > 0) lastBastionTicks--;
+    }
+
+    private void activatePrayer(int rank) {
+        if (!startCooldown(CompanionSkill.PALADIN_PRAYER)) return;
+        float amount = 3.0F + rank * 2.0F;
+        companion.heal(amount);
+        LivingEntity owner = companion.getOwnerPlayer();
+        if (owner != null && owner.isAlive() && companion.distanceToSqr(owner) <= 144.0D) {
+            owner.heal(amount);
+        }
+        prayerTicks = 20;
+        playDefensiveEffect(ParticleTypes.HEART, SoundEvents.AMETHYST_BLOCK_CHIME);
+    }
+
+    private void playDefensiveEffect(net.minecraft.core.particles.ParticleOptions particle,
+                                     net.minecraft.sounds.SoundEvent sound) {
+        if (companion.level() instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(particle, companion.getX(), companion.getY() + 1.0D,
+                    companion.getZ(), 12, 0.45D, 0.65D, 0.45D, 0.03D);
+            serverLevel.playSound(null, companion.blockPosition(), sound,
+                    SoundSource.PLAYERS, 0.8F, 1.0F);
+        }
+    }
+
+    float mitigateIncomingDamage(float amount) {
+        float multiplier = 1.0F;
+        if (divineProtectionTicks > 0) multiplier *= 0.65F;
+        if (shieldWallTicks > 0) multiplier *= 0.50F;
+        if (aegisTicks > 0) multiplier *= 0.35F;
+        if (lastBastionTicks > 0) multiplier *= 0.25F;
+        return amount * multiplier;
     }
 
     private void activateTaunt(int rank) {
@@ -120,6 +215,11 @@ final class CompanionSkillRuntime {
         tag.put("Cooldowns", savedCooldowns);
         tag.putInt("TauntTicksRemaining", tauntTicksRemaining);
         tag.putDouble("TauntRange", tauntRange);
+        tag.putInt("DivineProtectionTicks", divineProtectionTicks);
+        tag.putInt("ShieldWallTicks", shieldWallTicks);
+        tag.putInt("PrayerTicks", prayerTicks);
+        tag.putInt("AegisTicks", aegisTicks);
+        tag.putInt("LastBastionTicks", lastBastionTicks);
         return tag;
     }
 
@@ -137,5 +237,10 @@ final class CompanionSkillRuntime {
         }
         tauntTicksRemaining = Math.max(0, Math.min(100, tag.getInt("TauntTicksRemaining")));
         tauntRange = Math.max(0.0D, Math.min(12.0D, tag.getDouble("TauntRange")));
+        divineProtectionTicks = Math.max(0, Math.min(180, tag.getInt("DivineProtectionTicks")));
+        shieldWallTicks = Math.max(0, Math.min(180, tag.getInt("ShieldWallTicks")));
+        prayerTicks = Math.max(0, Math.min(20, tag.getInt("PrayerTicks")));
+        aegisTicks = Math.max(0, Math.min(160, tag.getInt("AegisTicks")));
+        lastBastionTicks = Math.max(0, Math.min(160, tag.getInt("LastBastionTicks")));
     }
 }
