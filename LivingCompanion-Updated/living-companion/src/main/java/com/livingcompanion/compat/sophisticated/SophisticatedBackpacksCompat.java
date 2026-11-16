@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.network.NetworkHooks;
 import top.theillusivec4.curios.api.CuriosApi;
@@ -51,7 +50,7 @@ public final class SophisticatedBackpacksCompat {
         try { companionId = UUID.fromString(identifier); }
         catch (IllegalArgumentException exception) { return null; }
         return player.level().getEntitiesOfClass(CompanionEntity.class, player.getBoundingBox().inflate(8.0D),
-                entity -> entity.getUUID().equals(companionId) && entity.isAlive() && entity.isOwnedBy(player))
+                entity -> entity.getUUID().equals(companionId) && entity.isAlive() && entity.isOwnedBy(player)\n                        && entity.distanceToSqr(player) <= 64.0D)
                 .stream().findFirst().orElse(null);
     }
 
