@@ -50,11 +50,6 @@ public enum CompanionSkill {
 
     CompanionSkill(String id, CompanionClass archetype, SkillType type, String displayName,
                    String description, int maximumRank, int unlockLevel, int cooldownTicks) {
-        this.id = id;
-        this.archetype = archetype;
-        this.type = type;
-        this.displayName = displayName;
-        this.description = description;
         this(id, archetype, type, displayName, description, maximumRank, unlockLevel, cooldownTicks, null);
     }
 
