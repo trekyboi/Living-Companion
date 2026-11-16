@@ -3,6 +3,7 @@ package com.livingcompanion.network;
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
 import com.livingcompanion.progression.CompanionClass;
+import com.livingcompanion.progression.CompanionSkill;
 import com.livingcompanion.registry.ModEntities;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -38,10 +39,61 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(1, CreateCompanionMessage.class,
                 CreateCompanionMessage::encode, CreateCompanionMessage::decode,
                 CreateCompanionMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(2, UpgradeSkillMessage.class,
+                UpgradeSkillMessage::encode, UpgradeSkillMessage::decode,
+                UpgradeSkillMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenCreationMessage());
+    }
+
+    /** Sends a skill-rank purchase request; the server validates all requirements. */
+    public static void requestSkillUpgrade(int companionEntityId, String skillId) {
+        CHANNEL.sendToServer(new UpgradeSkillMessage(companionEntityId, skillId));
+    }
+
+    public static final class UpgradeSkillMessage {
+        private final int companionEntityId;
+        private final String skillId;
+
+        public UpgradeSkillMessage(int companionEntityId, String skillId) {
+            this.companionEntityId = companionEntityId;
+            this.skillId = skillId;
+        }
+
+        public static void encode(UpgradeSkillMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.companionEntityId);
+            buffer.writeUtf(message.skillId, 64);
+        }
+
+        public static UpgradeSkillMessage decode(FriendlyByteBuf buffer) {
+            return new UpgradeSkillMessage(buffer.readVarInt(), buffer.readUtf(64));
+        }
+
+        public static void handle(UpgradeSkillMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null) return;
+                Entity entity = player.serverLevel().getEntity(message.companionEntityId);
+                if (!(entity instanceof CompanionEntity companion)
+                        || !companion.isOwnedBy(player)
+                        || companion.distanceToSqr(player) > 64.0D) return;
+
+                CompanionSkill skill = CompanionSkill.byId(message.skillId);
+                if (skill == null || !companion.getProgression().unlockSkillRank(
+                        skill, companion.getCompanionClass())) {
+                    player.sendSystemMessage(Component.literal("That skill rank is unavailable. Check its class, level, and skill-point requirements."));
+                    return;
+                }
+
+                companion.inventoryChanged();
+                player.sendSystemMessage(Component.literal(skill.getDisplayName() + " upgraded to rank "
+                        + companion.getProgression().getSkillRank(skill.getId()) + "."));
+            });
+            context.setPacketHandled(true);
+        }
     }
 
     public static final class OpenCreationMessage {
