@@ -96,6 +96,8 @@ public final class CompanionProgression {
     /** Spends one point after validating class, level gate, and maximum rank. */
     public boolean unlockSkillRank(CompanionSkill skill, CompanionClass archetype) {
         if (skill == null || archetype == null || skill.getArchetype() != archetype
+                || (skill.getRequiredSpecialization() != null
+                && skill.getRequiredSpecialization() != specialization)
                 || level < skill.getUnlockLevel() || skillPoints < 1) return false;
         int current = getSkillRank(skill.getId());
         if (current >= skill.getMaximumRank()) return false;
@@ -130,6 +132,8 @@ public final class CompanionProgression {
         experience = Math.max(0, tag.getInt("Experience"));
         skillPoints = Math.max(0, tag.getInt("SkillPoints"));
         attributePoints = Math.max(0, tag.getInt("AttributePoints"));
+        specialization = CompanionSpecialization.byId(tag.getString("Specialization"));
+        if (specialization != null && specialization.getArchetype() != archetype) specialization = null;
         skillRanks.clear();
         if (tag.contains("Skills", 10)) {
             CompoundTag skills = tag.getCompound("Skills");
@@ -137,11 +141,11 @@ public final class CompanionProgression {
                 int rank = skills.getInt(key);
                 CompanionSkill skill = CompanionSkill.byId(key);
                 if (skill != null && archetype != null && skill.getArchetype() == archetype
+                        && (skill.getRequiredSpecialization() == null
+                        || skill.getRequiredSpecialization() == specialization)
                         && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
             }
         }
-        specialization = CompanionSpecialization.byId(tag.getString("Specialization"));
-        if (specialization != null && specialization.getArchetype() != archetype) specialization = null;
         achievements.clear();
         if (tag.contains("Achievements", Tag.TAG_LIST)) {
             ListTag savedAchievements = tag.getList("Achievements", Tag.TAG_STRING);
