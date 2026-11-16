@@ -70,12 +70,6 @@ public class CompanionEntity extends PathfinderMob {
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Boolean> DATA_OWNER_PROTECTION =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
-    public static final int ATTACK_ANIMATION_DURATION = 12;
-    private static final byte ATTACK_EVENT_BASE = 60;
-    // Client-local animation state is started by a server-broadcast entity event.
-    private int clientAttackStyle = 0;
-    private int clientAttackAnimationTicks = 0;
-
     /** Cached owner name for messages; survives owner logout. */
     private String ownerNameCache = "";
 
@@ -170,31 +164,6 @@ public class CompanionEntity extends PathfinderMob {
         if (this.level() instanceof ServerLevel serverLevel) {
             serverLevel.getChunkAt(this.blockPosition()).setUnsaved(true);
         }
-    }
-
-    public int getAttackAnimationStyle() {
-        return this.clientAttackStyle;
-    }
-
-    public int getAttackAnimationTicks() {
-        return this.clientAttackAnimationTicks;
-    }
-
-    private void triggerAttackAnimation() {
-        int style = this.random.nextInt(3);
-        if (!this.level().isClientSide) {
-            this.level().broadcastEntityEvent(this, (byte) (ATTACK_EVENT_BASE + style));
-        }
-    }
-
-    @Override
-    public void handleEntityEvent(byte eventId) {
-        if (eventId >= ATTACK_EVENT_BASE && eventId < ATTACK_EVENT_BASE + 3) {
-            this.clientAttackStyle = eventId - ATTACK_EVENT_BASE;
-            this.clientAttackAnimationTicks = ATTACK_ANIMATION_DURATION;
-            return;
-        }
-        super.handleEntityEvent(eventId);
     }
 
     public boolean isProtectedFromOwner() {
@@ -293,9 +262,6 @@ public class CompanionEntity extends PathfinderMob {
     @Override
     public void tick() {
         super.tick();
-        if (this.level().isClientSide && this.clientAttackAnimationTicks > 0) {
-            this.clientAttackAnimationTicks--;
-        }
         if (!this.level().isClientSide && !this.configApplied) {
             applyConfigAttributes();
             if (!this.loadedFromSave || this.restoreFullHealthAfterConfig) {
@@ -500,14 +466,6 @@ public class CompanionEntity extends PathfinderMob {
         owner.sendSystemMessage(Component.literal("Knight: " + line));
         int cooldown = CompanionConfig.DIALOGUE_COOLDOWN_SECONDS.get();
         nextDialogueTick = now + (cooldown + this.random.nextInt(Math.max(1, cooldown / 2 + 1))) * 20L;
-    }
-
-    /** Explicitly broadcasts a vanilla arm-swing animation whenever this companion attacks. */
-    @Override
-    public boolean doHurtTarget(Entity target) {
-        this.triggerAttackAnimation();
-        this.swing(InteractionHand.MAIN_HAND);
-        return super.doHurtTarget(target);
     }
 
     // ------------------------------------------------------------------
