@@ -171,7 +171,7 @@ public final class CompanionSkillVisualLayer
             quad(out, m, 0,y,0,
                     (float)Math.cos(a)*radius,y,(float)Math.sin(a)*radius,
                     (float)Math.cos(b)*radius,y,(float)Math.sin(b)*radius,
-                    255, red, green, blue, alpha);
+                    0,y,0, 255, red, green, blue, alpha);
         }
     }
 
