@@ -63,7 +63,8 @@ public final class CompanionStatsScreen extends Screen {
         // keeps the pixel font legible while giving every section room to breathe.
         final float uiScale=0.72F;
         graphics.pose().pushPose();
-        graphics.pose().translate(width*(1.0F-uiScale)/2.0F,height*(1.0F-uiScale)/2.0F,0);
+        // Virtual coordinates already account for the scale; an extra translation
+        // shifts the panel off-center after the pose scale is applied.
         graphics.pose().scale(uiScale,uiScale,1.0F);
 
         int virtualWidth=(int)(width/uiScale);
