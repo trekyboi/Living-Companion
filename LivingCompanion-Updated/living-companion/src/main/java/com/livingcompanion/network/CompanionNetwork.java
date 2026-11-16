@@ -4,6 +4,7 @@ import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
+import com.livingcompanion.progression.CompanionAttribute;
 import net.minecraft.client.Minecraft;
 import com.livingcompanion.registry.ModEntities;
 import net.minecraft.network.FriendlyByteBuf;
@@ -49,6 +50,9 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(4, SkillDataMessage.class,
                 SkillDataMessage::encode, SkillDataMessage::decode,
                 SkillDataMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(5, UpgradeAttributeMessage.class,
+                UpgradeAttributeMessage::encode, UpgradeAttributeMessage::decode,
+                UpgradeAttributeMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -58,6 +62,10 @@ public final class CompanionNetwork {
     /** Sends a skill-rank purchase request; the server validates all requirements. */
     public static void requestSkillUpgrade(int companionEntityId, String skillId) {
         CHANNEL.sendToServer(new UpgradeSkillMessage(companionEntityId, skillId));
+    }
+
+    public static void requestAttributeUpgrade(int companionEntityId, String attributeId) {
+        CHANNEL.sendToServer(new UpgradeAttributeMessage(companionEntityId, attributeId));
     }
 
     public static void requestSkillData(int companionEntityId) {
@@ -75,11 +83,16 @@ public final class CompanionNetwork {
             cooldowns[skill.ordinal()] = companion.getSkillRuntime().getCooldownRemaining(skill);
             activeTicks[skill.ordinal()] = companion.getSkillRuntime().getActiveTicksRemaining(skill);
         }
+        int[] attributes = new int[CompanionAttribute.values().length];
+        for (CompanionAttribute attribute : CompanionAttribute.values()) {
+            attributes[attribute.ordinal()] = companion.getProgression().getAttribute(attribute);
+        }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                 new SkillDataMessage(companion.getId(), companion.getCompanionClass().ordinal(),
                         companion.getProgression().getLevel(), companion.getProgression().getExperience(),
                         companion.getProgression().getExperienceToNextLevel(),
-                        companion.getProgression().getSkillPoints(), ranks, cooldowns, activeTicks));
+                        companion.getProgression().getSkillPoints(), companion.getProgression().getAttributePoints(),
+                        ranks, cooldowns, activeTicks, attributes));
     }
 
     public static final class RequestSkillDataMessage {
@@ -105,32 +118,36 @@ public final class CompanionNetwork {
     }
 
     public static final class SkillDataMessage {
-        public final int entityId, classId, level, experience, experienceToNext, skillPoints;
+        public final int entityId, classId, level, experience, experienceToNext, skillPoints, attributePoints;
         public final int[] ranks;
         public final int[] cooldowns;
         public final int[] activeTicks;
+        public final int[] attributes;
         public SkillDataMessage(int entityId, int classId, int level, int experience,
-                                int experienceToNext, int skillPoints, int[] ranks,
-                                int[] cooldowns, int[] activeTicks) {
+                                int experienceToNext, int skillPoints, int attributePoints, int[] ranks,
+                                int[] cooldowns, int[] activeTicks, int[] attributes) {
             this.entityId = entityId; this.classId = classId; this.level = level;
             this.experience = experience; this.experienceToNext = experienceToNext;
-            this.skillPoints = skillPoints; this.ranks = ranks;
-            this.cooldowns = cooldowns; this.activeTicks = activeTicks;
+            this.skillPoints = skillPoints; this.attributePoints = attributePoints; this.ranks = ranks;
+            this.cooldowns = cooldowns; this.activeTicks = activeTicks; this.attributes = attributes;
         }
         public static void encode(SkillDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
             buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
             buffer.writeVarInt(message.experienceToNext); buffer.writeVarInt(message.skillPoints);
+            buffer.writeVarInt(message.attributePoints);
             buffer.writeVarIntArray(message.ranks);
             buffer.writeVarIntArray(message.cooldowns);
             buffer.writeVarIntArray(message.activeTicks);
+            buffer.writeVarIntArray(message.attributes);
         }
         public static SkillDataMessage decode(FriendlyByteBuf buffer) {
             return new SkillDataMessage(buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
                     buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
                     buffer.readVarIntArray(CompanionSkill.values().length),
                     buffer.readVarIntArray(CompanionSkill.values().length),
-                    buffer.readVarIntArray(CompanionSkill.values().length));
+                    buffer.readVarIntArray(CompanionSkill.values().length),
+                    buffer.readVarIntArray(CompanionAttribute.values().length));
         }
         public static void handle(SkillDataMessage message, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
@@ -139,6 +156,40 @@ public final class CompanionNetwork {
                 net.minecraft.client.gui.screens.Screen parent = minecraft.screen;
                 com.livingcompanion.client.screen.CompanionSkillsScreen.open(parent, message);
             }));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public static final class UpgradeAttributeMessage {
+        private final int companionEntityId;
+        private final String attributeId;
+        public UpgradeAttributeMessage(int companionEntityId, String attributeId) {
+            this.companionEntityId = companionEntityId; this.attributeId = attributeId;
+        }
+        public static void encode(UpgradeAttributeMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.companionEntityId); buffer.writeUtf(message.attributeId, 32);
+        }
+        public static UpgradeAttributeMessage decode(FriendlyByteBuf buffer) {
+            return new UpgradeAttributeMessage(buffer.readVarInt(), buffer.readUtf(32));
+        }
+        public static void handle(UpgradeAttributeMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null) return;
+                Entity entity = player.serverLevel().getEntity(message.companionEntityId);
+                if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
+                        || companion.distanceToSqr(player) > 64.0D) return;
+                CompanionAttribute attribute = CompanionAttribute.byId(message.attributeId);
+                if (attribute == null || !companion.getProgression().spendAttributePoint(attribute)) {
+                    player.sendSystemMessage(Component.literal("That attribute upgrade is unavailable."));
+                    return;
+                }
+                companion.refreshProgressionAttributes();
+                player.sendSystemMessage(Component.literal(attribute.getDisplayName() + " increased to "
+                        + companion.getProgression().getAttribute(attribute) + "."));
+                sendSkillData(player, companion);
+            });
             context.setPacketHandled(true);
         }
     }
