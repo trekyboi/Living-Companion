@@ -15,7 +15,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     private static final int SLOT_EDGE_LIGHT = 0xFF55565A;
     private static final int SLOT_EDGE_DARK = 0xFF08090B;
     private Button protectionButton;
-    private Button skillsButton;
+    private Button skillsButton;\n    private Button statsButton;
 
     public CompanionInventoryScreen(CompanionInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -37,6 +37,9 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         this.skillsButton = this.addRenderableWidget(Button.builder(Component.literal("Skills"), button -> {
             CompanionNetwork.requestSkillData(this.menu.getCompanion().getId());
         }).bounds(this.leftPos + 62, this.topPos + 2, 72, 18).build());
+        this.statsButton = this.addRenderableWidget(Button.builder(Component.literal("Stats"), button -> {
+            CompanionNetwork.requestStats(this.menu.getCompanion().getId());
+        }).bounds(this.leftPos + 138, this.topPos + 2, 72, 18).build());
         this.protectionButton = this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
             if (this.minecraft != null && this.minecraft.gameMode != null) {
                 this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
