@@ -2,6 +2,7 @@ package com.livingcompanion.entity;
 
 import com.livingcompanion.LivingCompanion;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -31,7 +32,13 @@ public final class CompanionCombatEvents {
                         && companion.getCompanionClass()
                         != com.livingcompanion.progression.CompanionClass.UNASSIGNED);
 
+        LivingEntity attacker = event.getSource().getEntity() instanceof LivingEntity livingAttacker
+                ? livingAttacker : null;
         for (CompanionEntity companion : nearbyCompanions) {
+            companion.assistOwnerAgainst(attacker);
+            if (attacker instanceof net.minecraft.world.entity.monster.Monster) {
+                companion.recordProtectionEvent();
+            }
             float remaining = companion.interceptOwnerDamage(owner, event.getSource(), event.getAmount());
             companion.commentOnEvent(
                     "You're hurt. Fall back a step and let me handle this.",
