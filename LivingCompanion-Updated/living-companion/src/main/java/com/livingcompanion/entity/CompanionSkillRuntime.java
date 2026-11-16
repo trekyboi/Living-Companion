@@ -35,6 +35,8 @@ public final class CompanionSkillRuntime {
     private int prayerTicks;
     private int aegisTicks;
     private int lastBastionTicks;
+    private int interceptVisualTicks;
+    private int holyStrikeVisualTicks;
     private long nextBattleLineTick;
     private String lastBattleLine = "";
 
@@ -140,6 +142,12 @@ public final class CompanionSkillRuntime {
         if (aegisTicks > 0) flags |= 1 << 3;
         if (lastBastionTicks > 0) flags |= 1 << 4;
         if (tauntTicksRemaining > 0) flags |= 1 << 5;
+        if (interceptVisualTicks > 0) flags |= 1 << 6;
+        if (holyStrikeVisualTicks > 0) flags |= 1 << 7;
+        if (companion.getCompanionClass() == CompanionClass.TANK
+                && rank(CompanionSkill.TANK_UNYIELDING) > 0) flags |= 1 << 8;
+        if (companion.getCompanionClass() == CompanionClass.PALADIN
+                && rank(CompanionSkill.PALADIN_DIVINE_GRACE) > 0) flags |= 1 << 9;
         companion.setSkillVisualFlags(flags);
     }
 
@@ -155,6 +163,7 @@ public final class CompanionSkillRuntime {
         float bonusDamage = 2.0F * rank;
         boolean damaged = target.hurt(companion.damageSources().mobAttack(companion), bonusDamage);
         if (damaged && companion.level() instanceof ServerLevel serverLevel) {
+            holyStrikeVisualTicks = 10;
             serverLevel.sendParticles(ParticleTypes.CRIT,
                     target.getX(), target.getY() + target.getBbHeight() * 0.65D, target.getZ(),
                     8 + rank * 3, 0.25D, 0.25D, 0.25D, 0.08D);
@@ -172,6 +181,8 @@ public final class CompanionSkillRuntime {
         if (prayerTicks > 0) prayerTicks--;
         if (aegisTicks > 0) aegisTicks--;
         if (lastBastionTicks > 0) lastBastionTicks--;
+        if (interceptVisualTicks > 0) interceptVisualTicks--;
+        if (holyStrikeVisualTicks > 0) holyStrikeVisualTicks--;
     }
 
     private void activatePrayer(int rank) {
@@ -299,6 +310,7 @@ public final class CompanionSkillRuntime {
         if (!startCooldown(CompanionSkill.TANK_INTERCEPT)) return amount;
 
         companion.setTarget(livingAttacker);
+        interceptVisualTicks = 14;
         float redirected = amount * (0.20F + 0.10F * rank);
         companion.hurt(source, redirected);
         playInterceptEffect(); battleLine("Pick on someone your own size. Actually, pick on me.", "I saw that. Bad choice.", "The person behind me is off limits.", "Eyes on me. That's the arrangement.", "You'll have to get through the armor first.", "I can take it. They can't.", "Try me. I'm already here.");
@@ -375,6 +387,8 @@ public final class CompanionSkillRuntime {
         tag.putInt("PrayerTicks", prayerTicks);
         tag.putInt("AegisTicks", aegisTicks);
         tag.putInt("LastBastionTicks", lastBastionTicks);
+        tag.putInt("InterceptVisualTicks", interceptVisualTicks);
+        tag.putInt("HolyStrikeVisualTicks", holyStrikeVisualTicks);
         tag.putString("LastBattleLine", lastBattleLine);
         return tag;
     }
@@ -398,6 +412,8 @@ public final class CompanionSkillRuntime {
         prayerTicks = Math.max(0, Math.min(20, tag.getInt("PrayerTicks")));
         aegisTicks = Math.max(0, Math.min(160, tag.getInt("AegisTicks")));
         lastBastionTicks = Math.max(0, Math.min(160, tag.getInt("LastBastionTicks")));
+        interceptVisualTicks = Math.max(0, Math.min(14, tag.getInt("InterceptVisualTicks")));
+        holyStrikeVisualTicks = Math.max(0, Math.min(10, tag.getInt("HolyStrikeVisualTicks")));
         lastBattleLine = tag.getString("LastBattleLine");
     }
 }
