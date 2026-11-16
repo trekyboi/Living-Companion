@@ -50,7 +50,8 @@ public final class SophisticatedBackpacksCompat {
         try { companionId = UUID.fromString(identifier); }
         catch (IllegalArgumentException exception) { return null; }
         return player.level().getEntitiesOfClass(CompanionEntity.class, player.getBoundingBox().inflate(8.0D),
-                entity -> entity.getUUID().equals(companionId) && entity.isAlive() && entity.isOwnedBy(player)\n                        && entity.distanceToSqr(player) <= 64.0D)
+                entity -> entity.getUUID().equals(companionId) && entity.isAlive() && entity.isOwnedBy(player)
+                        && entity.distanceToSqr(player) <= 64.0D)
                 .stream().findFirst().orElse(null);
     }
 
