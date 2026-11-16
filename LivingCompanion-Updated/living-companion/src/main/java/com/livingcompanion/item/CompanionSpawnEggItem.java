@@ -1,6 +1,7 @@
 package com.livingcompanion.item;
 
 import com.livingcompanion.entity.CompanionEntity;
+import com.livingcompanion.resurrection.CompanionResurrectionData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -47,7 +48,8 @@ public class CompanionSpawnEggItem extends ForgeSpawnEggItem {
 
             // One owned companion per player. Check every dimension so a second
             // spawn egg cannot create a duplicate while the first is elsewhere.
-            if (player != null && hasOwnedCompanion(serverLevel, player)) {
+            if (player != null && (hasOwnedCompanion(serverLevel, player)
+                    || CompanionResurrectionData.get(serverLevel.getServer()).hasPendingResurrection(player.getUUID()))) {
                 player.sendSystemMessage(Component.literal("You already have a companion. He is still out there."));
                 return InteractionResult.FAIL;
             }
