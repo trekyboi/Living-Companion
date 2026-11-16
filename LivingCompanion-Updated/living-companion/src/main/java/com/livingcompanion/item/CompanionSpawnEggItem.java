@@ -51,10 +51,14 @@ public class CompanionSpawnEggItem extends SpawnEggItem {
                     MobSpawnType.SPAWN_EGG, true,
                     !Objects.equals(clicked, spawnPos) && face == Direction.UP);
 
-            if (entity instanceof CompanionEntity companion && player != null) {
-                companion.bindOwner(player);
+            if (entity instanceof CompanionEntity companion) {
+                if (player != null) {
+                    companion.bindOwner(player);
+                }
+                if (player == null || !player.getAbilities().instabuild) {
+                    stack.shrink(1);
+                }
             }
-            stack.shrink(1);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
