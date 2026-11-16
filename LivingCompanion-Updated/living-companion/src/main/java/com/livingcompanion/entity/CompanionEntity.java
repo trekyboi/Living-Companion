@@ -71,6 +71,9 @@ public class CompanionEntity extends PathfinderMob {
     /** One-shot flag: config attributes are (re)applied on the first server tick. */
     private boolean configApplied = false;
 
+    /** Set when resurrection must restore full health after configured attributes are applied. */
+    private boolean restoreFullHealthAfterConfig = false;
+
     public enum Command { FOLLOW, STAY, DEFEND }
     private Command command = Command.FOLLOW;
     private long nextDialogueTick = 0L;
@@ -213,8 +216,9 @@ public class CompanionEntity extends PathfinderMob {
         super.tick();
         if (!this.level().isClientSide && !this.configApplied) {
             applyConfigAttributes();
-            if (!this.loadedFromSave) {
-                this.setHealth(this.getMaxHealth()); // fresh spawns start at configured max
+            if (!this.loadedFromSave || this.restoreFullHealthAfterConfig) {
+                this.setHealth(this.getMaxHealth()); // fresh spawns and resurrected companions start at configured max
+                this.restoreFullHealthAfterConfig = false;
             }
             this.configApplied = true;
         }
@@ -300,6 +304,11 @@ public class CompanionEntity extends PathfinderMob {
 
     public List<String> getMemories() {
         return List.copyOf(this.memories);
+    }
+
+    /** Requests full-health restoration after the first-tick config pass. */
+    public void markForFullHealthRestore() {
+        this.restoreFullHealthAfterConfig = true;
     }
 
     // ------------------------------------------------------------------
