@@ -70,11 +70,11 @@ public class CompanionEntity extends PathfinderMob {
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Boolean> DATA_OWNER_PROTECTION =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
-    private static final EntityDataAccessor<Integer> DATA_ATTACK_STYLE =
-            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> DATA_ATTACK_ANIMATION_TICKS =
-            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.INT);
-    public static final int ATTACK_ANIMATION_DURATION = 8;
+    public static final int ATTACK_ANIMATION_DURATION = 12;
+    private static final byte ATTACK_EVENT_BASE = 60;
+    // Client-local animation state is started by a server-broadcast entity event.
+    private int clientAttackStyle = 0;
+    private int clientAttackAnimationTicks = 0;
 
     /** Cached owner name for messages; survives owner logout. */
     private String ownerNameCache = "";
@@ -159,8 +159,6 @@ public class CompanionEntity extends PathfinderMob {
         super.defineSynchedData();
         this.entityData.define(DATA_OWNER_UUID, Optional.empty());
         this.entityData.define(DATA_OWNER_PROTECTION, false);
-        this.entityData.define(DATA_ATTACK_STYLE, 0);
-        this.entityData.define(DATA_ATTACK_ANIMATION_TICKS, 0);
     }
 
     public CompanionInventory getCompanionInventory() {
@@ -175,16 +173,28 @@ public class CompanionEntity extends PathfinderMob {
     }
 
     public int getAttackAnimationStyle() {
-        return this.entityData.get(DATA_ATTACK_STYLE);
+        return this.clientAttackStyle;
     }
 
     public int getAttackAnimationTicks() {
-        return this.entityData.get(DATA_ATTACK_ANIMATION_TICKS);
+        return this.clientAttackAnimationTicks;
     }
 
     private void triggerAttackAnimation() {
-        this.entityData.set(DATA_ATTACK_STYLE, this.random.nextInt(3));
-        this.entityData.set(DATA_ATTACK_ANIMATION_TICKS, ATTACK_ANIMATION_DURATION);
+        int style = this.random.nextInt(3);
+        if (!this.level().isClientSide) {
+            this.level().broadcastEntityEvent(this, (byte) (ATTACK_EVENT_BASE + style));
+        }
+    }
+
+    @Override
+    public void handleEntityEvent(byte eventId) {
+        if (eventId >= ATTACK_EVENT_BASE && eventId < ATTACK_EVENT_BASE + 3) {
+            this.clientAttackStyle = eventId - ATTACK_EVENT_BASE;
+            this.clientAttackAnimationTicks = ATTACK_ANIMATION_DURATION;
+            return;
+        }
+        super.handleEntityEvent(eventId);
     }
 
     public boolean isProtectedFromOwner() {
@@ -283,8 +293,8 @@ public class CompanionEntity extends PathfinderMob {
     @Override
     public void tick() {
         super.tick();
-        if (!this.level().isClientSide && this.getAttackAnimationTicks() > 0) {
-            this.entityData.set(DATA_ATTACK_ANIMATION_TICKS, this.getAttackAnimationTicks() - 1);
+        if (this.level().isClientSide && this.clientAttackAnimationTicks > 0) {
+            this.clientAttackAnimationTicks--;
         }
         if (!this.level().isClientSide && !this.configApplied) {
             applyConfigAttributes();
