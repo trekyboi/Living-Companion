@@ -6,6 +6,7 @@ import com.livingcompanion.progression.CompanionProgression;
 import com.livingcompanion.progression.CompanionAttribute;
 import com.livingcompanion.progression.CompanionRelationship;
 import com.livingcompanion.progression.CompanionAchievement;
+import com.livingcompanion.progression.CompanionSpecialization;
 import com.livingcompanion.ai.FollowOwnerGoal;
 import com.livingcompanion.ai.CompanionIdleRoutineGoal;
 import com.livingcompanion.inventory.CompanionInventory;
