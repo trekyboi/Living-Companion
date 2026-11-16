@@ -21,7 +21,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     public CompanionInventoryScreen(CompanionInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 236;
-        this.imageHeight = 232;
+        this.imageHeight = 250;
         this.inventoryLabelY = 130;
         this.titleLabelX = 8;
         this.titleLabelY = 6;
@@ -37,15 +37,15 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         this.clearWidgets();
         this.skillsButton = this.addRenderableWidget(Button.builder(Component.literal("Skills"), button -> {
             CompanionNetwork.requestSkillData(this.menu.getCompanion().getId());
-        }).bounds(this.leftPos + 62, this.topPos + 2, 72, 18).build());
+        }).bounds(this.leftPos + 132, this.topPos + 2, 46, 18).build());
         this.statsButton = this.addRenderableWidget(Button.builder(Component.literal("Stats"), button -> {
             CompanionNetwork.requestStats(this.menu.getCompanion().getId());
-        }).bounds(this.leftPos + 138, this.topPos + 2, 72, 18).build());
+        }).bounds(this.leftPos + 180, this.topPos + 2, 48, 18).build());
         this.protectionButton = this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
             if (this.minecraft != null && this.minecraft.gameMode != null) {
                 this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
             }
-        }).bounds(this.leftPos + 62, this.topPos + 94, 166, 18).build());
+        }).bounds(this.leftPos + 62, this.topPos + 226, 166, 18).build());
     }
 
     private static void drawSlot(GuiGraphics graphics, int x, int y) {
@@ -95,7 +95,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         graphics.fill(left + 6, top + 126, left + this.imageWidth - 6, top + 127, 0xFF51483C);
         graphics.drawString(this.font, "Equipment", left + 8, top + 116, 0xFFE6D3B0, false);
         graphics.drawString(this.font, "Companion Storage", left + 62, top + 116, 0xFFE6D3B0, false);
-        graphics.drawString(this.font, "Your Inventory", left + 8, top + 130, 0xFFE6D3B0, false);
+        
     }
 
     @Override
