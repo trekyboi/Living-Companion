@@ -4,7 +4,7 @@ import com.livingcompanion.entity.CompanionEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import com.mojang.math.Matrix4f;
+import org.joml.Matrix4f;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
@@ -37,7 +37,7 @@ public final class CompanionSkillVisualLayer
         }
 
         VertexConsumer consumer = buffers.getBuffer(RenderType.lightning());
-        float time = ageInTicks + partialTicks;
+        float time = ageInTicks;
         float orbit = time * 0.035F;
         float bob = (float) Math.sin(time * 0.12F) * 0.035F;
 
