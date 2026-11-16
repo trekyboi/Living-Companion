@@ -72,9 +72,6 @@ public final class CompanionProgression {
             gained++;
         }
         if (level >= MAX_LEVEL) experience = 0;
-        if (level >= 10) awardAchievement(CompanionAchievement.VETERAN);
-        if (level >= 25) awardAchievement(CompanionAchievement.ELITE);
-        if (level >= 50) awardAchievement(CompanionAchievement.LEGEND);
         return gained;
     }
 
@@ -154,6 +151,9 @@ public final class CompanionProgression {
             attributePoints = Math.max(0, (level - 1) * 2);
         }
         if (level == 1 && skillPoints == 0 && skillRanks.isEmpty()) skillPoints = 1;
+        if (level >= 10) awardAchievement(CompanionAchievement.VETERAN);
+        if (level >= 25) awardAchievement(CompanionAchievement.ELITE);
+        if (level >= 50) awardAchievement(CompanionAchievement.LEGEND);
         if (level >= MAX_LEVEL) experience = 0;
         else experience = Math.min(experience, getExperienceToNextLevel() - 1);
     }
