@@ -93,7 +93,7 @@ final class CompanionSkillRuntime {
         if (!(companion.level() instanceof ServerLevel serverLevel)) return;
         AABB area = companion.getBoundingBox().inflate(tauntRange);
         for (Monster hostile : serverLevel.getEntitiesOfClass(Monster.class, area,
-                mob -> mob.isAlive() && mob != companion)) {
+                Monster::isAlive)) {
             hostile.setTarget(companion);
         }
     }
