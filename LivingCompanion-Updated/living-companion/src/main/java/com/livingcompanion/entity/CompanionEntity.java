@@ -2,6 +2,8 @@ package com.livingcompanion.entity;
 
 import com.livingcompanion.config.CompanionConfig;
 import com.livingcompanion.ai.FollowOwnerGoal;
+import com.livingcompanion.inventory.CompanionInventory;
+import com.livingcompanion.menu.CompanionInventoryMenu;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -12,6 +14,7 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.DifficultyInstance;
@@ -40,6 +43,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraftforge.network.NetworkHooks;
 
 import java.util.Optional;
 import java.util.List;
@@ -73,6 +78,9 @@ public class CompanionEntity extends PathfinderMob {
 
     /** Set when resurrection must restore full health after configured attributes are applied. */
     private boolean restoreFullHealthAfterConfig = false;
+
+    /** Persistent carried inventory shown through the companion's player-style menu. */
+    private final CompanionInventory companionInventory = new CompanionInventory(this);
 
     public enum Command { FOLLOW, STAY, DEFEND }
     private Command command = Command.FOLLOW;
@@ -141,6 +149,17 @@ public class CompanionEntity extends PathfinderMob {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(DATA_OWNER_UUID, Optional.empty());
+    }
+
+    public CompanionInventory getCompanionInventory() {
+        return this.companionInventory;
+    }
+
+    /** Marks the entity chunk dirty when carried inventory contents change. */
+    public void inventoryChanged() {
+        if (this.level() instanceof ServerLevel serverLevel) {
+            serverLevel.getChunkAt(this.blockPosition()).setUnsaved(true);
+        }
     }
 
     public UUID getOwnerUUID() {
@@ -271,6 +290,7 @@ public class CompanionEntity extends PathfinderMob {
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
         tag.put("Memories", savedMemories);
+        this.companionInventory.save(tag);
     }
 
     @Override
@@ -288,6 +308,7 @@ public class CompanionEntity extends PathfinderMob {
                 this.command = Command.FOLLOW;
             }
         }
+        this.companionInventory.load(tag);
         this.memories.clear();
         ListTag savedMemories = tag.getList("Memories", Tag.TAG_STRING);
         for (int i = 0; i < savedMemories.size() && this.memories.size() < MAX_MEMORIES; i++) {
@@ -343,11 +364,6 @@ public class CompanionEntity extends PathfinderMob {
                 player.sendSystemMessage(Component.translatable("message.livingcompanion.not_yours",
                         this.ownerNameCache.isEmpty() ? "someone" : this.ownerNameCache));
             } else if (player.isShiftKeyDown()) {
-                player.sendSystemMessage(Component.literal("Knight: " + this.command.name()
-                        + " | Health: " + Math.round(this.getHealth()) + "/" + Math.round(this.getMaxHealth())));
-            } else if (tryEquipFromPlayer(player, hand)) {
-                // The companion equips one item from the player's hand.
-            } else {
                 Command next = switch (this.command) {
                     case FOLLOW -> Command.STAY;
                     case STAY -> Command.DEFEND;
@@ -359,6 +375,12 @@ public class CompanionEntity extends PathfinderMob {
                     case STAY -> "I'll hold this position.";
                     case DEFEND -> "I'll stay close and protect you.";
                 }));
+            } else if (player instanceof ServerPlayer serverPlayer) {
+                NetworkHooks.openScreen(serverPlayer,
+                        new SimpleMenuProvider((id, inventory, opener) ->
+                                new CompanionInventoryMenu(id, inventory, this),
+                                Component.literal("Knight's Inventory")),
+                        buffer -> buffer.writeVarInt(this.getId()));
             }
         }
         return InteractionResult.sidedSuccess(this.level().isClientSide);
