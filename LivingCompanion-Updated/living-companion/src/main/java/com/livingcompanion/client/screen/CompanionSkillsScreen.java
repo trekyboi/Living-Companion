@@ -9,6 +9,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -217,11 +219,17 @@ public final class CompanionSkillsScreen extends Screen {
                 int rowBottom = rowY + ROW_HEIGHT;
                 graphics.fill(left + 8, rowY, right - 8, rowBottom, 0xFF252A31);
 
-                int textX = left + 18;
+                graphics.renderItem(skillIcon(skill), left + 16, rowY + 24);
+                int textX = left + 44;
                 int textRight = textX + descriptionWidth;
                 graphics.drawString(this.font, skill.getDisplayName() + "  [" + skill.getType().name()
                                 + "]  Rank " + rank + "/" + skill.getMaximumRank(),
                         textX, rowY + 8, 0xFFFFE6BE, false);
+                for (int pip = 0; pip < skill.getMaximumRank(); pip++) {
+                    int pipX = textX + pip * 9;
+                    graphics.fill(pipX, rowY + 19, pipX + 7, rowY + 23,
+                            pip < rank ? 0xFFFFD06E : 0xFF555B64);
+                }
 
                 List<net.minecraft.util.FormattedCharSequence> description =
                         this.font.split(Component.literal(skill.getDescription()), descriptionWidth);
@@ -260,6 +268,13 @@ public final class CompanionSkillsScreen extends Screen {
                     statusColor = 0xFF83E6A0;
                 }
                 graphics.drawString(this.font, status, textX, rowY + 53, statusColor, false);
+                if (cooldownTicks > 0 && skill.getCooldownTicks() > 0) {
+                    int barWidth = Math.max(36, descriptionWidth - 8);
+                    int remaining = Math.min(skill.getCooldownTicks(), cooldownTicks);
+                    int filled = barWidth * remaining / skill.getCooldownTicks();
+                    graphics.fill(textX, rowY + 63, textX + barWidth, rowY + 66, 0xFF090B0E);
+                    graphics.fill(textX, rowY + 63, textX + filled, rowY + 66, 0xFFD6A85F);
+                }
             }
             graphics.disableScissor();
 
@@ -272,6 +287,19 @@ public final class CompanionSkillsScreen extends Screen {
         }
         updateButtonPositions();
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private static ItemStack skillIcon(CompanionSkill skill) {
+        return switch (skill) {
+            case PALADIN_DIVINE_GRACE -> new ItemStack(Items.GOLDEN_APPLE);
+            case PALADIN_HOLY_STRIKE, TANK_VANGUARD_FURY -> new ItemStack(Items.GOLDEN_SWORD);
+            case PALADIN_DIVINE_PROTECTION, TANK_SHIELD_WALL, TANK_BULWARK_OATH -> new ItemStack(Items.SHIELD);
+            case PALADIN_PRAYER, PALADIN_SANCTUARY -> new ItemStack(Items.GHAST_TEAR);
+            case PALADIN_AEGIS_OF_DAWN, TANK_LAST_BASTION -> new ItemStack(Items.TOTEM_OF_UNDYING);
+            case TANK_UNYIELDING -> new ItemStack(Items.IRON_CHESTPLATE);
+            case TANK_TAUNT -> new ItemStack(Items.BELL);
+            case TANK_INTERCEPT -> new ItemStack(Items.IRON_INGOT);
+        };
     }
 
     private static final class MthClamp {
