@@ -30,3 +30,12 @@ jobs:
       - name: Build Forge mod
         working-directory: LivingCompanion-Updated/living-companion
         run: bash ./gradlew --no-daemon build
+
+      - name: Upload Forge mod JAR
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-companion-forge-1.20.1
+          path: LivingCompanion-Updated/living-companion/build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 14
