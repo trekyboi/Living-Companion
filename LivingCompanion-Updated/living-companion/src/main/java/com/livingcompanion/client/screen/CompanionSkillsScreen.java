@@ -52,8 +52,13 @@ public final class CompanionSkillsScreen extends Screen {
 
     public void updateData(SkillDataMessage data) {
         if (data.entityId != this.data.entityId) return;
+        int previousSpecialization = this.data.specializationId;
         this.data = data;
-        if (this.minecraft != null) this.init(this.minecraft, this.width, this.height);
+        if (previousSpecialization != data.specializationId && this.minecraft != null) {
+            this.init(this.minecraft, this.width, this.height);
+        } else {
+            updateButtonPositions();
+        }
     }
 
     @Override
