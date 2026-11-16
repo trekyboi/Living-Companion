@@ -817,7 +817,6 @@ public class CompanionEntity extends PathfinderMob {
                         "Well now. " + itemName + " is worth remembering.",
                         "I've seen plenty of loot. " + itemName + " deserves a closer look.");
                 remember("we discovered " + itemName);
-                this.personality.recordDiscovery();
             }
 
             if (!CompanionConfig.LOOT_PICKUP_ENABLED.get()) continue;
