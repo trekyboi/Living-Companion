@@ -45,10 +45,13 @@ public final class CompanionConfig {
         b.push("combat");
         HOSTILE_SCAN_RANGE = b.comment("Range used to find hostile monsters.")
                 .defineInRange("hostileScanRange", 16.0D, 4.0D, 48.0D);
+        b.pop();
+
+        b.push("loot");
         LOOT_PICKUP_ENABLED = b.comment("Allow companions to collect explicitly approved nearby item drops.")
-                .define("lootPickupEnabled", false);
+                .define("pickupEnabled", false);
         LOOT_PICKUP_WHITELIST = b.comment("Item registry IDs the companion may collect. Empty means collect nothing.")
-                .defineList("lootPickupWhitelist", List.of(), value -> value instanceof String itemId
+                .defineList("pickupWhitelist", List.of(), value -> value instanceof String itemId
                         && itemId.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"));
         b.pop();
 
