@@ -99,8 +99,8 @@ public final class CompanionNetwork {
     }
 
     public static final class SkillDataMessage {
-        private final int entityId, classId, level, experience, experienceToNext, skillPoints;
-        private final int[] ranks;
+        public final int entityId, classId, level, experience, experienceToNext, skillPoints;
+        public final int[] ranks;
         public SkillDataMessage(int entityId, int classId, int level, int experience,
                                 int experienceToNext, int skillPoints, int[] ranks) {
             this.entityId = entityId; this.classId = classId; this.level = level;
