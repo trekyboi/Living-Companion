@@ -172,6 +172,10 @@ public class CompanionEntity extends PathfinderMob {
         return this.progression;
     }
 
+    public float interceptOwnerDamage(ServerPlayer owner, DamageSource source, float amount) {
+        return this.skillRuntime.mitigateOwnerDamage(owner, source, amount);
+    }
+
     /** Assigns the character's permanent starting archetype. */
     public void setCompanionClass(CompanionClass companionClass) {
         if (companionClass == null || companionClass == CompanionClass.UNASSIGNED) return;
