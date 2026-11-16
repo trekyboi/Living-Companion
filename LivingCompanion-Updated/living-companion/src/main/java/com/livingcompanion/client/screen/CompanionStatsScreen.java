@@ -54,8 +54,8 @@ public final class CompanionStatsScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {
         renderBackground(graphics);
-        int panelWidth=Math.min(520,width-24);
-        int panelHeight=Math.min(340,height-24);
+        int panelWidth=Math.min(520,Math.max(220,width-16));
+        int panelHeight=Math.min(340,Math.max(220,height-16));
         int left=(width-panelWidth)/2, top=(height-panelHeight)/2;
         graphics.fill(left,top,left+panelWidth,top+panelHeight,0xF0181B20);
         graphics.fill(left,top,left+panelWidth,top+2,0xFF9A784A);
@@ -90,13 +90,14 @@ public final class CompanionStatsScreen extends Screen {
         }
 
         int skillsY=top+190;
+        int skillRowStep=panelHeight<300?12:15;
         graphics.drawString(font,"UNLOCKED SKILLS",col1,skillsY,0xFFFFE6BE,false);
         int shown=0;
         for(CompanionSkill skill:CompanionSkill.values()) {
             if(skill.getArchetype().ordinal()!=data.classId) continue;
             int rank=skill.ordinal()<data.ranks.length?data.ranks[skill.ordinal()]:0;
             graphics.drawString(font,skill.getDisplayName()+"  "+rank+"/"+skill.getMaximumRank(),
-                    col1+8,skillsY+17+shown*15,rank>0?0xFFFFD58A:0xFF858B94,false);
+                    col1+8,skillsY+17+shown*skillRowStep,rank>0?0xFFFFD58A:0xFF858B94,false);
             shown++;
         }
         graphics.drawCenteredString(font,"Values include equipped item modifiers",
