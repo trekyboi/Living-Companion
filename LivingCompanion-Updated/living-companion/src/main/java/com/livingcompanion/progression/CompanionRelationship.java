@@ -40,11 +40,11 @@ public final class CompanionRelationship {
         return gained;
     }
 
-    /** Accumulates time spent together; every five minutes nearby grants one bond XP. */
+    /** Accumulates time spent together; every minute nearby grants one bond XP. */
     public int tickNearOwner() {
         if (level >= MAX_LEVEL) return 0;
         proximityTicks++;
-        if (proximityTicks >= 6000) {
+        if (proximityTicks >= 1200) {
             proximityTicks = 0;
             return addExperience(1);
         }
