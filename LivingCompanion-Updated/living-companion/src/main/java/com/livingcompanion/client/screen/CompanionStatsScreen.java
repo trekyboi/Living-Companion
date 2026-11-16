@@ -102,10 +102,22 @@ public final class CompanionStatsScreen extends Screen {
         int shown=0;
         for(CompanionSkill skill:CompanionSkill.values()) {
             if(skill.getArchetype().ordinal()!=data.classId) continue;
+            if (skill.getRequiredSpecialization() != null) continue;
             int rank=skill.ordinal()<data.ranks.length?data.ranks[skill.ordinal()]:0;
             graphics.drawString(font,skill.getDisplayName()+"  "+rank+"/"+skill.getMaximumRank(),
                     col1+8,skillsY+17+shown*skillRowStep,rank>0?0xFFFFD58A:0xFF858B94,false);
             shown++;
+        }
+
+        graphics.drawString(font,"ACHIEVEMENTS",col2,skillsY,0xFFFFE6BE,false);
+        int achievementRows = Math.min(6, data.achievementTitles.length);
+        for (int i = 0; i < achievementRows; i++) {
+            graphics.drawString(font, data.achievementTitles[i], col2 + 8,
+                    skillsY + 17 + i * skillRowStep, 0xFFE8D2A8, false);
+        }
+        if (data.achievementTitles.length > achievementRows) {
+            graphics.drawString(font, "+" + (data.achievementTitles.length - achievementRows) + " more",
+                    col2 + 8, skillsY + 17 + achievementRows * skillRowStep, 0xFF9BA5AF, false);
         }
         graphics.drawCenteredString(font,"Values include equipped item modifiers",
                 width/2,top+panelHeight-18,0xFF858B94);
