@@ -42,12 +42,13 @@ public final class CompanionProgression {
         return gained;
     }
 
-    /** Spends one point on a skill. Skill IDs and maximum ranks are defined by the skill registry/UI. */
-    public boolean unlockSkillRank(String skillId, int maximumRank) {
-        if (skillId == null || skillId.isBlank() || maximumRank < 1 || skillPoints < 1) return false;
-        int current = getSkillRank(skillId);
-        if (current >= maximumRank) return false;
-        skillRanks.put(skillId, current + 1);
+    /** Spends one point after validating class, level gate, and maximum rank. */
+    public boolean unlockSkillRank(CompanionSkill skill, CompanionClass archetype) {
+        if (skill == null || archetype == null || skill.getArchetype() != archetype
+                || level < skill.getUnlockLevel() || skillPoints < 1) return false;
+        int current = getSkillRank(skill.getId());
+        if (current >= skill.getMaximumRank()) return false;
+        skillRanks.put(skill.getId(), current + 1);
         skillPoints--;
         return true;
     }
@@ -72,7 +73,8 @@ public final class CompanionProgression {
             CompoundTag skills = tag.getCompound("Skills");
             for (String key : skills.getAllKeys()) {
                 int rank = skills.getInt(key);
-                if (rank > 0 && rank <= 10) skillRanks.put(key, rank);
+                CompanionSkill skill = CompanionSkill.byId(key);
+                if (skill != null && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
             }
         }
         if (level >= MAX_LEVEL) experience = 0;
