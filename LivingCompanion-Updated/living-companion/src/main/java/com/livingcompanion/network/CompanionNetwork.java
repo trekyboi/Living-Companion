@@ -102,7 +102,9 @@ public final class CompanionNetwork {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                 new StatsDataMessage(companion.getId(), companion.getCompanionClass().ordinal(),
                         companion.getProgression().getLevel(), companion.getProgression().getExperience(),
-                        companion.getProgression().getExperienceToNextLevel(), stats, attributes, ranks));
+                        companion.getProgression().getExperienceToNextLevel(), stats, attributes, ranks,
+                        companion.getRelationship().getLevel(), companion.getRelationship().getExperience(),
+                        companion.getRelationship().getExperienceToNextLevel(), companion.getRelationship().getTitle()));
     }
 
     public static final class RequestStatsMessage {
@@ -129,13 +131,20 @@ public final class CompanionNetwork {
 
     public static final class StatsDataMessage {
         public final int entityId, classId, level, experience, experienceToNext;
+        public final int relationshipLevel, relationshipExperience, relationshipExperienceToNext;
+        public final String relationshipTitle;
         public final double[] stats;
         public final int[] attributes, ranks;
         public StatsDataMessage(int entityId, int classId, int level, int experience,
-                                int experienceToNext, double[] stats, int[] attributes, int[] ranks) {
+                                int experienceToNext, double[] stats, int[] attributes, int[] ranks,
+                                int relationshipLevel, int relationshipExperience,
+                                int relationshipExperienceToNext, String relationshipTitle) {
             this.entityId=entityId; this.classId=classId; this.level=level;
             this.experience=experience; this.experienceToNext=experienceToNext;
             this.stats=stats; this.attributes=attributes; this.ranks=ranks;
+            this.relationshipLevel=relationshipLevel; this.relationshipExperience=relationshipExperience;
+            this.relationshipExperienceToNext=relationshipExperienceToNext;
+            this.relationshipTitle=relationshipTitle;
         }
         public static void encode(StatsDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
@@ -145,6 +154,10 @@ public final class CompanionNetwork {
             for (double value : message.stats) buffer.writeDouble(value);
             buffer.writeVarIntArray(message.attributes);
             buffer.writeVarIntArray(message.ranks);
+            buffer.writeVarInt(message.relationshipLevel);
+            buffer.writeVarInt(message.relationshipExperience);
+            buffer.writeVarInt(message.relationshipExperienceToNext);
+            buffer.writeUtf(message.relationshipTitle, 64);
         }
         public static StatsDataMessage decode(FriendlyByteBuf buffer) {
             int entityId=buffer.readVarInt(), classId=buffer.readVarInt(), level=buffer.readVarInt();
@@ -152,9 +165,14 @@ public final class CompanionNetwork {
             int count=Math.min(16, buffer.readVarInt());
             double[] stats=new double[count];
             for(int i=0;i<count;i++) stats[i]=buffer.readDouble();
+            int[] attributes=buffer.readVarIntArray(CompanionAttribute.values().length);
+            int[] ranks=buffer.readVarIntArray(CompanionSkill.values().length);
+            int relationshipLevel=buffer.readVarInt();
+            int relationshipExperience=buffer.readVarInt();
+            int relationshipNext=buffer.readVarInt();
+            String relationshipTitle=buffer.readUtf(64);
             return new StatsDataMessage(entityId,classId,level,experience,next,stats,
-                    buffer.readVarIntArray(CompanionAttribute.values().length),
-                    buffer.readVarIntArray(CompanionSkill.values().length));
+                    attributes,ranks,relationshipLevel,relationshipExperience,relationshipNext,relationshipTitle);
         }
         public static void handle(StatsDataMessage message, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context=supplier.get();
