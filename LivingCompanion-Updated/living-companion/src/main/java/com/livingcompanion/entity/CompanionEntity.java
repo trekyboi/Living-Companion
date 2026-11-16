@@ -191,6 +191,10 @@ public class CompanionEntity extends PathfinderMob {
     }
 
     private boolean shouldTargetHostile(Monster hostile) {
+        // STAY disables proactive target acquisition. HurtByTargetGoal remains active,
+        // so the companion can still respond when directly attacked.
+        if (this.command == Command.STAY) return false;
+
         double range = CompanionConfig.HOSTILE_SCAN_RANGE.get();
         Player owner = getOwnerPlayer();
         if (this.command == Command.DEFEND && owner != null && owner.isAlive()
@@ -309,6 +313,11 @@ public class CompanionEntity extends PathfinderMob {
     private void setCommand(Command next) {
         this.command = next;
         this.getNavigation().stop();
+
+        // Clear an existing hunt target when ordered to hold position.
+        if (next == Command.STAY) {
+            this.setTarget(null);
+        }
     }
 
     @Override
