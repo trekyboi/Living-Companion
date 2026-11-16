@@ -127,6 +127,20 @@ public final class CompanionSkillRuntime {
             if (tauntTicksRemaining % 10 == 0) applyTauntTargets();
             tauntTicksRemaining--;
         }
+
+        syncVisualFlags();
+    }
+
+    /** Publishes persistent skill states to the client renderer through entity data. */
+    private void syncVisualFlags() {
+        int flags = 0;
+        if (divineProtectionTicks > 0) flags |= 1;
+        if (shieldWallTicks > 0) flags |= 1 << 1;
+        if (prayerTicks > 0) flags |= 1 << 2;
+        if (aegisTicks > 0) flags |= 1 << 3;
+        if (lastBastionTicks > 0) flags |= 1 << 4;
+        if (tauntTicksRemaining > 0) flags |= 1 << 5;
+        companion.setSkillVisualFlags(flags);
     }
 
     void onSuccessfulMeleeHit(LivingEntity target) {
