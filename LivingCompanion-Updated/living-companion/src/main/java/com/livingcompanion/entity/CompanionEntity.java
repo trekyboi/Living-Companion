@@ -39,6 +39,7 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.ArmorItem;
@@ -67,6 +68,8 @@ public class CompanionEntity extends PathfinderMob {
     /** Owner UUID, synched to clients (rendering/nameplate logic later). */
     private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER_UUID =
             SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Boolean> DATA_OWNER_PROTECTION =
+            SynchedEntityData.defineId(CompanionEntity.class, EntityDataSerializers.BOOLEAN);
 
     /** Cached owner name for messages; survives owner logout. */
     private String ownerNameCache = "";
@@ -150,6 +153,7 @@ public class CompanionEntity extends PathfinderMob {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(DATA_OWNER_UUID, Optional.empty());
+        this.entityData.define(DATA_OWNER_PROTECTION, false);
     }
 
     public CompanionInventory getCompanionInventory() {
@@ -161,6 +165,31 @@ public class CompanionEntity extends PathfinderMob {
         if (this.level() instanceof ServerLevel serverLevel) {
             serverLevel.getChunkAt(this.blockPosition()).setUnsaved(true);
         }
+    }
+
+    public boolean isProtectedFromOwner() {
+        return this.entityData.get(DATA_OWNER_PROTECTION);
+    }
+
+    public void setProtectedFromOwner(boolean protectedFromOwner) {
+        this.entityData.set(DATA_OWNER_PROTECTION, protectedFromOwner);
+        if (!this.level().isClientSide) this.inventoryChanged();
+    }
+
+    private boolean isOwnerDamage(DamageSource source) {
+        UUID owner = getOwnerUUID();
+        if (owner == null) return false;
+        Entity attacker = source.getEntity();
+        if (attacker != null && owner.equals(attacker.getUUID())) return true;
+        Entity direct = source.getDirectEntity();
+        return direct instanceof Projectile projectile && projectile.getOwner() != null
+                && owner.equals(projectile.getOwner().getUUID());
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        if (isProtectedFromOwner() && isOwnerDamage(source)) return false;
+        return super.hurt(source, amount);
     }
 
     public UUID getOwnerUUID() {
@@ -288,6 +317,7 @@ public class CompanionEntity extends PathfinderMob {
             tag.putString("OwnerName", this.ownerNameCache);
         }
         tag.putString("Command", this.command.name());
+        tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
         tag.put("Memories", savedMemories);
@@ -302,6 +332,7 @@ public class CompanionEntity extends PathfinderMob {
             setOwnerUUID(tag.getUUID("OwnerUUID"));
         }
         this.ownerNameCache = tag.getString("OwnerName");
+        setProtectedFromOwner(tag.getBoolean("ProtectFromOwner"));
         if (tag.contains("Command")) {
             try {
                 this.command = Command.valueOf(tag.getString("Command"));
