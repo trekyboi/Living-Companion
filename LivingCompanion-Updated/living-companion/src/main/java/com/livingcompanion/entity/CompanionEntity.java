@@ -5,6 +5,7 @@ import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionProgression;
 import com.livingcompanion.progression.CompanionAttribute;
 import com.livingcompanion.progression.CompanionRelationship;
+import com.livingcompanion.progression.CompanionPersonality;
 import com.livingcompanion.progression.CompanionAchievement;
 import com.livingcompanion.progression.CompanionSpecialization;
 import com.livingcompanion.ai.FollowOwnerGoal;
@@ -98,6 +99,7 @@ public class CompanionEntity extends PathfinderMob {
     private final CompanionInventory companionInventory = new CompanionInventory(this);
     private final CompanionProgression progression = new CompanionProgression();
     private final CompanionRelationship relationship = new CompanionRelationship();
+    private final CompanionPersonality personality = new CompanionPersonality();
     private int relationshipInteractionCooldownTicks = 0;
     private int worldAwarenessTicks = 0;
     private String lastBiomeId = "";
@@ -299,6 +301,27 @@ public class CompanionEntity extends PathfinderMob {
 
     public CompanionRelationship getRelationship() {
         return this.relationship;
+    }
+
+    public CompanionPersonality getPersonality() {
+        return this.personality;
+    }
+
+    /** Records combat experience used to shape the companion's developing behavior. */
+    public void recordCombatExperience() {
+        if (!this.level().isClientSide) this.personality.recordCombat();
+    }
+
+    public void recordProtectionEvent() {
+        if (!this.level().isClientSide) this.personality.recordProtection();
+    }
+
+    public void recordDiscovery() {
+        if (!this.level().isClientSide) this.personality.recordDiscovery();
+    }
+
+    public void recordPeacefulInteraction() {
+        if (!this.level().isClientSide) this.personality.recordPeacefulInteraction();
     }
 
     /** Awards familiarity for meaningful shared events. */
@@ -639,6 +662,7 @@ public class CompanionEntity extends PathfinderMob {
             this.lastBiomeId = biomeId;
             String biomeName = biomeId.substring(biomeId.indexOf(':') + 1).replace('_', ' ');
             remember("we travelled through the " + biomeName + " biome");
+            this.personality.recordDiscovery();
             if (biomeId.contains("desert")) {
                 commentOnEvent("Desert ahead. Keep water and supplies close.",
                         "Sand as far as I can see. I already miss trees.",
@@ -835,6 +859,7 @@ public class CompanionEntity extends PathfinderMob {
         tag.putString("CompanionClass", this.companionClass.name());
         tag.put("Progression", this.progression.save());
         tag.put("Relationship", this.relationship.save());
+        tag.put("Personality", this.personality.save());
         tag.putInt("RelationshipInteractionCooldown", this.relationshipInteractionCooldownTicks);
         tag.putString("LastBiomeId", this.lastBiomeId);
         tag.putBoolean("InsideVillage", this.insideVillage);
@@ -872,6 +897,9 @@ public class CompanionEntity extends PathfinderMob {
         }
         if (tag.contains("Relationship", Tag.TAG_COMPOUND)) {
             this.relationship.load(tag.getCompound("Relationship"));
+        }
+        if (tag.contains("Personality", Tag.TAG_COMPOUND)) {
+            this.personality.load(tag.getCompound("Personality"));
         }
         this.relationshipInteractionCooldownTicks = Math.max(0, tag.getInt("RelationshipInteractionCooldown"));
         this.lastBiomeId = tag.getString("LastBiomeId");
@@ -921,6 +949,9 @@ public class CompanionEntity extends PathfinderMob {
     /** Stores a short, unique memory. The newest twelve memories survive world saves. */
     public void remember(String memory) {
         if (memory == null || memory.isBlank() || this.memories.contains(memory)) return;
+        if (memory.contains("discovered") || memory.contains("found") || memory.contains("diamonds")) {
+            this.personality.recordDiscovery();
+        }
         this.memories.add(memory);
         while (this.memories.size() > MAX_MEMORIES) this.memories.remove(0);
     }
@@ -1091,6 +1122,7 @@ public class CompanionEntity extends PathfinderMob {
         boolean hit = super.doHurtTarget(target);
         if (hit && target instanceof LivingEntity livingTarget) {
             this.skillRuntime.onSuccessfulMeleeHit(livingTarget);
+            this.personality.recordCombat();
         }
         return hit;
     }
