@@ -53,6 +53,12 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(5, UpgradeAttributeMessage.class,
                 UpgradeAttributeMessage::encode, UpgradeAttributeMessage::decode,
                 UpgradeAttributeMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(6, RequestStatsMessage.class,
+                RequestStatsMessage::encode, RequestStatsMessage::decode,
+                RequestStatsMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(7, StatsDataMessage.class,
+                StatsDataMessage::encode, StatsDataMessage::decode,
+                StatsDataMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -70,6 +76,94 @@ public final class CompanionNetwork {
 
     public static void requestSkillData(int companionEntityId) {
         CHANNEL.sendToServer(new RequestSkillDataMessage(companionEntityId));
+    }
+
+    public static void requestStats(int companionEntityId) {
+        CHANNEL.sendToServer(new RequestStatsMessage(companionEntityId));
+    }
+
+    private static void sendStatsData(ServerPlayer player, CompanionEntity companion) {
+        double[] stats = {
+                companion.getHealth(), companion.getMaxHealth(),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED),
+                companion.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE)
+        };
+        int[] attributes = new int[CompanionAttribute.values().length];
+        for (CompanionAttribute attribute : CompanionAttribute.values()) {
+            attributes[attribute.ordinal()] = companion.getProgression().getAttribute(attribute);
+        }
+        int[] ranks = new int[CompanionSkill.values().length];
+        for (CompanionSkill skill : CompanionSkill.values()) {
+            ranks[skill.ordinal()] = companion.getProgression().getSkillRank(skill.getId());
+        }
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+                new StatsDataMessage(companion.getId(), companion.getCompanionClass().ordinal(),
+                        companion.getProgression().getLevel(), companion.getProgression().getExperience(),
+                        companion.getProgression().getExperienceToNextLevel(), stats, attributes, ranks));
+    }
+
+    public static final class RequestStatsMessage {
+        private final int entityId;
+        public RequestStatsMessage(int entityId) { this.entityId = entityId; }
+        public static void encode(RequestStatsMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.entityId);
+        }
+        public static RequestStatsMessage decode(FriendlyByteBuf buffer) {
+            return new RequestStatsMessage(buffer.readVarInt());
+        }
+        public static void handle(RequestStatsMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null) return;
+                Entity entity = player.serverLevel().getEntity(message.entityId);
+                if (entity instanceof CompanionEntity companion && companion.isOwnedBy(player)
+                        && companion.distanceToSqr(player) <= 64.0D) sendStatsData(player, companion);
+            });
+            context.setPacketHandled(true);
+        }
+    }
+
+    public static final class StatsDataMessage {
+        public final int entityId, classId, level, experience, experienceToNext;
+        public final double[] stats;
+        public final int[] attributes, ranks;
+        public StatsDataMessage(int entityId, int classId, int level, int experience,
+                                int experienceToNext, double[] stats, int[] attributes, int[] ranks) {
+            this.entityId=entityId; this.classId=classId; this.level=level;
+            this.experience=experience; this.experienceToNext=experienceToNext;
+            this.stats=stats; this.attributes=attributes; this.ranks=ranks;
+        }
+        public static void encode(StatsDataMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
+            buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
+            buffer.writeVarInt(message.experienceToNext);
+            buffer.writeVarInt(message.stats.length);
+            for (double value : message.stats) buffer.writeDouble(value);
+            buffer.writeVarIntArray(message.attributes);
+            buffer.writeVarIntArray(message.ranks);
+        }
+        public static StatsDataMessage decode(FriendlyByteBuf buffer) {
+            int entityId=buffer.readVarInt(), classId=buffer.readVarInt(), level=buffer.readVarInt();
+            int experience=buffer.readVarInt(), next=buffer.readVarInt();
+            int count=Math.min(16, buffer.readVarInt());
+            double[] stats=new double[count];
+            for(int i=0;i<count;i++) stats[i]=buffer.readDouble();
+            return new StatsDataMessage(entityId,classId,level,experience,next,stats,
+                    buffer.readVarIntArray(CompanionAttribute.values().length),
+                    buffer.readVarIntArray(CompanionSkill.values().length));
+        }
+        public static void handle(StatsDataMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context=supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+                Minecraft minecraft=Minecraft.getInstance();
+                com.livingcompanion.client.screen.CompanionStatsScreen.open(minecraft.screen,message);
+            }));
+            context.setPacketHandled(true);
+        }
     }
 
     private static void sendSkillData(ServerPlayer player, CompanionEntity companion) {
