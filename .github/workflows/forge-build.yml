@@ -2,7 +2,7 @@ name: Forge build
 
 on:
   push:
-    branches: [main, feature/forge-skill-visuals]
+    branches: [main, feature/forge-skill-visuals, feature/backpack-curios]
   pull_request:
     branches: [main]
   workflow_dispatch:
