@@ -87,6 +87,7 @@ public class CompanionEntity extends PathfinderMob {
     /** Persistent carried inventory shown through the companion's player-style menu. */
     private final CompanionInventory companionInventory = new CompanionInventory(this);
     private final CompanionProgression progression = new CompanionProgression();
+    private final CompanionSkillRuntime skillRuntime = new CompanionSkillRuntime(this);
     private CompanionClass companionClass = CompanionClass.UNASSIGNED;
 
     public enum Command { FOLLOW, STAY, DEFEND }
@@ -366,8 +367,9 @@ public class CompanionEntity extends PathfinderMob {
             }
             this.configApplied = true;
         }
-        if (!this.level().isClientSide && this.tickCount % 20 == 0) {
-            speakOccasionally();
+        if (!this.level().isClientSide) {
+            this.skillRuntime.tick();
+            if (this.tickCount % 20 == 0) speakOccasionally();
         }
     }
 
@@ -414,6 +416,7 @@ public class CompanionEntity extends PathfinderMob {
         tag.putString("Command", this.command.name());
         tag.putString("CompanionClass", this.companionClass.name());
         tag.put("Progression", this.progression.save());
+        tag.put("SkillRuntime", this.skillRuntime.save());
         tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
@@ -438,6 +441,9 @@ public class CompanionEntity extends PathfinderMob {
         }
         if (tag.contains("Progression", Tag.TAG_COMPOUND)) {
             this.progression.load(tag.getCompound("Progression"), this.companionClass);
+        }
+        if (tag.contains("SkillRuntime", Tag.TAG_COMPOUND)) {
+            this.skillRuntime.load(tag.getCompound("SkillRuntime"));
         }
         setProtectedFromOwner(tag.getBoolean("ProtectFromOwner"));
         if (tag.contains("Command")) {
@@ -585,7 +591,11 @@ public class CompanionEntity extends PathfinderMob {
         if (!net.minecraftforge.fml.ModList.get().isLoaded("bettermobcombat")) {
             this.swing(InteractionHand.MAIN_HAND);
         }
-        return super.doHurtTarget(target);
+        boolean hit = super.doHurtTarget(target);
+        if (hit && target instanceof LivingEntity livingTarget) {
+            this.skillRuntime.onSuccessfulMeleeHit(livingTarget);
+        }
+        return hit;
     }
 
     // ------------------------------------------------------------------
