@@ -43,18 +43,21 @@ public final class CompanionAttributesScreen extends Screen {
     protected void init() {
         this.clearWidgets();
         this.upgradeButtons.clear();
-        int panelWidth = Math.min(520, this.width - 24);
+        int panelWidth = Math.min(520, Math.max(220, this.width - 16));
+        int panelHeight = Math.min(300, Math.max(220, this.height - 16));
         int left = (this.width - panelWidth) / 2;
-        int top = (this.height - 300) / 2;
-        int buttonX = left + panelWidth - 112;
-        int rowY = top + 86;
+        int top = (this.height - panelHeight) / 2;
+        int rowGap = Math.max(27, (panelHeight - 112) / CompanionAttribute.values().length);
+        int buttonWidth = Math.min(96, Math.max(70, panelWidth / 5));
+        int buttonX = left + panelWidth - buttonWidth - 12;
+        int rowY = top + 78;
         for (CompanionAttribute attribute : CompanionAttribute.values()) {
             Button button = Button.builder(Component.literal("Upgrade"), b ->
                     CompanionNetwork.requestAttributeUpgrade(data.entityId, attribute.getId()))
-                    .bounds(buttonX, rowY, 96, 22).build();
+                    .bounds(buttonX, rowY, buttonWidth, 22).build();
             this.upgradeButtons.add(button);
             this.addRenderableWidget(button);
-            rowY += 39;
+            rowY += rowGap;
         }
         updateData(this.data);
     }
@@ -81,8 +84,8 @@ public final class CompanionAttributesScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
-        int panelWidth = Math.min(520, this.width - 24);
-        int panelHeight = 300;
+        int panelWidth = Math.min(520, Math.max(220, this.width - 16));
+        int panelHeight = Math.min(300, Math.max(220, this.height - 16));
         int left = (this.width - panelWidth) / 2;
         int top = (this.height - panelHeight) / 2;
         graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xF0181B20);
@@ -91,14 +94,15 @@ public final class CompanionAttributesScreen extends Screen {
         graphics.drawCenteredString(this.font, "Unspent attribute points: " + data.attributePoints,
                 this.width / 2, top + 38, 0xFF83E6A0);
 
-        int y = top + 87;
+        int y = top + 78;
+        int rowGap = Math.max(27, (panelHeight - 112) / CompanionAttribute.values().length);
         for (CompanionAttribute attribute : CompanionAttribute.values()) {
             int value = getValue(attribute);
             graphics.drawString(this.font, attribute.getDisplayName() + "  " + value + "/20",
                     left + 18, y, 0xFFFFE6BE, false);
             graphics.drawString(this.font, attribute.getDescription(),
                     left + 18, y + 13, 0xFFBFC5CC, false);
-            y += 39;
+            y += rowGap;
         }
         super.render(graphics, mouseX, mouseY, partialTick);
     }
