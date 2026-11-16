@@ -73,7 +73,10 @@ public final class CompanionStatsScreen extends Screen {
                 + (data.relationshipExperienceToNext > 0 ? " / " + data.relationshipExperienceToNext + " XP" : "  |  MAX");
         graphics.drawString(font,bond,left+16,top+45,0xFFE6C58E,false);
 
-        int y=top+65;
+        graphics.drawString(font,"Title: " + data.companionTitle + "  |  Achievements: "
+                + data.achievementCount + "/12",left+16,top+57,0xFFFFD58A,false);
+
+        int y=top+75;
         graphics.drawString(font,"COMBAT",col1,y,0xFFFFE6BE,false);
         graphics.drawString(font,"PROGRESSION",col2,y,0xFFFFE6BE,false);
         y+=18;
@@ -85,7 +88,7 @@ public final class CompanionStatsScreen extends Screen {
             graphics.drawString(font,values[i],col1+112,y+i*17,0xFFFFFFFF,false);
         }
 
-        int ay=top+83;
+        int ay=top+93;
         for(CompanionAttribute attribute:CompanionAttribute.values()) {
             int value=attribute.ordinal()<data.attributes.length?data.attributes[attribute.ordinal()]:0;
             graphics.drawString(font,attribute.getDisplayName()+": "+value+"/20",
@@ -93,7 +96,7 @@ public final class CompanionStatsScreen extends Screen {
             ay+=17;
         }
 
-        int skillsY=top+200;
+        int skillsY=top+210;
         int skillRowStep=panelHeight<300?12:15;
         graphics.drawString(font,"UNLOCKED SKILLS",col1,skillsY,0xFFFFE6BE,false);
         int shown=0;
