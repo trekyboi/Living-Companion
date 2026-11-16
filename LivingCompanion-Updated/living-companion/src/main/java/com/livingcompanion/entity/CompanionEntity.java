@@ -94,6 +94,17 @@ public class CompanionEntity extends PathfinderMob {
     private final CompanionSkillRuntime skillRuntime = new CompanionSkillRuntime(this);
     private CompanionClass companionClass = CompanionClass.UNASSIGNED;
 
+    /** Custom survival food state. Food drains over time and is replenished from carried supplies. */
+    private int foodLevel = 20;
+    private float foodSaturation = 5.0F;
+    private int foodDrainTicks = 0;
+    private int starvationTicks = 0;
+    private int eatingCooldownTicks = 0;
+    private boolean warnedLowFood = false;
+    private static final int MAX_FOOD_LEVEL = 20;
+    private static final int PASSIVE_FOOD_INTERVAL = 3600; // one point every three minutes
+    private static final int COMBAT_FOOD_INTERVAL = 1800;  // combat doubles food use
+
     public enum Command { FOLLOW, STAY, DEFEND }
     private Command command = Command.FOLLOW;
     private long nextDialogueTick = 0L;
@@ -276,6 +287,14 @@ public class CompanionEntity extends PathfinderMob {
 
     public CompanionSkillRuntime getSkillRuntime() {
         return this.skillRuntime;
+    }
+
+    public int getFoodLevel() {
+        return this.foodLevel;
+    }
+
+    public int getMaxFoodLevel() {
+        return MAX_FOOD_LEVEL;
     }
 
     /** Client-readable flags describing which persistent skill effects are active. */
@@ -507,8 +526,98 @@ public class CompanionEntity extends PathfinderMob {
         }
         if (!this.level().isClientSide) {
             this.skillRuntime.tick();
+            tickFoodSystem();
             if (this.tickCount % 20 == 0) speakOccasionally();
         }
+    }
+
+    /**
+     * Drains food gradually, consumes the best available carried food, and applies starvation.
+     * All state changes happen on the server so food cannot be duplicated by client prediction.
+     */
+    private void tickFoodSystem() {
+        if (this.eatingCooldownTicks > 0) this.eatingCooldownTicks--;
+
+        int interval = this.getTarget() != null && this.getTarget().isAlive()
+                ? COMBAT_FOOD_INTERVAL : PASSIVE_FOOD_INTERVAL;
+        this.foodDrainTicks++;
+        if (this.foodDrainTicks >= interval) {
+            this.foodDrainTicks = 0;
+            if (this.foodSaturation > 0.0F) {
+                this.foodSaturation = Math.max(0.0F, this.foodSaturation - 1.0F);
+            } else if (this.foodLevel > 0) {
+                this.foodLevel--;
+                inventoryChanged();
+            }
+        }
+
+        if (this.foodLevel <= 14 && this.eatingCooldownTicks <= 0) {
+            consumeCarriedFood();
+        }
+
+        if (this.foodLevel <= 5 && !this.warnedLowFood) {
+            this.warnedLowFood = true;
+            commentOnEvent(
+                    "I'm running low on food. We should keep an eye out for supplies.",
+                    "A little food would help. I can keep going, though.",
+                    "Our rations are getting thin. Keep some food handy."
+            );
+        } else if (this.foodLevel > 10) {
+            this.warnedLowFood = false;
+        }
+
+        if (this.foodLevel <= 0) {
+            this.starvationTicks++;
+            if (this.starvationTicks >= 200) {
+                this.starvationTicks = 0;
+                this.hurt(this.damageSources().starve(), 1.0F);
+            }
+        } else {
+            this.starvationTicks = 0;
+        }
+    }
+
+    /** Selects the most nutritious food stack in the companion's carried storage. */
+    private void consumeCarriedFood() {
+        int bestSlot = -1;
+        int bestNutrition = 0;
+        float bestSaturation = -1.0F;
+
+        for (int slot = 0; slot < CompanionInventory.STORAGE_SIZE; slot++) {
+            ItemStack stack = this.companionInventory.getItem(slot);
+            if (stack.isEmpty()) continue;
+            net.minecraft.world.food.FoodProperties food = stack.getFoodProperties(this);
+            if (food == null || food.getNutrition() <= 0) continue;
+            float saturationValue = food.getNutrition() * food.getSaturationModifier();
+            if (food.getNutrition() > bestNutrition
+                    || (food.getNutrition() == bestNutrition && saturationValue > bestSaturation)) {
+                bestSlot = slot;
+                bestNutrition = food.getNutrition();
+                bestSaturation = saturationValue;
+            }
+        }
+
+        if (bestSlot < 0) {
+            this.eatingCooldownTicks = 200;
+            return;
+        }
+
+        ItemStack foodStack = this.companionInventory.getItem(bestSlot);
+        net.minecraft.world.food.FoodProperties food = foodStack.getFoodProperties(this);
+        int nutrition = food.getNutrition();
+        float saturation = nutrition * food.getSaturationModifier() * 2.0F;
+        ItemStack remaining = foodStack.finishUsingItem(this.level(), this);
+        this.companionInventory.setItem(bestSlot, remaining);
+        this.foodLevel = Math.min(MAX_FOOD_LEVEL, this.foodLevel + nutrition);
+        this.foodSaturation = Math.min(this.foodLevel, this.foodSaturation + saturation);
+        this.eatingCooldownTicks = 100;
+        this.starvationTicks = 0;
+        this.inventoryChanged();
+        commentOnEvent(
+                "That hit the spot. I'll keep watch while we travel.",
+                "Much better. A full stomach makes the road easier.",
+                "Good. I was starting to think about the rations."
+        );
     }
 
     @Override
@@ -556,6 +665,11 @@ public class CompanionEntity extends PathfinderMob {
         tag.put("Progression", this.progression.save());
         tag.put("SkillRuntime", this.skillRuntime.save());
         tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
+        tag.putInt("FoodLevel", this.foodLevel);
+        tag.putFloat("FoodSaturation", this.foodSaturation);
+        tag.putInt("FoodDrainTicks", this.foodDrainTicks);
+        tag.putInt("StarvationTicks", this.starvationTicks);
+        tag.putBoolean("WarnedLowFood", this.warnedLowFood);
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
         tag.put("Memories", savedMemories);
@@ -584,6 +698,13 @@ public class CompanionEntity extends PathfinderMob {
             this.skillRuntime.load(tag.getCompound("SkillRuntime"));
         }
         setProtectedFromOwner(tag.getBoolean("ProtectFromOwner"));
+        this.foodLevel = tag.contains("FoodLevel", Tag.TAG_INT)
+                ? Math.max(0, Math.min(MAX_FOOD_LEVEL, tag.getInt("FoodLevel"))) : MAX_FOOD_LEVEL;
+        this.foodSaturation = tag.contains("FoodSaturation", Tag.TAG_FLOAT)
+                ? Math.max(0.0F, Math.min(this.foodLevel, tag.getFloat("FoodSaturation"))) : 5.0F;
+        this.foodDrainTicks = Math.max(0, tag.getInt("FoodDrainTicks"));
+        this.starvationTicks = Math.max(0, tag.getInt("StarvationTicks"));
+        this.warnedLowFood = tag.getBoolean("WarnedLowFood");
         if (tag.contains("Command")) {
             try {
                 this.command = Command.valueOf(tag.getString("Command"));
@@ -721,6 +842,12 @@ public class CompanionEntity extends PathfinderMob {
             if (this.companionClass == CompanionClass.PALADIN) pool = PALADIN_COMBAT_LINES;
             else if (this.companionClass == CompanionClass.TANK) pool = TANK_COMBAT_LINES;
             else pool = COMBAT_LINES;
+        } else if (this.foodLevel <= 5) {
+            pool = List.of(
+                    "We should find food soon. I'm running on fumes.",
+                    "I could use a meal. The next fight may come at a bad time.",
+                    "Rations are low. Keep an eye out for something edible."
+            );
         } else if (owner.getHealth() <= owner.getMaxHealth() * 0.35F) {
             pool = OWNER_HURT_LINES;
         } else if (this.getHealth() <= this.getMaxHealth() * 0.35F) {
