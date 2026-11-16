@@ -2,7 +2,6 @@ package com.livingcompanion.menu;
 
 import com.livingcompanion.entity.CompanionEntity;
 import com.livingcompanion.inventory.CompanionInventory;
-import net.minecraftforge.fml.ModList;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
@@ -27,7 +26,6 @@ public final class CompanionInventoryMenu extends AbstractContainerMenu {
         super(com.livingcompanion.registry.ModMenus.COMPANION_INVENTORY.get(), id);
         this.companion = companion;
         this.companionInventory = companion.getCompanionInventory();
-        this.curiosBackSlot = ModList.get().isLoaded("curios");
 
         // Companion armor and hand slots, arranged like the equipment column
         // in the vanilla player inventory.
@@ -39,10 +37,12 @@ public final class CompanionInventoryMenu extends AbstractContainerMenu {
         this.addSlot(new Slot(companionInventory, CompanionInventory.OFF_HAND, 26, 56));
 
         // Optional Curios back slot; Curios owns its saved equipment data.
-        if (this.curiosBackSlot) {
-            Slot backpackSlot = com.livingcompanion.compat.curios.CuriosBackpackSlot.create(companion, 26, 38);
-            if (backpackSlot != null) this.addSlot(backpackSlot);
+        Slot backpackSlot = null;
+        if (net.minecraftforge.fml.ModList.get().isLoaded("curios")) {
+            backpackSlot = com.livingcompanion.compat.curios.CuriosBackpackSlot.create(companion, 26, 38);
         }
+        this.curiosBackSlot = backpackSlot != null;
+        if (backpackSlot != null) this.addSlot(backpackSlot);
 
         // Companion's 27 storage slots and 9-slot hotbar.
         for (int row = 0; row < 3; row++) {
