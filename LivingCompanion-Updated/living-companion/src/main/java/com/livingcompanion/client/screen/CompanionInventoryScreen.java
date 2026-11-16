@@ -75,6 +75,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         drawSlot(graphics, left + 8, top + 74);
         drawSlot(graphics, left + 26, top + 20);
         drawSlot(graphics, left + 26, top + 56);
+        if (this.menu.hasCuriosBackSlot()) drawSlot(graphics, left + 26, top + 38);
 
         // Companion storage: three rows plus its hotbar.
         for (int row = 0; row < 4; row++) {
@@ -117,6 +118,9 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
                 graphics.fill(sx + 2, sy + 15, sx + 16, sy + 16, 0x88777D86);
             }
         }
+        if (this.menu.hasCuriosBackSlot() && !this.menu.getSlot(6).hasItem()) {
+            graphics.renderItem(new ItemStack(Items.CHEST), left + 27, top + 39);
+        }
     }
 
     @Override
@@ -146,6 +150,9 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
             slot = 4; description = "Main hand — weapon or utility item";
         } else if (x >= 26 && x < 44 && y >= 56 && y < 74) {
             slot = 5; description = "Off hand — shield or utility item";
+        }
+        if (this.menu.hasCuriosBackSlot() && x >= 26 && x < 44 && y >= 38 && y < 56) {
+            return this.menu.getSlot(6).hasItem() ? null : "Back slot — equip a Curios-compatible backpack";
         }
         // Preserve vanilla item tooltips whenever the slot contains an item.
         return slot >= 0 && !this.menu.getSlot(slot).hasItem() ? description : null;
