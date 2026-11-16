@@ -143,6 +143,10 @@ public final class CompanionResurrectionData extends SavedData {
         if (changed) setDirty();
     }
 
+    public boolean hasPendingResurrection(UUID owner) {
+        return owner != null && contains(owner);
+    }
+
     private boolean contains(UUID owner) {
         return pending.stream().anyMatch(entry -> entry.owner.equals(owner));
     }
