@@ -35,6 +35,11 @@ public final class CompanionProgressionEvents {
             if (companion.isAlive()) {
                 companion.awardExperience(scaleExperience(baseExperience, companion, defeated));
                 companion.addRelationshipExperience(2);
+                companion.commentOnEvent(
+                        "That's one less threat on the road.",
+                        "Good. Let's make sure there aren't any more.",
+                        "Well handled. I think we can breathe for a moment."
+                );
             }
             return;
         }
@@ -51,6 +56,11 @@ public final class CompanionProgressionEvents {
 
         if (companion != null) {
             companion.addRelationshipExperience(1);
+            companion.commentOnEvent(
+                    "You handled that well.",
+                    "Good strike. I'll keep the next one off you.",
+                    "One less problem. Keep moving."
+            );
             // The companion receives a meaningful share while the owner remains
             // the primary combatant. Boss rewards remain substantial.
             int sharedExperience = Math.max(1, Math.round(scaleExperience(baseExperience, companion, defeated) * 0.75F));
