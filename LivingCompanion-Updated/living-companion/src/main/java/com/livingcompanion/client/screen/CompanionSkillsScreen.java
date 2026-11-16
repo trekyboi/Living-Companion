@@ -69,8 +69,8 @@ public final class CompanionSkillsScreen extends Screen {
         this.clearWidgets();
         this.upgradeButtons.clear();
 
-        this.panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(300, this.width - 24));
-        this.panelHeight = Math.min(PANEL_MAX_HEIGHT, Math.max(240, this.height - 24));
+        this.panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(220, this.width - 16));
+        this.panelHeight = Math.min(PANEL_MAX_HEIGHT, Math.max(200, this.height - 16));
         this.panelLeft = (this.width - this.panelWidth) / 2;
         this.panelTop = (this.height - this.panelHeight) / 2;
         this.listTop = this.panelTop + HEADER_HEIGHT;
