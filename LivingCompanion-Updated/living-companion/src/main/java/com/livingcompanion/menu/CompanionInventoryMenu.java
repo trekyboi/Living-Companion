@@ -61,6 +61,13 @@ public final class CompanionInventoryMenu extends AbstractContainerMenu {
     }
 
     @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id != 0 || companion == null || !companion.isOwnedBy(player) || !companion.isAlive()) return false;
+        companion.setProtectedFromOwner(!companion.isProtectedFromOwner());
+        return true;
+    }
+
+    @Override
     public boolean stillValid(Player player) {
         return companion != null && companion.isOwnedBy(player)
                 && companion.isAlive() && companion.distanceToSqr(player) <= 64.0D;
