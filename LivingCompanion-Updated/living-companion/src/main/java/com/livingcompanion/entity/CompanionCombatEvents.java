@@ -20,7 +20,7 @@ public final class CompanionCombatEvents {
                 CompanionEntity.class, owner.getBoundingBox().inflate(12.0D),
                 companion -> companion.isAlive() && companion.isOwnedBy(owner)
                         && companion.getCompanionClass()
-                        == com.livingcompanion.progression.CompanionClass.TANK);
+                        != com.livingcompanion.progression.CompanionClass.UNASSIGNED);
 
         for (CompanionEntity companion : nearbyCompanions) {
             float remaining = companion.interceptOwnerDamage(owner, event.getSource(), event.getAmount());
