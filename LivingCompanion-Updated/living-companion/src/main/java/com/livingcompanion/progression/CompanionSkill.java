@@ -25,7 +25,16 @@ public enum CompanionSkill {
     TANK_INTERCEPT("tank_intercept", CompanionClass.TANK, SkillType.ACTIVE, "Intercept",
             "Intercepts nearby attacks, redirecting part of the owner's damage to the Tank.", 3, 10, 360),
     TANK_LAST_BASTION("tank_last_bastion", CompanionClass.TANK, SkillType.ULTIMATE, "Last Bastion",
-            "Enters a fortified stance and draws nearby enemies' aggression.", 1, 25, 1200);
+            "Enters a fortified stance and draws nearby enemies' aggression.", 1, 25, 1200),
+
+    PALADIN_SANCTUARY("paladin_sanctuary", CompanionClass.PALADIN, SkillType.PASSIVE, "Sanctuary",
+            "Warden branch: strengthens Prayer healing and protective wards.", 3, 15, 0, CompanionSpecialization.PALADIN_WARDEN),
+    PALADIN_JUDGMENT("paladin_judgment", CompanionClass.PALADIN, SkillType.PASSIVE, "Judgment",
+            "Crusader branch: empowers Holy Strike with additional radiant damage.", 3, 15, 0, CompanionSpecialization.PALADIN_CRUSADER),
+    TANK_BULWARK_OATH("tank_bulwark_oath", CompanionClass.TANK, SkillType.PASSIVE, "Bulwark's Oath",
+            "Bulwark branch: reduces damage suffered by the owner while nearby.", 3, 15, 0, CompanionSpecialization.TANK_BULWARK),
+    TANK_VANGUARD_FURY("tank_vanguard_fury", CompanionClass.TANK, SkillType.PASSIVE, "Vanguard's Fury",
+            "Vanguard branch: increases the Tank's melee damage.", 3, 15, 0, CompanionSpecialization.TANK_VANGUARD);
 
     public enum SkillType { PASSIVE, ACTIVE, ULTIMATE }
 
@@ -37,6 +46,7 @@ public enum CompanionSkill {
     private final int maximumRank;
     private final int unlockLevel;
     private final int cooldownTicks;
+    private final CompanionSpecialization requiredSpecialization;
 
     CompanionSkill(String id, CompanionClass archetype, SkillType type, String displayName,
                    String description, int maximumRank, int unlockLevel, int cooldownTicks) {
@@ -45,9 +55,21 @@ public enum CompanionSkill {
         this.type = type;
         this.displayName = displayName;
         this.description = description;
+        this(id, archetype, type, displayName, description, maximumRank, unlockLevel, cooldownTicks, null);
+    }
+
+    CompanionSkill(String id, CompanionClass archetype, SkillType type, String displayName,
+                   String description, int maximumRank, int unlockLevel, int cooldownTicks,
+                   CompanionSpecialization requiredSpecialization) {
+        this.id = id;
+        this.archetype = archetype;
+        this.type = type;
+        this.displayName = displayName;
+        this.description = description;
         this.maximumRank = maximumRank;
         this.unlockLevel = unlockLevel;
         this.cooldownTicks = cooldownTicks;
+        this.requiredSpecialization = requiredSpecialization;
     }
 
     public String getId() { return id; }
@@ -58,6 +80,7 @@ public enum CompanionSkill {
     public int getMaximumRank() { return maximumRank; }
     public int getUnlockLevel() { return unlockLevel; }
     public int getCooldownTicks() { return cooldownTicks; }
+    public CompanionSpecialization getRequiredSpecialization() { return requiredSpecialization; }
 
     public static CompanionSkill byId(String id) {
         if (id == null) return null;
@@ -69,5 +92,12 @@ public enum CompanionSkill {
 
     public static List<CompanionSkill> forClass(CompanionClass archetype) {
         return Arrays.stream(values()).filter(skill -> skill.archetype == archetype).toList();
+    }
+
+    public static List<CompanionSkill> forClassAndSpecialization(
+            CompanionClass archetype, CompanionSpecialization specialization) {
+        return Arrays.stream(values()).filter(skill -> skill.archetype == archetype
+                && (skill.requiredSpecialization == null
+                || skill.requiredSpecialization == specialization)).toList();
     }
 }
