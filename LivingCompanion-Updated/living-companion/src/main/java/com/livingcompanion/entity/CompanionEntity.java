@@ -590,14 +590,16 @@ public class CompanionEntity extends PathfinderMob {
     }
 
     /**
-     * Keeps the vanilla arm swing when Better Mob Combat is absent.
-     * Better Mob Combat supplies its own Player Animator attack pose when loaded.
+     * Keeps the vanilla swing for fallback attacks.
+     *
+     * Better Mob Combat bypasses this method when it successfully handles a
+     * registered Better Combat weapon through MeleeAttackGoal. When it cannot
+     * handle the held item, vanilla combat reaches this method and still needs
+     * its ordinary swing animation even if Better Mob Combat is installed.
      */
     @Override
     public boolean doHurtTarget(Entity target) {
-        if (!net.minecraftforge.fml.ModList.get().isLoaded("bettermobcombat")) {
-            this.swing(InteractionHand.MAIN_HAND);
-        }
+        this.swing(InteractionHand.MAIN_HAND);
         boolean hit = super.doHurtTarget(target);
         if (hit && target instanceof LivingEntity livingTarget) {
             this.skillRuntime.onSuccessfulMeleeHit(livingTarget);
