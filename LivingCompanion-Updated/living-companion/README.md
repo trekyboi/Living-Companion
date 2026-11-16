@@ -12,9 +12,8 @@ Player Animator.
 - Minecraft Forge 47.x (development pinned to 47.4.0)
 - Java 17
 - ForgeGradle 6 / Gradle wrapper 8.1.1
-- Optional combat stack: Better Combat 1.9.0, Better Mob Combat 1.3.0,
-  Player Animator, Mob Player Animator, Cloth Config API, and Better Mob Combat
-  Fix (BMCFIX) 1.0.2 for the Better Combat 1.9.0 compatibility issue
+- Optional combat stack: Better Combat 1.8.6, Better Mob Combat 1.3.0,
+  Player Animator, Mob Player Animator, and Cloth Config API
 
 There is no GeckoLib dependency and no custom 3D model or procedural attack-animation
 framework. Better Mob Combat routes humanoid mob melee attacks through Better
@@ -69,13 +68,24 @@ On Windows use `gradlew.bat` instead of `./gradlew`.
 The distributable mod JAR is created in `build/libs/`. Install it in a Forge
 1.20.1 instance.
 
-For Better Combat-style companion attacks, install the Forge 1.20.1 versions of
-Better Combat, Better Mob Combat, Player Animator, Mob Player Animator, and
-Cloth Config API. Better Combat 1.9.0 requires Better Mob Combat Fix (BMCFIX)
-1.0.2 to address an upstream compatibility break. Install Architectury API if
-the fix mod's release metadata lists it as a dependency. The combat addons
-must be installed on the client and server where required by their mod pages.
-Without the addon stack, Living Companion continues using vanilla combat.
+For Better Combat-style companion attacks, use this Forge 1.20.1 stack:
+- Better Combat **1.8.6**
+- Better Mob Combat **1.3.0**
+- Player Animator (Forge 1.20.1)
+- Mob Player Animator (Forge 1.20.1)
+- Cloth Config API (Forge 1.20.1)
+
+Better Combat 1.9.0 changed APIs used by Better Mob Combat. The BMCFIX 1.0.2
+patch addresses two API breakages, while community reports and the Better Mob
+Combat Recruitsfix project still flag animation failures with Better Combat
+1.9.x. Better Combat 1.8.6 is the safer compatibility target for this
+companion. BMCFIX is unnecessary with Better Combat 1.8.6.
+
+Install Better Combat and Better Mob Combat on the client and server. Install
+Player Animator and Cloth Config API wherever required by their dependency
+metadata. Mob Player Animator is a client-side requirement for rendering mob
+animations. Without the addon stack, Living Companion continues using vanilla
+combat.
 
 ### Preventing friendly-fire sweeps
 
