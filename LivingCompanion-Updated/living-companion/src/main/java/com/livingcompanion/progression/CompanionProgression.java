@@ -1,8 +1,13 @@
 package com.livingcompanion.progression;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,11 +21,34 @@ public final class CompanionProgression {
     private int attributePoints = 0;
     private final Map<String, Integer> skillRanks = new HashMap<>();
     private final Map<String, Integer> attributes = new HashMap<>();
+    private final Set<CompanionAchievement> achievements = EnumSet.noneOf(CompanionAchievement.class);
 
     public int getLevel() { return level; }
     public int getExperience() { return experience; }
     public int getSkillPoints() { return skillPoints; }
     public int getAttributePoints() { return attributePoints; }
+    public Set<CompanionAchievement> getAchievements() { return Collections.unmodifiableSet(achievements); }
+    public boolean hasAchievement(CompanionAchievement achievement) { return achievements.contains(achievement); }
+
+    public boolean awardAchievement(CompanionAchievement achievement) {
+        return achievement != null && achievements.add(achievement);
+    }
+
+    /** Highest earned achievement title, with a clear default for new companions. */
+    public String getTitle() {
+        CompanionAchievement[] priority = {
+                CompanionAchievement.UNBREAKABLE, CompanionAchievement.DRAGON_SLAYER,
+                CompanionAchievement.WITHER_SLAYER, CompanionAchievement.DEVOTED,
+                CompanionAchievement.LEGEND, CompanionAchievement.TRUSTED,
+                CompanionAchievement.ELITE, CompanionAchievement.VETERAN,
+                CompanionAchievement.END_EXPLORER, CompanionAchievement.NETHER_EXPLORER,
+                CompanionAchievement.DIAMOND_SEEKER, CompanionAchievement.FIRST_BLOOD
+        };
+        for (CompanionAchievement achievement : priority) {
+            if (achievements.contains(achievement)) return achievement.getTitle();
+        }
+        return "Adventurer";
+    }
     public int getAttribute(CompanionAttribute attribute) {
         return attribute == null ? 0 : attributes.getOrDefault(attribute.getId(), 0);
     }
@@ -44,6 +72,9 @@ public final class CompanionProgression {
             gained++;
         }
         if (level >= MAX_LEVEL) experience = 0;
+        if (level >= 10) awardAchievement(CompanionAchievement.VETERAN);
+        if (level >= 25) awardAchievement(CompanionAchievement.ELITE);
+        if (level >= 50) awardAchievement(CompanionAchievement.LEGEND);
         return gained;
     }
 
@@ -78,6 +109,11 @@ public final class CompanionProgression {
         CompoundTag savedAttributes = new CompoundTag();
         attributes.forEach(savedAttributes::putInt);
         tag.put("Attributes", savedAttributes);
+        ListTag savedAchievements = new ListTag();
+        for (CompanionAchievement achievement : achievements) {
+            savedAchievements.add(StringTag.valueOf(achievement.getId()));
+        }
+        tag.put("Achievements", savedAchievements);
         return tag;
     }
 
@@ -94,6 +130,14 @@ public final class CompanionProgression {
                 CompanionSkill skill = CompanionSkill.byId(key);
                 if (skill != null && archetype != null && skill.getArchetype() == archetype
                         && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
+            }
+        }
+        achievements.clear();
+        if (tag.contains("Achievements", Tag.TAG_LIST)) {
+            ListTag savedAchievements = tag.getList("Achievements", Tag.TAG_STRING);
+            for (int i = 0; i < savedAchievements.size(); i++) {
+                CompanionAchievement achievement = CompanionAchievement.byId(savedAchievements.getString(i));
+                if (achievement != null) achievements.add(achievement);
             }
         }
         attributes.clear();
