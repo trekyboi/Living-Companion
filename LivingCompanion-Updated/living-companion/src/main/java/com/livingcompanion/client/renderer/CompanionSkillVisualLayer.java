@@ -392,16 +392,34 @@ public final class CompanionSkillVisualLayer
 
     private static void renderHolySlash(PoseStack pose, VertexConsumer out, float time) {
         Matrix4f m=pose.last().pose();
-        float pulse=0.75F+(float)Math.sin(time*0.55F)*0.15F;
-        for(int i=0;i<18;i++) {
-            float t=i/17.0F;
-            double a=-Math.PI*0.78D+t*Math.PI*0.92D;
-            float x=0.48F+(float)Math.cos(a)*0.48F;
-            float y=1.0F+(float)Math.sin(a)*0.62F;
-            float x2=0.48F+(float)Math.cos(a+0.07D)*0.48F;
-            float y2=1.0F+(float)Math.sin(a+0.07D)*0.62F;
-            quad(out,m,x,y,-0.35F,x2,y2,-0.35F,x2,y2+0.045F,-0.35F,x,y+0.045F,-0.35F,
-                    255,245,175,(int)(210*pulse));
+        float pulse=0.82F+(float)Math.sin(time*0.42F)*0.12F;
+        // Wide segmented crescent with a bright inner edge and a soft outer blade.
+        for(int i=0;i<28;i++) {
+            float t0=i/28.0F, t1=(i+1)/28.0F;
+            double a0=-Math.PI*0.78D+t0*Math.PI*0.92D;
+            double a1=-Math.PI*0.78D+t1*Math.PI*0.92D;
+            float rOuter=0.78F, rInner=0.58F;
+            float x0=0.42F+(float)Math.cos(a0)*rOuter;
+            float y0=1.02F+(float)Math.sin(a0)*rOuter;
+            float x1=0.42F+(float)Math.cos(a1)*rOuter;
+            float y1=1.02F+(float)Math.sin(a1)*rOuter;
+            float ix1=0.42F+(float)Math.cos(a1)*rInner;
+            float iy1=1.02F+(float)Math.sin(a1)*rInner;
+            float ix0=0.42F+(float)Math.cos(a0)*rInner;
+            float iy0=1.02F+(float)Math.sin(a0)*rInner;
+            quad(out,m,x0,y0,-0.39F,x1,y1,-0.39F,ix1,iy1,-0.39F,ix0,iy0,-0.39F,
+                    255,205,65,(int)(135*pulse));
+            quad(out,m,x0,y0,-0.405F,x1,y1,-0.405F,ix1,iy1,-0.405F,ix0,iy0,-0.405F,
+                    255,247,185,(int)(220*pulse));
+        }
+        // Impact flare at the end of the slash.
+        double end=-Math.PI*0.78D+Math.PI*0.92D;
+        float ex=0.42F+(float)Math.cos(end)*0.70F;
+        float ey=1.02F+(float)Math.sin(end)*0.70F;
+        for(int i=0;i<8;i++) {
+            double angle=i*Math.PI/4.0D+time*0.08D;
+            float dx=(float)Math.cos(angle), dy=(float)Math.sin(angle);
+            bar(out,m,ex,ey,ex+dx*0.22F,ey+dy*0.22F,0.025F,255,235,145,205);
         }
     }
 
