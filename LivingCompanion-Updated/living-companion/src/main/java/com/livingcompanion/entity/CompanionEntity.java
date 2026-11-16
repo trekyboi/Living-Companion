@@ -949,7 +949,7 @@ public class CompanionEntity extends PathfinderMob {
         if (!CompanionConfig.HEALING_ENABLED.get() || this.tickCount % 10 != 0
                 || this.healingCooldownTicks > 0 || this.getHealth() <= 0.0F) return;
 
-        float threshold = (float) CompanionConfig.HEALING_HEALTH_THRESHOLD.get();
+        float threshold = CompanionConfig.HEALING_HEALTH_THRESHOLD.get().floatValue();
         if (this.getHealth() > this.getMaxHealth() * threshold) return;
 
         int bestSlot = -1;
@@ -960,7 +960,7 @@ public class CompanionEntity extends PathfinderMob {
 
             int score = 0;
             for (var effect : PotionUtils.getPotion(stack).getEffects()) {
-                if (effect.getEffect() == MobEffects.INSTANT_HEALTH) {
+                if (effect.getEffect() == MobEffects.HEAL) {
                     score = Math.max(score, 100 + effect.getAmplifier());
                 } else if (effect.getEffect() == MobEffects.REGENERATION) {
                     score = Math.max(score, 50 + effect.getAmplifier());
