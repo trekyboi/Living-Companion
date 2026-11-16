@@ -33,15 +33,15 @@ public final class CompanionCombatEvents {
 
         for (CompanionEntity companion : nearbyCompanions) {
             float remaining = companion.interceptOwnerDamage(owner, event.getSource(), event.getAmount());
-            if (remaining < event.getAmount()) {
-                event.setAmount(Math.max(0.0F, remaining));
-                break;
-            }
             companion.commentOnEvent(
                     "You're hurt. Fall back a step and let me handle this.",
                     "Stay with me. I'll keep them off you.",
                     "You're taking too many hits. Get behind me."
             );
+            if (remaining < event.getAmount()) {
+                event.setAmount(Math.max(0.0F, remaining));
+                break;
+            }
         }
     }
 }
