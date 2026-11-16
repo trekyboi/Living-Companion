@@ -468,6 +468,18 @@ public class CompanionEntity extends PathfinderMob {
         nextDialogueTick = now + (cooldown + this.random.nextInt(Math.max(1, cooldown / 2 + 1))) * 20L;
     }
 
+    /**
+     * Keeps the vanilla arm swing when Better Mob Combat is absent.
+     * Better Mob Combat supplies its own Player Animator attack pose when loaded.
+     */
+    @Override
+    public boolean doHurtTarget(Entity target) {
+        if (!net.minecraftforge.fml.ModList.get().isLoaded("bettermobcombat")) {
+            this.swing(InteractionHand.MAIN_HAND);
+        }
+        return super.doHurtTarget(target);
+    }
+
     // ------------------------------------------------------------------
     // Sound (humanoid, not monster)
     // ------------------------------------------------------------------
