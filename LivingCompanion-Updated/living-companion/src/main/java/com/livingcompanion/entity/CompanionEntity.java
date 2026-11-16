@@ -47,6 +47,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
+import net.minecraft.tags.StructureTags;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
@@ -95,6 +96,9 @@ public class CompanionEntity extends PathfinderMob {
     private final CompanionProgression progression = new CompanionProgression();
     private final CompanionRelationship relationship = new CompanionRelationship();
     private int relationshipInteractionCooldownTicks = 0;
+    private int worldAwarenessTicks = 0;
+    private String lastBiomeId = "";
+    private boolean insideVillage = false;
     private final CompanionSkillRuntime skillRuntime = new CompanionSkillRuntime(this);
     private CompanionClass companionClass = CompanionClass.UNASSIGNED;
 
@@ -569,8 +573,67 @@ public class CompanionEntity extends PathfinderMob {
             this.skillRuntime.tick();
             tickFoodSystem();
             tickRelationship();
+            tickWorldAwareness();
             if (this.tickCount % 20 == 0) speakOccasionally();
         }
+    }
+
+    /**
+     * Detects biome transitions and village visits at a low polling rate.
+     * Existing memory events cover boss fights, dimensions, and valuable discoveries.
+     */
+    private void tickWorldAwareness() {
+        if (++this.worldAwarenessTicks < 100 || !(this.level() instanceof ServerLevel serverLevel)) return;
+        this.worldAwarenessTicks = 0;
+
+        String biomeId = this.level().getBiome(this.blockPosition()).unwrapKey()
+                .map(key -> key.location().toString()).orElse("unknown");
+        if (this.lastBiomeId.isEmpty()) {
+            this.lastBiomeId = biomeId;
+        } else if (!biomeId.equals(this.lastBiomeId)) {
+            this.lastBiomeId = biomeId;
+            String biomeName = biomeId.substring(biomeId.indexOf(':') + 1).replace('_', ' ');
+            remember("we travelled through the " + biomeName + " biome");
+            if (biomeId.contains("desert")) {
+                commentOnEvent("Desert ahead. Keep water and supplies close.",
+                        "Sand as far as I can see. I already miss trees.",
+                        "Watch the horizon. Open ground gives trouble plenty of room.");
+            } else if (biomeId.contains("snow") || biomeId.contains("frozen") || biomeId.contains("ice")) {
+                commentOnEvent("Cold country. Keep moving and watch your footing.",
+                        "I can feel the chill through the armor. That's impressive, really.",
+                        "Snow hides holes, cliffs, and the occasional unpleasant surprise.");
+            } else if (biomeId.contains("jungle")) {
+                commentOnEvent("Dense jungle. Stay close; visibility is poor.",
+                        "Every leaf seems to be hiding something with teeth.",
+                        "Keep an eye out for ruins. This place has a long memory.");
+            } else if (biomeId.contains("ocean") || biomeId.contains("beach")) {
+                commentOnEvent("We've reached the coast. The open water makes me uneasy.",
+                        "A long way to swim. I hope you brought a boat.",
+                        "The sea is peaceful from here. I intend to keep it that way.");
+            } else if (biomeId.contains("badlands") || biomeId.contains("mesa")) {
+                commentOnEvent("Strange country. The stone looks almost painted.",
+                        "This place has seen a lot of sun and very little rain.",
+                        "Keep looking. There may be something buried out here.");
+            } else if (biomeId.contains("swamp") || biomeId.contains("mangrove")) {
+                commentOnEvent("A swamp. Wonderful. Mud, water, and things that bite.",
+                        "Watch your step. The ground here has questionable intentions.",
+                        "I would rather camp somewhere dry.");
+            } else {
+                commentOnEvent("New terrain. Let's see what this place has to offer.",
+                        "The landscape has changed. Keep your eyes open.",
+                        "Another stretch of the world to learn.");
+            }
+        }
+
+        boolean nowInVillage = serverLevel.structureManager()
+                .getStructureWithPieceAt(this.blockPosition(), StructureTags.VILLAGE).isValid();
+        if (nowInVillage && !this.insideVillage) {
+            remember("we visited a village");
+            commentOnEvent("A village. Let's see if anyone here needs a hand.",
+                    "People have made a life out here. Worth keeping safe.",
+                    "A proper settlement. I hope the walls are stronger than they look.");
+        }
+        this.insideVillage = nowInVillage;
     }
 
     /**
@@ -707,6 +770,8 @@ public class CompanionEntity extends PathfinderMob {
         tag.put("Progression", this.progression.save());
         tag.put("Relationship", this.relationship.save());
         tag.putInt("RelationshipInteractionCooldown", this.relationshipInteractionCooldownTicks);
+        tag.putString("LastBiomeId", this.lastBiomeId);
+        tag.putBoolean("InsideVillage", this.insideVillage);
         tag.put("SkillRuntime", this.skillRuntime.save());
         tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
         tag.putInt("FoodLevel", this.foodLevel);
@@ -742,6 +807,8 @@ public class CompanionEntity extends PathfinderMob {
             this.relationship.load(tag.getCompound("Relationship"));
         }
         this.relationshipInteractionCooldownTicks = Math.max(0, tag.getInt("RelationshipInteractionCooldown"));
+        this.lastBiomeId = tag.getString("LastBiomeId");
+        this.insideVillage = tag.getBoolean("InsideVillage");
         if (tag.contains("SkillRuntime", Tag.TAG_COMPOUND)) {
             this.skillRuntime.load(tag.getCompound("SkillRuntime"));
         }
