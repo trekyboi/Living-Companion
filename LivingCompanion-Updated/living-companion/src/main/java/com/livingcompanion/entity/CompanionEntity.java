@@ -277,7 +277,8 @@ public class CompanionEntity extends PathfinderMob {
             if (owner != null) {
                 owner.sendSystemMessage(Component.literal(this.getName().getString()
                         + " reached level " + this.progression.getLevel()
-                        + "! +" + gained + " skill point" + (gained == 1 ? "" : "s") + "."));
+                        + "! +" + gained + " skill point" + (gained == 1 ? "" : "s")
+                        + " and +" + (gained * 2) + " attribute points."));
             }
         }
         inventoryChanged();
