@@ -2,6 +2,8 @@ package com.livingcompanion.event;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
@@ -9,23 +11,55 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/** Awards RPG experience when the companion personally defeats a hostile creature. */
+import java.util.Comparator;
+
+/**
+ * Awards companion XP for meaningful combat participation.
+ * Companion kills grant full XP; the owner's nearby kills grant shared XP,
+ * keeping progression active when the player is doing most of the fighting.
+ */
 @Mod.EventBusSubscriber(modid = LivingCompanion.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class CompanionProgressionEvents {
 
+    private static final double XP_SHARE_RANGE = 32.0D;
+
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
-        if (!(event.getSource().getEntity() instanceof CompanionEntity companion)) return;
         LivingEntity defeated = event.getEntity();
-        if (defeated == companion || defeated.getMaxHealth() <= 0.0F) return;
+        if (defeated.getMaxHealth() <= 0.0F) return;
 
-        int experience;
-        if (defeated instanceof EnderDragon || defeated instanceof WitherBoss) {
-            experience = 250;
-        } else {
-            experience = Math.max(5, Math.min(40, 5 + Math.round(defeated.getMaxHealth() / 2.0F)));
+        int experience = calculateExperience(defeated);
+        Entity attacker = event.getSource().getEntity();
+
+        if (attacker instanceof CompanionEntity companion) {
+            if (companion.isAlive()) companion.awardExperience(experience);
+            return;
         }
-        companion.awardExperience(experience);
+
+        if (!(attacker instanceof ServerPlayer player)) return;
+
+        CompanionEntity companion = player.level().getEntitiesOfClass(
+                        CompanionEntity.class,
+                        player.getBoundingBox().inflate(XP_SHARE_RANGE),
+                        candidate -> candidate.isAlive() && candidate.isOwnedBy(player))
+                .stream()
+                .min(Comparator.comparingDouble(player::distanceToSqr))
+                .orElse(null);
+
+        if (companion != null) {
+            // The companion receives a meaningful share while the owner remains
+            // the primary combatant. Boss rewards remain substantial.
+            int sharedExperience = Math.max(1, Math.round(experience * 0.75F));
+            companion.awardExperience(sharedExperience);
+        }
+    }
+
+    private static int calculateExperience(LivingEntity defeated) {
+        if (defeated instanceof EnderDragon || defeated instanceof WitherBoss) {
+            return 250;
+        }
+        return Math.max(5, Math.min(40,
+                5 + Math.round(defeated.getMaxHealth() / 2.0F)));
     }
 
     private CompanionProgressionEvents() { }
