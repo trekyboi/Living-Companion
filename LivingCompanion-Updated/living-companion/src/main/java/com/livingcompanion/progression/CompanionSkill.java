@@ -23,7 +23,7 @@ public enum CompanionSkill {
     TANK_SHIELD_WALL("tank_shield_wall", CompanionClass.TANK, SkillType.ACTIVE, "Shield Wall",
             "Greatly reduces incoming damage for a short duration.", 3, 5, 300),
     TANK_INTERCEPT("tank_intercept", CompanionClass.TANK, SkillType.ACTIVE, "Intercept",
-            "Moves to protect the owner and absorbs part of an incoming attack.", 3, 10, 360),
+            "Intercepts nearby attacks, redirecting part of the owner's damage to the Tank.", 3, 10, 360),
     TANK_LAST_BASTION("tank_last_bastion", CompanionClass.TANK, SkillType.ULTIMATE, "Last Bastion",
             "Enters a fortified stance and draws nearby enemies' aggression.", 1, 25, 1200);
 
