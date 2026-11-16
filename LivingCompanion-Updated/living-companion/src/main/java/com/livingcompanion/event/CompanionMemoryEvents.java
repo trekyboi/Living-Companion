@@ -28,7 +28,10 @@ public final class CompanionMemoryEvents {
     public static void onPlayerDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             CompanionEntity companion = findCompanion(player);
-            if (companion != null) companion.remember("you fell in battle");
+            if (companion != null) {
+                companion.remember("you fell in battle");
+                companion.addRelationshipExperience(5);
+            }
         }
     }
 
@@ -39,6 +42,7 @@ public final class CompanionMemoryEvents {
         CompanionEntity companion = findCompanion(player);
         if (companion == null) return;
         companion.remember("you came back after falling in battle");
+        companion.addRelationshipExperience(20);
         if (companion.getCompanionClass() == com.livingcompanion.progression.CompanionClass.PALADIN) {
             companion.commentOnEvent(
                     "You're back. Take your time; I'll keep watch.",
@@ -68,6 +72,7 @@ public final class CompanionMemoryEvents {
             CompanionEntity companion = findCompanion(player);
             if (companion != null) {
                 companion.remember(memory);
+                companion.addRelationshipExperience(30);
                 if (event.getEntity() instanceof EnderDragon) {
                     companion.commentOnEvent("Well. That's the biggest problem dealt with.",
                             "I was expecting a longer argument.",
@@ -80,6 +85,7 @@ public final class CompanionMemoryEvents {
             }
         } else if (attacker instanceof CompanionEntity companion) {
             companion.remember(memory);
+            companion.addRelationshipExperience(30);
             companion.commentOnEvent("Well. That's the biggest problem dealt with.",
                     "I was expecting a longer argument.",
                     "Remind me never to do that twice in one afternoon.");
@@ -99,6 +105,7 @@ public final class CompanionMemoryEvents {
         CompanionEntity companion = findCompanion(player);
         if (companion != null) {
             companion.remember(memory);
+            companion.addRelationshipExperience(8);
             if (event.getState().is(Blocks.DIAMOND_ORE)
                     || event.getState().is(Blocks.DEEPSLATE_DIAMOND_ORE)) {
                 companion.commentOnEvent("Diamonds. Excellent. Try not to spend them all at once.",
@@ -121,7 +128,10 @@ public final class CompanionMemoryEvents {
         CompanionEntity companion = findCompanion(player);
         if (companion == null) return;
 
-        if (memory != null) companion.remember(memory);
+        if (memory != null) {
+            companion.remember(memory);
+            companion.addRelationshipExperience(10);
+        }
 
         // FOLLOW and DEFEND companions travel with their owner. STAY companions
         // deliberately remain in the dimension where they were ordered to wait.
