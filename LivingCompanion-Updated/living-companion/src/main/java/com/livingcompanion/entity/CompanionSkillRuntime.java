@@ -137,8 +137,11 @@ public final class CompanionSkillRuntime {
             serverLevel.sendParticles(ParticleTypes.CRIT,
                     target.getX(), target.getY() + target.getBbHeight() * 0.65D, target.getZ(),
                     8 + rank * 3, 0.25D, 0.25D, 0.25D, 0.08D);
+            serverLevel.sendParticles(ParticleTypes.FLAME, target.getX(), target.getY() + target.getBbHeight() * 0.55D, target.getZ(), 7 + rank * 2, 0.18D, 0.3D, 0.18D, 0.015D);
+            serverLevel.sendParticles(ParticleTypes.ENCHANT, target.getX(), target.getY() + target.getBbHeight() * 0.7D, target.getZ(), 14 + rank * 4, 0.35D, 0.45D, 0.35D, 0.5D);
             serverLevel.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT,
-                    SoundSource.PLAYERS, 0.8F, 1.15F);
+                    SoundSource.PLAYERS, 0.95F, 0.85F);
+            battleLine("That one had a little extra conviction.");
         }
     }
 
@@ -279,8 +282,10 @@ public final class CompanionSkillRuntime {
             serverLevel.sendParticles(ParticleTypes.ANGRY_VILLAGER,
                     companion.getX(), companion.getY() + 1.4D, companion.getZ(),
                     8 + rank * 2, 0.65D, 0.45D, 0.65D, 0.0D);
+            serverLevel.sendParticles(ParticleTypes.CRIT, companion.getX(), companion.getY() + 1.0D, companion.getZ(), 20 + rank * 4, 0.75D, 0.7D, 0.75D, 0.12D);
             serverLevel.playSound(null, companion.blockPosition(), SoundEvents.SHIELD_BLOCK,
-                    SoundSource.PLAYERS, 0.9F, 0.7F);
+                    SoundSource.PLAYERS, 1.0F, 0.65F);
+            battleLine("Eyes on me, you ugly lot!");
         }
     }
 
