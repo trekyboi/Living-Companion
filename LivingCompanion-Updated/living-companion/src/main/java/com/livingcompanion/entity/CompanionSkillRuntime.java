@@ -1,5 +1,7 @@
 package com.livingcompanion.entity;
 
+import com.livingcompanion.progression.CompanionAttribute;
+
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
 import net.minecraft.nbt.CompoundTag;
@@ -160,7 +162,7 @@ public final class CompanionSkillRuntime {
 
     private void activatePrayer(int rank) {
         if (!startCooldown(CompanionSkill.PALADIN_PRAYER)) return;
-        float amount = 3.0F + rank * 2.0F;
+        float amount = (3.0F + rank * 2.0F) * (1.0F + companion.getProgression().getAttribute(CompanionAttribute.WISDOM) * 0.01F);
         companion.heal(amount);
         LivingEntity owner = companion.getOwnerPlayer();
         if (owner != null && owner.isAlive() && companion.distanceToSqr(owner) <= 144.0D) {
@@ -340,7 +342,9 @@ public final class CompanionSkillRuntime {
 
     private boolean startCooldown(CompanionSkill skill) {
         if (!isReady(skill)) return false;
-        cooldowns.put(skill.getId(), skill.getCooldownTicks());
+        int wisdom = companion.getProgression().getAttribute(CompanionAttribute.WISDOM);
+        int adjustedCooldown = Math.max(1, Math.round(skill.getCooldownTicks() * (1.0F - wisdom * 0.005F)));
+        cooldowns.put(skill.getId(), adjustedCooldown);
         companion.inventoryChanged();
         return true;
     }
