@@ -97,7 +97,7 @@ public final class CompanionSkillsScreen extends Screen {
             int rowY = this.listTop + i * rowStep - this.scrollOffset;
             button.setX(buttonX);
             button.setY(rowY + (ROW_HEIGHT - 22) / 2);
-            boolean visible = rowY + ROW_HEIGHT > this.listTop && rowY < this.listBottom;
+            boolean visible = rowY >= this.listTop && rowY + ROW_HEIGHT <= this.listBottom;
             button.visible = visible;
             if (i < skills.size()) {
                 CompanionSkill skill = skills.get(i);
