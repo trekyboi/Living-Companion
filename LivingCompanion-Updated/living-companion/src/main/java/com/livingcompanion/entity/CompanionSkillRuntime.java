@@ -34,6 +34,7 @@ public final class CompanionSkillRuntime {
     private int aegisTicks;
     private int lastBastionTicks;
     private long nextBattleLineTick;
+    private String lastBattleLine = "";
 
     CompanionSkillRuntime(CompanionEntity companion) {
         this.companion = companion;
@@ -66,7 +67,7 @@ public final class CompanionSkillRuntime {
                 && isReady(CompanionSkill.PALADIN_DIVINE_PROTECTION)) {
             divineProtectionTicks = 60 + divineRank * 40;
             startCooldown(CompanionSkill.PALADIN_DIVINE_PROTECTION);
-            playDivineWardEffect(); battleLine("Behind me. This is where the armor is.", "Please stop standing where the arrows go.", "I've got this. Probably.");
+            playDivineWardEffect(); battleLine("Behind me. This is where the armor is.", "Please stop standing where the arrows go.", "I've got this. Probably.", "I was hoping to avoid paperwork today.", "Everyone still attached to their limbs? Good.", "I can hold this. Keep moving.", "That was close. For you, mostly.");
         }
 
         int shieldRank = rank(CompanionSkill.TANK_SHIELD_WALL);
@@ -75,7 +76,7 @@ public final class CompanionSkillRuntime {
                 && isReady(CompanionSkill.TANK_SHIELD_WALL)) {
             shieldWallTicks = 60 + shieldRank * 40;
             startCooldown(CompanionSkill.TANK_SHIELD_WALL);
-            playShieldWallEffect(); battleLine("I've had worse. I think.", "That sounded expensive. For you.", "I'll add that to the list of things that didn't work.");
+            playShieldWallEffect(); battleLine("I've had worse. I think.", "That sounded expensive. For you.", "I'll add that to the list of things that didn't work.", "Still standing. Excellent start.", "Was that meant to hurt?", "I would appreciate a quieter opponent.", "Armor review: still worth it.");
         }
 
         int prayerRank = rank(CompanionSkill.PALADIN_PRAYER);
@@ -94,7 +95,7 @@ public final class CompanionSkillRuntime {
                 && aegisTicks <= 0 && isReady(CompanionSkill.PALADIN_AEGIS_OF_DAWN)) {
             aegisTicks = 160;
             startCooldown(CompanionSkill.PALADIN_AEGIS_OF_DAWN);
-            playAegisEffect(); battleLine("Still alive. That's inconvenient for them.", "I am beginning to find this personal.", "I've got at least one more fight in me. Maybe two.");
+            playAegisEffect(); battleLine("Still alive. That's inconvenient for them.", "I am beginning to find this personal.", "I've got at least one more fight in me. Maybe two.", "Right. That got my attention.", "I was saving that for a worse day.", "You'll have to be more convincing than that.", "I am officially done being patient.");
         }
 
         int bastionRank = rank(CompanionSkill.TANK_LAST_BASTION);
@@ -103,7 +104,7 @@ public final class CompanionSkillRuntime {
                 && lastBastionTicks <= 0 && isReady(CompanionSkill.TANK_LAST_BASTION)) {
             lastBastionTicks = 160;
             startCooldown(CompanionSkill.TANK_LAST_BASTION);
-            playLastBastionEffect(); battleLine("No.", "You'll have to go through me. Sorry about the queue.", "I was standing here first.");
+            playLastBastionEffect(); battleLine("No.", "You'll have to go through me. Sorry about the queue.", "I was standing here first.", "I'm afraid that's a very short conversation.", "You can try. I've got time.", "This is becoming a habit.", "Find someone else. I'm occupied.");
             this.tauntRange = 12.0D;
             this.tauntTicksRemaining = 160;
             applyTauntTargets();
@@ -128,7 +129,7 @@ public final class CompanionSkillRuntime {
 
     void onSuccessfulMeleeHit(LivingEntity target) {
         if (!target.isAlive()) {
-            battleLine("Well, that's sorted.", "One less problem.", "I expected more trouble, honestly.");
+            battleLine("Well, that's sorted.", "One less problem.", "I expected more trouble, honestly.", "Right. Who's next?", "That went about as expected.", "Could've been worse. For me, anyway.", "I should probably check the armor.");
         }
         if (companion.getCompanionClass() != CompanionClass.PALADIN) return;
         int rank = rank(CompanionSkill.PALADIN_HOLY_STRIKE);
@@ -145,7 +146,7 @@ public final class CompanionSkillRuntime {
             serverLevel.sendParticles(ParticleTypes.ENCHANT, target.getX(), target.getY() + target.getBbHeight() * 0.7D, target.getZ(), 14 + rank * 4, 0.35D, 0.45D, 0.35D, 0.5D);
             serverLevel.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT,
                     SoundSource.PLAYERS, 0.95F, 0.85F);
-            battleLine("That one had some weight behind it.", "A little encouragement from above. And my sword.", "There. Feel better? Good.");
+            battleLine("That one had some weight behind it.", "A little encouragement from above. And my sword.", "There. Feel better? Good.", "I meant to do that.", "That should leave a mark.", "Clean hit. I'll take it.", "Well, that settled that.");
         }
     }
 
@@ -166,7 +167,7 @@ public final class CompanionSkillRuntime {
             owner.heal(amount);
         }
         prayerTicks = 20;
-        playPrayerEffect(); battleLine("There. Try not to undo that immediately.", "You're welcome. Try the dodging thing next time.", "Patched up. Your survival instincts are still a work in progress.");
+        playPrayerEffect(); battleLine("There. Try not to undo that immediately.", "You're welcome. Try the dodging thing next time.", "Patched up. Your survival instincts are still a work in progress.", "Hold still. You're making this difficult.", "That should keep you going.", "Please make the next injury less dramatic.", "There. Back to being difficult.");
     }
 
     private void battleLine(String... lines) {
@@ -175,7 +176,17 @@ public final class CompanionSkillRuntime {
         if (now < nextBattleLineTick) return;
         LivingEntity owner = companion.getOwnerPlayer();
         if (owner == null || !owner.isAlive() || companion.distanceToSqr(owner) > 576.0D) return;
-        String line = lines[ThreadLocalRandom.current().nextInt(lines.length)];
+        String line;
+        if (lines.length == 1) {
+            line = lines[0];
+        } else {
+            int index = ThreadLocalRandom.current().nextInt(lines.length);
+            line = lines[index];
+            if (line.equals(lastBattleLine)) {
+                line = lines[(index + 1 + ThreadLocalRandom.current().nextInt(lines.length - 1)) % lines.length];
+            }
+        }
+        lastBattleLine = line;
         owner.sendSystemMessage(net.minecraft.network.chat.Component.literal(companion.getName().getString() + ": " + line));
         nextBattleLineTick = now + 180L;
     }
@@ -274,7 +285,7 @@ public final class CompanionSkillRuntime {
         companion.setTarget(livingAttacker);
         float redirected = amount * (0.20F + 0.10F * rank);
         companion.hurt(source, redirected);
-        playInterceptEffect(); battleLine("Pick on someone your own size. Actually, pick on me.", "I saw that. Bad choice.", "The person behind me is off limits.");
+        playInterceptEffect(); battleLine("Pick on someone your own size. Actually, pick on me.", "I saw that. Bad choice.", "The person behind me is off limits.", "Eyes on me. That's the arrangement.", "You'll have to get through the armor first.", "I can take it. They can't.", "Try me. I'm already here.");
         return amount - redirected;
     }
 
@@ -290,7 +301,7 @@ public final class CompanionSkillRuntime {
             serverLevel.sendParticles(ParticleTypes.CRIT, companion.getX(), companion.getY() + 1.0D, companion.getZ(), 20 + rank * 4, 0.75D, 0.7D, 0.75D, 0.12D);
             serverLevel.playSound(null, companion.blockPosition(), SoundEvents.SHIELD_BLOCK,
                     SoundSource.PLAYERS, 1.0F, 0.65F);
-            battleLine("Oi. I'm over here.", "You. Yes, the ugly one. Come here.", "Let's get this over with. I was enjoying the quiet.");
+            battleLine("Oi. I'm over here.", "You. Yes, the ugly one. Come here.", "Let's get this over with. I was enjoying the quiet.", "There's plenty of me to be annoyed at.", "Come on, then. I've got a schedule.", "Stop bothering everyone else.", "I promise I'm much more interesting.");
         }
     }
 
@@ -346,6 +357,7 @@ public final class CompanionSkillRuntime {
         tag.putInt("PrayerTicks", prayerTicks);
         tag.putInt("AegisTicks", aegisTicks);
         tag.putInt("LastBastionTicks", lastBastionTicks);
+        tag.putString("LastBattleLine", lastBattleLine);
         return tag;
     }
 
@@ -368,5 +380,6 @@ public final class CompanionSkillRuntime {
         prayerTicks = Math.max(0, Math.min(20, tag.getInt("PrayerTicks")));
         aegisTicks = Math.max(0, Math.min(160, tag.getInt("AegisTicks")));
         lastBastionTicks = Math.max(0, Math.min(160, tag.getInt("LastBastionTicks")));
+        lastBattleLine = tag.getString("LastBattleLine");
     }
 }
