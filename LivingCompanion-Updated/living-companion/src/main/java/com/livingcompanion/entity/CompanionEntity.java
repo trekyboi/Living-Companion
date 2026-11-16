@@ -95,12 +95,75 @@ public class CompanionEntity extends PathfinderMob {
     private long nextDialogueTick = 0L;
     private final List<String> memories = new ArrayList<>();
     private static final int MAX_MEMORIES = 12;
+    private String lastDialogueLine = "";
     private static final List<String> IDLE_LINES = List.of(
-            "The road ahead looks quiet. I don't trust it.",
-            "Keep your shield close. You never know what is waiting out there.",
-            "I've seen worse roads. Usually right before things get interesting.",
-            "I'll keep watch. Get some rest if you need it.",
-            "A good blade and a steady companion. That's enough for most journeys."
+            "The road ahead looks quiet. I don't trust it.", "I've seen worse roads. Usually right before things get interesting.",
+            "If we keep this pace, we'll arrive sometime this week.", "I was promised adventure. Nobody mentioned the walking.",
+            "You ever notice how trouble waits until we've unpacked?", "I like this stretch. Fewer things trying to eat us.",
+            "I should polish the armor. It has developed a personality.", "I've been on worse journeys. The food was better, though.",
+            "I wonder how far the next village is. My feet are beginning to file a complaint.",
+            "You're very quiet today. I'll assume that's a good sign.", "I could get used to this. The lack of immediate danger, mostly.",
+            "If you hear something behind us, I heard it first. Probably.", "I was thinking about taking up fishing. Less stabbing.",
+            "The important thing is to look confident. People rarely check.", "I hope you have a plan. I left mine somewhere near the last skeleton.",
+            "We make a decent team. Your survival rate has improved noticeably.", "I have a feeling this is going to be a long day.",
+            "I used to travel with a map. Then I met you.", "A quiet road, a clear sky. Something is definitely planning something.",
+            "I don't mind the miles. I mind the company of spiders."
+    );
+    private static final List<String> EXPLORATION_LINES = List.of(
+            "New ground. Keep your eyes open; places like this have a way of hiding trouble.",
+            "I haven't been here before. That's either exciting or a warning.",
+            "Take a moment. It's a fine view. Even if something is probably watching us.",
+            "We should remember this place. It might be useful later.",
+            "Every good expedition starts with someone saying, 'It can't be that dangerous.'",
+            "Let's have a look around. Carefully. I have grown attached to my current number of limbs.",
+            "I wonder what people built here. I also wonder what chased them away.",
+            "There's always something worth finding if you look past the monsters."
+    );
+    private static final List<String> NIGHT_LINES = List.of(
+            "Night's settling in. Stay close; the dark makes everything ambitious.",
+            "I can take first watch. I don't sleep much in this armor anyway.",
+            "The stars are nice. The things crawling under them are less charming.",
+            "If we camp here, I'll keep an eye on the perimeter.",
+            "I dislike how quiet it gets just before something screams.",
+            "We should find shelter. I would prefer to meet the undead on our terms."
+    );
+    private static final List<String> WEATHER_LINES = List.of(
+            "This rain is getting into places armor was never designed to protect.",
+            "Lovely weather. Perfect for catching a cold and a stray arrow.",
+            "I hope that storm passes soon. My helmet is starting to sound like a drum.",
+            "The wind is picking up. Keep your footing.",
+            "If the weather gets any worse, even the zombies will stay indoors.",
+            "I miss dry socks. I miss them more than I miss most people."
+    );
+    private static final List<String> COMBAT_LINES = List.of(
+            "Stay behind me. I'll keep the unpleasant ones busy.",
+            "One at a time, if you please. There's a queue.",
+            "I count at least three problems. I'll start with the loudest.",
+            "Keep moving. Standing still makes you a very convenient target.",
+            "I was enjoying the quiet. Naturally, that had to end.",
+            "Watch the flanks. They rarely have the manners to attack from the front.",
+            "I've got the front. You handle anything that gets clever.",
+            "That one looks determined. Let's correct that."
+    );
+    private static final List<String> OWNER_HURT_LINES = List.of(
+            "You're hurt. Fall back a step and let me handle this.",
+            "Easy. You're bleeding, and I'm running out of patience with these things.",
+            "Stay with me. We can sort this out.",
+            "You're taking too many hits. Let me get between you and them.",
+            "I can cover you. Take a breath and recover."
+    );
+    private static final List<String> COMPANION_HURT_LINES = List.of(
+            "That one got through. I'll be more careful.",
+            "Armor's holding. My pride took the worse of it.",
+            "I've had better days. Still here, though.",
+            "A scratch. A rather enthusiastic scratch.",
+            "I'll be fine. Keep your attention on the fight."
+    );
+    private static final List<String> MEMORY_LINES = List.of(
+            "I still remember when %s. That was a day worth keeping.",
+            "Funny how a journey stays with you. Especially the part where %s.",
+            "We've come a long way since %s. I remember it clearly.",
+            "I was just thinking about how %s. Good times. Mostly."
     );
 
     public CompanionEntity(EntityType<? extends PathfinderMob> type, Level level) {
@@ -566,7 +629,7 @@ public class CompanionEntity extends PathfinderMob {
         return true;
     }
 
-    /** Cooldown-based contextual dialogue with occasional references to saved event memories. */
+    /** Context-aware dialogue with broad pools, memory callbacks, and repetition protection. */
     private void speakOccasionally() {
         if (!CompanionConfig.DIALOGUE_ENABLED.get() || this.getOwnerUUID() == null) return;
         Player owner = getOwnerPlayer();
@@ -574,23 +637,41 @@ public class CompanionEntity extends PathfinderMob {
         long now = this.level().getGameTime();
         if (now < nextDialogueTick || this.distanceToSqr(owner) > 24.0D * 24.0D) return;
 
-        String line;
-        if (owner.getHealth() <= owner.getMaxHealth() * 0.35F) {
-            line = "You're looking hurt. Be careful.";
-        } else if (this.getTarget() != null) {
-            line = "Stay sharp. We've got company.";
-        } else if (this.level().isRaining()) {
-            line = "This weather is miserable. Keep moving.";
-        } else if (this.level().getDayTime() % 24000L >= 13000L) {
-            line = "Night is coming. We should watch our surroundings.";
-        } else if (!this.memories.isEmpty() && this.random.nextInt(4) == 0) {
-            line = "I still remember when " + this.memories.get(this.random.nextInt(this.memories.size())) + ".";
+        List<String> pool;
+        if (this.getTarget() != null && this.getTarget().isAlive()) {
+            pool = COMBAT_LINES;
+        } else if (owner.getHealth() <= owner.getMaxHealth() * 0.35F) {
+            pool = OWNER_HURT_LINES;
+        } else if (this.getHealth() <= this.getMaxHealth() * 0.35F) {
+            pool = COMPANION_HURT_LINES;
+        } else if (this.level().isRaining() || this.level().isThundering()) {
+            pool = WEATHER_LINES;
+        } else if (this.level().getDayTime() % 24000L >= 13000L
+                || this.level().getDayTime() % 24000L < 1000L) {
+            pool = NIGHT_LINES;
+        } else if (!this.memories.isEmpty() && this.random.nextInt(5) == 0) {
+            String memory = this.memories.get(this.random.nextInt(this.memories.size()));
+            String template = MEMORY_LINES.get(this.random.nextInt(MEMORY_LINES.size()));
+            speakLine(String.format(template, memory), now);
+            return;
+        } else if (this.random.nextInt(5) == 0) {
+            pool = EXPLORATION_LINES;
         } else {
-            line = IDLE_LINES.get(this.random.nextInt(IDLE_LINES.size()));
+            pool = IDLE_LINES;
         }
-        owner.sendSystemMessage(Component.literal("Knight: " + line));
+
+        speakLine(pool.get(this.random.nextInt(pool.size())), now);
+    }
+
+    private void speakLine(String line, long now) {
+        if (line == null || line.isBlank() || line.equals(this.lastDialogueLine)) return;
+        Player owner = getOwnerPlayer();
+        if (owner == null) return;
+        String speaker = this.hasCustomName() ? this.getName().getString() : "Knight";
+        owner.sendSystemMessage(Component.literal(speaker + ": " + line));
+        this.lastDialogueLine = line;
         int cooldown = CompanionConfig.DIALOGUE_COOLDOWN_SECONDS.get();
-        nextDialogueTick = now + (cooldown + this.random.nextInt(Math.max(1, cooldown / 2 + 1))) * 20L;
+        this.nextDialogueTick = now + (cooldown + this.random.nextInt(Math.max(1, cooldown / 2 + 1))) * 20L;
     }
 
     /**
