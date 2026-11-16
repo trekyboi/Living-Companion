@@ -15,6 +15,7 @@ import net.minecraft.world.phys.AABB;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Server-authoritative execution state for companion skills.
@@ -65,7 +66,7 @@ public final class CompanionSkillRuntime {
                 && isReady(CompanionSkill.PALADIN_DIVINE_PROTECTION)) {
             divineProtectionTicks = 60 + divineRank * 40;
             startCooldown(CompanionSkill.PALADIN_DIVINE_PROTECTION);
-            playDivineWardEffect(); battleLine("Stay behind me. I've got this.");
+            playDivineWardEffect(); battleLine("Stay behind me. I charge extra for heroic rescues.", "I would say get behind me, but you already seem to be doing that.", "Relax. I have a shield and a deeply unreasonable amount of confidence.");
         }
 
         int shieldRank = rank(CompanionSkill.TANK_SHIELD_WALL);
@@ -74,7 +75,7 @@ public final class CompanionSkillRuntime {
                 && isReady(CompanionSkill.TANK_SHIELD_WALL)) {
             shieldWallTicks = 60 + shieldRank * 40;
             startCooldown(CompanionSkill.TANK_SHIELD_WALL);
-            playShieldWallEffect(); battleLine("Hit me harder. I dare you.");
+            playShieldWallEffect(); battleLine("Was that your attack? I thought a skeleton sneezed.", "I have taken worse damage from a poorly made sandwich.", "Go on. My armor enjoys the attention.");
         }
 
         int prayerRank = rank(CompanionSkill.PALADIN_PRAYER);
@@ -93,7 +94,7 @@ public final class CompanionSkillRuntime {
                 && aegisTicks <= 0 && isReady(CompanionSkill.PALADIN_AEGIS_OF_DAWN)) {
             aegisTicks = 160;
             startCooldown(CompanionSkill.PALADIN_AEGIS_OF_DAWN);
-            playAegisEffect(); battleLine("The light still has work for me.");
+            playAegisEffect(); battleLine("Death will have to take a number. I am busy.", "I did not survive this long to become floor decoration.", "The afterlife can wait. I have unfinished business.");
         }
 
         int bastionRank = rank(CompanionSkill.TANK_LAST_BASTION);
@@ -102,7 +103,7 @@ public final class CompanionSkillRuntime {
                 && lastBastionTicks <= 0 && isReady(CompanionSkill.TANK_LAST_BASTION)) {
             lastBastionTicks = 160;
             startCooldown(CompanionSkill.TANK_LAST_BASTION);
-            playLastBastionEffect(); battleLine("You shall pass through me first.");
+            playLastBastionEffect(); battleLine("You shall pass through me first. Bring a ladder.", "I am the wall. You are the questionable decoration.", "Have you tried attacking someone your own size? Actually, do not.");
             this.tauntRange = 12.0D;
             this.tauntTicksRemaining = 160;
             applyTauntTargets();
@@ -126,6 +127,9 @@ public final class CompanionSkillRuntime {
     }
 
     void onSuccessfulMeleeHit(LivingEntity target) {
+        if (!target.isAlive()) {
+            battleLine("And stay down. I dislike repeating myself.", "Another monster discovers consequences.", "That went about as well as expected. For me, obviously.");
+        }
         if (companion.getCompanionClass() != CompanionClass.PALADIN) return;
         int rank = rank(CompanionSkill.PALADIN_HOLY_STRIKE);
         if (rank <= 0 || !isReady(CompanionSkill.PALADIN_HOLY_STRIKE)) return;
@@ -141,7 +145,7 @@ public final class CompanionSkillRuntime {
             serverLevel.sendParticles(ParticleTypes.ENCHANT, target.getX(), target.getY() + target.getBbHeight() * 0.7D, target.getZ(), 14 + rank * 4, 0.35D, 0.45D, 0.35D, 0.5D);
             serverLevel.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT,
                     SoundSource.PLAYERS, 0.95F, 0.85F);
-            battleLine("That one had a little extra conviction.");
+            battleLine("Consider that a strongly worded blessing.", "I put a little faith into that one. And elbow.", "That hit came with express delivery.");
         }
     }
 
@@ -162,15 +166,16 @@ public final class CompanionSkillRuntime {
             owner.heal(amount);
         }
         prayerTicks = 20;
-        playPrayerEffect(); battleLine("A little divine assistance. You're welcome.");
+        playPrayerEffect(); battleLine("Healing is complimentary. Gratitude is expected.", "There. Try to stay in one piece for five minutes.", "I can mend wounds. Your decision-making remains beyond me.");
     }
 
-    private void battleLine(String line) {
-        if (!(companion.level() instanceof ServerLevel level)) return;
+    private void battleLine(String... lines) {
+        if (!(companion.level() instanceof ServerLevel level) || lines.length == 0) return;
         long now = level.getGameTime();
         if (now < nextBattleLineTick) return;
         LivingEntity owner = companion.getOwnerPlayer();
         if (owner == null || !owner.isAlive() || companion.distanceToSqr(owner) > 576.0D) return;
+        String line = lines[ThreadLocalRandom.current().nextInt(lines.length)];
         owner.sendSystemMessage(net.minecraft.network.chat.Component.literal(companion.getName().getString() + ": " + line));
         nextBattleLineTick = now + 180L;
     }
@@ -269,7 +274,7 @@ public final class CompanionSkillRuntime {
         companion.setTarget(livingAttacker);
         float redirected = amount * (0.20F + 0.10F * rank);
         companion.hurt(source, redirected);
-        playInterceptEffect(); battleLine("I believe that was meant for me.");
+        playInterceptEffect(); battleLine("Excuse you. The owner is under my protection.", "I believe you ordered a beating. I will handle that.", "Touch my human again and we will have a very educational afternoon.");
         return amount - redirected;
     }
 
@@ -285,7 +290,7 @@ public final class CompanionSkillRuntime {
             serverLevel.sendParticles(ParticleTypes.CRIT, companion.getX(), companion.getY() + 1.0D, companion.getZ(), 20 + rank * 4, 0.75D, 0.7D, 0.75D, 0.12D);
             serverLevel.playSound(null, companion.blockPosition(), SoundEvents.SHIELD_BLOCK,
                     SoundSource.PLAYERS, 1.0F, 0.65F);
-            battleLine("Eyes on me, you ugly lot!");
+            battleLine("Over here, you walking pile of bad decisions!", "Come on then! I have all day and questionable patience.", "Look at me! I am clearly the most handsome target here.");
         }
     }
 
