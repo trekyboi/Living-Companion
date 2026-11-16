@@ -304,7 +304,7 @@ public final class CompanionSkillsScreen extends Screen {
     private static ItemStack skillIcon(CompanionSkill skill) {
         return switch (skill) {
             case PALADIN_DIVINE_GRACE -> new ItemStack(Items.GOLDEN_APPLE);
-            case PALADIN_HOLY_STRIKE, TANK_VANGUARD_FURY -> new ItemStack(Items.GOLDEN_SWORD);
+            case PALADIN_HOLY_STRIKE, PALADIN_JUDGMENT, TANK_VANGUARD_FURY -> new ItemStack(Items.GOLDEN_SWORD);
             case PALADIN_DIVINE_PROTECTION, TANK_SHIELD_WALL, TANK_BULWARK_OATH -> new ItemStack(Items.SHIELD);
             case PALADIN_PRAYER, PALADIN_SANCTUARY -> new ItemStack(Items.GHAST_TEAR);
             case PALADIN_AEGIS_OF_DAWN, TANK_LAST_BASTION -> new ItemStack(Items.TOTEM_OF_UNDYING);
