@@ -46,9 +46,21 @@ remains the fallback when the combat addons are absent.
 
 ## Optional backpack compatibility
 
-Living Companion exposes the companion entity's Curios **back** slot when Curios API 5.14.1+ for Forge 1.20.1 is installed. Backpack items that support the Curios back slot can be equipped through Curios-compatible equipment workflows. Curios remains optional; the companion's normal inventory and equipment work without it.
+Living Companion integrates with **Sophisticated Backpacks** on Forge 1.20.1.
 
-The Curios slot provides equipment compatibility and persistence through Curios. Opening a backpack's custom storage interface on a companion is backpack-mod-specific and requires a dedicated integration. That access layer is being developed separately.
+Required mods for the full integration:
+- Curios API **5.14.1+** (Forge 1.20.1)
+- Sophisticated Core **1.5.30+**
+- Sophisticated Backpacks **3.26.20+**
+
+When all three mods are installed:
+- The companion receives a Curios **back** slot.
+- The companion inventory screen displays the backpack slot.
+- Equip a Sophisticated Backpack in that slot.
+- Use the **Backpack** button in the companion inventory to open Sophisticated Backpacks' native storage container, including its storage and upgrade interface.
+- Backpack access is owner-only and requires the companion to remain within 8 blocks.
+
+The compatibility layer registers the companion's equipped backpack with Sophisticated Backpacks' inventory provider. Curios persists the equipped item, while Sophisticated Backpacks manages its own contents and upgrades. All three dependencies remain optional for Living Companion's core functionality.
 
 ## Remaining verification work
 
