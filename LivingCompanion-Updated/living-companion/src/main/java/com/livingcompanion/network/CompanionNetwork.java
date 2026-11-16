@@ -69,11 +69,17 @@ public final class CompanionNetwork {
         for (CompanionSkill skill : CompanionSkill.values()) {
             ranks[skill.ordinal()] = companion.getProgression().getSkillRank(skill.getId());
         }
+        int[] cooldowns = new int[CompanionSkill.values().length];
+        int[] activeTicks = new int[CompanionSkill.values().length];
+        for (CompanionSkill skill : CompanionSkill.values()) {
+            cooldowns[skill.ordinal()] = companion.getSkillRuntime().getCooldownRemaining(skill);
+            activeTicks[skill.ordinal()] = companion.getSkillRuntime().getActiveTicksRemaining(skill);
+        }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                 new SkillDataMessage(companion.getId(), companion.getCompanionClass().ordinal(),
                         companion.getProgression().getLevel(), companion.getProgression().getExperience(),
                         companion.getProgression().getExperienceToNextLevel(),
-                        companion.getProgression().getSkillPoints(), ranks));
+                        companion.getProgression().getSkillPoints(), ranks, cooldowns, activeTicks));
     }
 
     public static final class RequestSkillDataMessage {
@@ -101,21 +107,29 @@ public final class CompanionNetwork {
     public static final class SkillDataMessage {
         public final int entityId, classId, level, experience, experienceToNext, skillPoints;
         public final int[] ranks;
+        public final int[] cooldowns;
+        public final int[] activeTicks;
         public SkillDataMessage(int entityId, int classId, int level, int experience,
-                                int experienceToNext, int skillPoints, int[] ranks) {
+                                int experienceToNext, int skillPoints, int[] ranks,
+                                int[] cooldowns, int[] activeTicks) {
             this.entityId = entityId; this.classId = classId; this.level = level;
             this.experience = experience; this.experienceToNext = experienceToNext;
             this.skillPoints = skillPoints; this.ranks = ranks;
+            this.cooldowns = cooldowns; this.activeTicks = activeTicks;
         }
         public static void encode(SkillDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
             buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
             buffer.writeVarInt(message.experienceToNext); buffer.writeVarInt(message.skillPoints);
             buffer.writeVarIntArray(message.ranks);
+            buffer.writeVarIntArray(message.cooldowns);
+            buffer.writeVarIntArray(message.activeTicks);
         }
         public static SkillDataMessage decode(FriendlyByteBuf buffer) {
             return new SkillDataMessage(buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
                     buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
+                    buffer.readVarIntArray(CompanionSkill.values().length),
+                    buffer.readVarIntArray(CompanionSkill.values().length),
                     buffer.readVarIntArray(CompanionSkill.values().length));
         }
         public static void handle(SkillDataMessage message, Supplier<NetworkEvent.Context> supplier) {
