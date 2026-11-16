@@ -64,7 +64,7 @@ public final class CompanionProgression {
         return tag;
     }
 
-    public void load(CompoundTag tag) {
+    public void load(CompoundTag tag, CompanionClass archetype) {
         level = Math.max(1, Math.min(MAX_LEVEL, tag.getInt("Level")));
         experience = Math.max(0, tag.getInt("Experience"));
         skillPoints = Math.max(0, tag.getInt("SkillPoints"));
@@ -74,7 +74,7 @@ public final class CompanionProgression {
             for (String key : skills.getAllKeys()) {
                 int rank = skills.getInt(key);
                 CompanionSkill skill = CompanionSkill.byId(key);
-                if (skill != null && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
+                if (skill != null && archetype != null && skill.getArchetype() == archetype\n                        && rank > 0 && rank <= skill.getMaximumRank()) skillRanks.put(key, rank);
             }
         }
         // Migration: a fresh level-1 companion starts with its first level's skill point.
