@@ -153,7 +153,6 @@ public final class CompanionSkillVisualLayer
                                    float radius, int red, int green, int blue) {
         pose.pushPose();
         pose.translate(0,y,0);
-        pose.mulPose(Axis.XP.rotation((float)Math.PI/2.0F));
         renderRing(pose,out,0,radius,0.025F,48,red,green,blue,210,time*0.025F);
         pose.popPose();
     }
@@ -201,8 +200,10 @@ public final class CompanionSkillVisualLayer
 
     private static void renderInterceptTether(PoseStack pose, VertexConsumer out,
                                               CompanionEntity companion, float time) {
-        Player owner=companion.getOwnerPlayer();
-        if(owner==null || owner.level()!=companion.level()) return;
+        Player owner=companion.level().players().stream()
+                .filter(player -> player.getUUID().equals(companion.getOwnerUUID()))
+                .findFirst().orElse(null);
+        if(owner==null) return;
         double dx=owner.getX()-companion.getX();
         double dz=owner.getZ()-companion.getZ();
         double distance=Math.sqrt(dx*dx+dz*dz);
