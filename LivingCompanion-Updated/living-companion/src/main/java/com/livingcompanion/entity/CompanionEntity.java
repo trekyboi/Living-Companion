@@ -101,6 +101,7 @@ public class CompanionEntity extends PathfinderMob {
     private int worldAwarenessTicks = 0;
     private String lastBiomeId = "";
     private boolean insideVillage = false;
+    private String lastStructureId = "";
     private final CompanionSkillRuntime skillRuntime = new CompanionSkillRuntime(this);
     private CompanionClass companionClass = CompanionClass.UNASSIGNED;
 
@@ -663,8 +664,8 @@ public class CompanionEntity extends PathfinderMob {
             }
         }
 
-        boolean nowInVillage = serverLevel.structureManager()
-                .getStructureWithPieceAt(this.blockPosition(), StructureTags.VILLAGE).isValid();
+        var structures = serverLevel.structureManager();
+        boolean nowInVillage = structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.VILLAGE).isValid();
         if (nowInVillage && !this.insideVillage) {
             remember("we visited a village");
             commentOnEvent("A village. Let's see if anyone here needs a hand.",
@@ -672,6 +673,51 @@ public class CompanionEntity extends PathfinderMob {
                     "A proper settlement. I hope the walls are stronger than they look.");
         }
         this.insideVillage = nowInVillage;
+
+        String structureId = "";
+        String structureLine = "";
+        if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.ANCIENT_CITY).isValid()) {
+            structureId = "ancient_city";
+            structureLine = "An ancient city. Keep your voice down and your weapon ready.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.STRONGHOLD).isValid()) {
+            structureId = "stronghold";
+            structureLine = "A stronghold. This place was built to keep something in—or out.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.MINESHAFT).isValid()) {
+            structureId = "mineshaft";
+            structureLine = "An old mineshaft. Watch the supports and the dark corners.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.RUINED_PORTAL).isValid()) {
+            structureId = "ruined_portal";
+            structureLine = "A ruined portal. Someone came through here once. I wonder what followed.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.NETHER_FORTRESS).isValid()) {
+            structureId = "nether_fortress";
+            structureLine = "A Nether fortress. We should move carefully; this place is crawling with danger.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.BASTION_REMNANT).isValid()) {
+            structureId = "bastion";
+            structureLine = "A bastion. Piglins rarely welcome visitors.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.END_CITY).isValid()) {
+            structureId = "end_city";
+            structureLine = "An End City. Keep an eye out for shulkers and anything worth bringing home.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.WOODLAND_MANSION).isValid()) {
+            structureId = "woodland_mansion";
+            structureLine = "A woodland mansion. I doubt the residents are friendly.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.PILLAGER_OUTPOST).isValid()) {
+            structureId = "pillager_outpost";
+            structureLine = "A pillager outpost. Let's make sure they don't follow us back to the village.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.SHIPWRECK).isValid()) {
+            structureId = "shipwreck";
+            structureLine = "A shipwreck. There may be supplies worth salvaging.";
+        } else if (structures.getStructureWithPieceAt(this.blockPosition(), StructureTags.OCEAN_MONUMENT).isValid()) {
+            structureId = "ocean_monument";
+            structureLine = "An ocean monument. We should prepare before going inside.";
+        }
+
+        if (!structureId.isEmpty() && !structureId.equals(this.lastStructureId)) {
+            this.lastStructureId = structureId;
+            remember("we discovered " + structureId.replace('_', ' '));
+            commentOnEvent(structureLine);
+        } else if (structureId.isEmpty()) {
+            this.lastStructureId = "";
+        }
     }
 
     /**
@@ -810,6 +856,7 @@ public class CompanionEntity extends PathfinderMob {
         tag.putInt("RelationshipInteractionCooldown", this.relationshipInteractionCooldownTicks);
         tag.putString("LastBiomeId", this.lastBiomeId);
         tag.putBoolean("InsideVillage", this.insideVillage);
+        tag.putString("LastStructureId", this.lastStructureId);
         tag.put("SkillRuntime", this.skillRuntime.save());
         tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
         tag.putInt("FoodLevel", this.foodLevel);
@@ -847,6 +894,7 @@ public class CompanionEntity extends PathfinderMob {
         this.relationshipInteractionCooldownTicks = Math.max(0, tag.getInt("RelationshipInteractionCooldown"));
         this.lastBiomeId = tag.getString("LastBiomeId");
         this.insideVillage = tag.getBoolean("InsideVillage");
+        this.lastStructureId = tag.getString("LastStructureId");
         if (tag.contains("SkillRuntime", Tag.TAG_COMPOUND)) {
             this.skillRuntime.load(tag.getCompound("SkillRuntime"));
         }
