@@ -6,6 +6,7 @@ import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
 import com.livingcompanion.progression.CompanionAttribute;
 import com.livingcompanion.progression.CompanionSpecialization;
+import com.livingcompanion.resurrection.CompanionResurrectionData;
 import net.minecraft.client.Minecraft;
 import com.livingcompanion.registry.ModEntities;
 import net.minecraft.network.FriendlyByteBuf;
@@ -516,9 +517,10 @@ public final class CompanionNetwork {
                     player.sendSystemMessage(Component.literal("Choose a name between 1 and 24 characters."));
                     return;
                 }
-                if (findCompanion(player) != null) {
+                if (findCompanion(player) != null
+                        || CompanionResurrectionData.get(player.getServer()).hasPendingResurrection(player.getUUID())) {
                     player.getPersistentData().putBoolean("LivingCompanionCreationComplete", true);
-                    player.sendSystemMessage(Component.literal("You already have a companion."));
+                    player.sendSystemMessage(Component.literal("Your companion is already here or waiting to return."));
                     return;
                 }
 
