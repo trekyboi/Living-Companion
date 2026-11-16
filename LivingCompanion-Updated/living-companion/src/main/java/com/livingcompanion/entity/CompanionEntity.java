@@ -50,6 +50,8 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.level.Level;
 import net.minecraft.tags.StructureTags;
 import net.minecraft.world.item.ArmorItem;
@@ -102,6 +104,7 @@ public class CompanionEntity extends PathfinderMob {
     private final CompanionPersonality personality = new CompanionPersonality();
     private int relationshipInteractionCooldownTicks = 0;
     private int worldAwarenessTicks = 0;
+    private long nextSocialInteractionTick = 0L;
     private String lastBiomeId = "";
     private boolean insideVillage = false;
     private String lastStructureId = "";
@@ -322,10 +325,12 @@ public class CompanionEntity extends PathfinderMob {
                 || !(attacker instanceof Monster) || this.command == Command.STAY) return;
         Player owner = getOwnerPlayer();
         if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
-        if (attacker.distanceToSqr(owner) > 20.0D * 20.0D) return;
+        double protectiveRange = 16.0D + this.personality.getProtectiveInstinct() * 4.0D;
+        if (attacker.distanceToSqr(owner) > protectiveRange * protectiveRange) return;
         LivingEntity current = this.getTarget();
+        double finishThreshold = 0.30D + this.personality.getCombatConfidence() * 0.15D;
         if (current == null || !current.isAlive()
-                || current.getHealth() > current.getMaxHealth() * 0.30F
+                || current.getHealth() > current.getMaxHealth() * finishThreshold
                 || attacker.distanceToSqr(owner) < current.distanceToSqr(owner)) {
             this.setTarget(attacker);
             this.getNavigation().moveTo(attacker, 1.2D);
@@ -740,6 +745,52 @@ public class CompanionEntity extends PathfinderMob {
         } else if (structureId.isEmpty()) {
             this.lastStructureId = "";
         }
+
+        tickSocialAwareness(serverLevel);
+    }
+
+    /** Notices nearby villagers, the owner's tamed animals, and unfamiliar players. */
+    private void tickSocialAwareness(ServerLevel serverLevel) {
+        if (serverLevel.getGameTime() < this.nextSocialInteractionTick) return;
+        Player owner = getOwnerPlayer();
+        if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
+
+        Villager villager = this.level().getEntitiesOfClass(Villager.class,
+                this.getBoundingBox().inflate(7.0D), Villager::isAlive).stream().findFirst().orElse(null);
+        if (villager != null) {
+            this.personality.recordPeacefulInteraction();
+            remember("we met a villager near " + villager.blockPosition().getX() + ", "
+                    + villager.blockPosition().getZ());
+            commentOnEvent("A local. Let's be decent company for once.",
+                    "People make a place worth defending. Keep that in mind.",
+                    "I'll give them room. They have enough trouble living out here.");
+            this.nextSocialInteractionTick = serverLevel.getGameTime() + 600L;
+            return;
+        }
+
+        TamableAnimal pet = this.level().getEntitiesOfClass(TamableAnimal.class,
+                this.getBoundingBox().inflate(7.0D), animal -> animal.isAlive()
+                        && animal.isTame() && owner.getUUID().equals(animal.getOwnerUUID()))
+                .stream().findFirst().orElse(null);
+        if (pet != null) {
+            this.personality.recordPeacefulInteraction();
+            commentOnEvent("Your companion seems to have made a friend. Sensible creature.",
+                    "I'll keep an eye on your little scout.",
+                    "Good company. Even a guard deserves some.");
+            this.nextSocialInteractionTick = serverLevel.getGameTime() + 600L;
+            return;
+        }
+
+        Player stranger = this.level().getEntitiesOfClass(Player.class,
+                this.getBoundingBox().inflate(8.0D), player -> player.isAlive()
+                        && !player.getUUID().equals(owner.getUUID())).stream().findFirst().orElse(null);
+        if (stranger != null) {
+            commentOnEvent("Another traveler. Let's see whether they bring trouble.",
+                    "A fellow adventurer. Keep your wits about you.",
+                    "I'll let you do the talking. I have a face for guarding.");
+            remember("we crossed paths with another player");
+            this.nextSocialInteractionTick = serverLevel.getGameTime() + 600L;
+        }
     }
 
     /**
@@ -880,6 +931,7 @@ public class CompanionEntity extends PathfinderMob {
         tag.putString("LastBiomeId", this.lastBiomeId);
         tag.putBoolean("InsideVillage", this.insideVillage);
         tag.putString("LastStructureId", this.lastStructureId);
+        tag.putLong("NextSocialInteractionTick", this.nextSocialInteractionTick);
         tag.put("SkillRuntime", this.skillRuntime.save());
         tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
         tag.putInt("FoodLevel", this.foodLevel);
@@ -921,6 +973,7 @@ public class CompanionEntity extends PathfinderMob {
         this.lastBiomeId = tag.getString("LastBiomeId");
         this.insideVillage = tag.getBoolean("InsideVillage");
         this.lastStructureId = tag.getString("LastStructureId");
+        this.nextSocialInteractionTick = Math.max(0L, tag.getLong("NextSocialInteractionTick"));
         if (tag.contains("SkillRuntime", Tag.TAG_COMPOUND)) {
             this.skillRuntime.load(tag.getCompound("SkillRuntime"));
         }
