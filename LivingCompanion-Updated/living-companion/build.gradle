@@ -70,7 +70,9 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     // Curios is installed as a separate optional mod by the player.
-    implementation fg.deobf("curse.maven:curios-309927:6418456")\n    implementation fg.deobf("curse.maven:sophisticated-core-618298:9524671")\n    implementation fg.deobf("curse.maven:sophisticated-backpacks-422301:9524801")
+    implementation fg.deobf("curse.maven:curios-309927:6418456")
+    implementation fg.deobf("curse.maven:sophisticated-core-618298:9524671")
+    implementation fg.deobf("curse.maven:sophisticated-backpacks-422301:9524801")
 }
 
 // Expand ${...} placeholders in mods.toml / pack.mcmeta from gradle.properties.
