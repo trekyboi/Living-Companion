@@ -110,6 +110,13 @@ public final class CompanionSkillVisualLayer
                     0.025F,255,245,190,210);
             bar3D(out,m,x+tx,0.38F,z+tz,x+tx*0.72F,1.76F,z+tz*0.72F,
                     0.025F,255,245,190,210);
+            // Cross-bands divide each panel into a readable shield-like surface.
+            bar3D(out,m,x-tx*0.86F,0.82F,z-tz*0.86F,
+                    x+tx*0.86F,0.82F,z+tz*0.86F,0.018F,255,235,155,150);
+            bar3D(out,m,x-tx*0.82F,1.38F,z-tz*0.82F,
+                    x+tx*0.82F,1.38F,z+tz*0.82F,0.018F,255,235,155,150);
+            // Raised central ridge gives the barrier panels a faceted 3D profile.
+            bar3D(out,m,x,0.42F,z,x,1.72F,z,0.035F,255,250,205,190);
         }
     }
 
@@ -293,6 +300,9 @@ public final class CompanionSkillVisualLayer
         bar(out,m,-0.25F,0.33F,0.25F,0.33F,0.018F,Math.min(255,red+80),Math.min(255,green+80),255,235);
         bar(out,m,-0.25F,0.33F,0,-0.39F,0.018F,Math.min(255,red+55),Math.min(255,green+50),255,230);
         bar(out,m,0.25F,0.33F,0,-0.39F,0.018F,Math.min(255,red+55),Math.min(255,green+50),255,230);
+        bar(out,m,-0.18F,-0.05F,0,-0.36F,0.018F,Math.min(255,red+65),Math.min(255,green+60),255,230);
+        bar(out,m,0.18F,-0.05F,0,-0.36F,0.018F,Math.min(255,red+65),Math.min(255,green+60),255,230);
+        bar(out,m,0.0F,0.24F,0.0F,-0.28F,0.025F,210,245,255,230);
         bar(out,m,-0.13F,0.06F,0.13F,0.06F,0.012F,190,235,255,220);
     }
 
