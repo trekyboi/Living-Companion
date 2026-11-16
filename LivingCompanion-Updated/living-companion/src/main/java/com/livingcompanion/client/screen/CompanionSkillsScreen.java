@@ -74,6 +74,9 @@ public final class CompanionSkillsScreen extends Screen {
         this.panelLeft = (this.width - this.panelWidth) / 2;
         this.panelTop = (this.height - this.panelHeight) / 2;
         this.listTop = this.panelTop + HEADER_HEIGHT;
+        this.addRenderableWidget(Button.builder(Component.literal("Attributes"), button ->
+                CompanionAttributesScreen.open(this, this.data))
+                .bounds(this.panelLeft + this.panelWidth - 108, this.panelTop + 29, 94, 22).build());
         this.listBottom = this.panelTop + this.panelHeight - 12;
 
         CompanionClass[] classes = CompanionClass.values();
