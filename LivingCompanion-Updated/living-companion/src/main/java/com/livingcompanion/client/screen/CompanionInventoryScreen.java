@@ -8,7 +8,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Button;\nimport net.minecraftforge.fml.ModList;
 
 /** Player-style companion inventory with explicit slot wells and section labels. */
 public final class CompanionInventoryScreen extends AbstractContainerScreen<CompanionInventoryMenu> {
@@ -37,7 +37,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     protected void init() {
         super.init();
         this.clearWidgets();
-        this.skillsButton = this.addRenderableWidget(Button.builder(Component.literal("Skills"), button -> {
+        if (ModList.get().isLoaded("curios") && ModList.get().isLoaded("sophisticatedbackpacks")) {\n            this.addRenderableWidget(Button.builder(Component.literal("Backpack"), button -> {\n                CompanionNetwork.requestOpenBackpack(this.menu.getCompanion().getId());\n            }).bounds(this.leftPos + 70, this.topPos + 2, 58, 18).build());\n        }\n        this.skillsButton = this.addRenderableWidget(Button.builder(Component.literal("Skills"), button -> {
             CompanionNetwork.requestSkillData(this.menu.getCompanion().getId());
         }).bounds(this.leftPos + 132, this.topPos + 2, 46, 18).build());
         this.statsButton = this.addRenderableWidget(Button.builder(Component.literal("Stats"), button -> {
