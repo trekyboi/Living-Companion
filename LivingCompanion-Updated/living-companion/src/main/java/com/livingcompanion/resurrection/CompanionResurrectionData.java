@@ -81,7 +81,7 @@ public final class CompanionResurrectionData extends SavedData {
         }
 
         // Creative owners get an immediate return. Survival owners receive a short countdown.
-        boolean creativeOwner = owner != null && owner.gameMode.getGameMode() == GameType.CREATIVE;
+        boolean creativeOwner = owner != null && owner.gameMode.getGameModeForPlayer() == GameType.CREATIVE;
         long delay = creativeOwner ? 0L : CompanionConfig.RESURRECTION_DELAY_SECONDS.get() * 20L;
         pending.add(new PendingResurrection(ownerId, dimension, respawnPos,
                 server.overworld().getGameTime() + delay, entityTag));
