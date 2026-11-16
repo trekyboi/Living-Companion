@@ -89,6 +89,9 @@ public final class CompanionSkillsScreen extends Screen {
         int rowStep = ROW_HEIGHT + ROW_GAP;
         int buttonWidth = Math.min(96, Math.max(76, this.panelWidth / 6));
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
+        CompanionClass[] classes = CompanionClass.values();
+        if (data.classId <= 0 || data.classId >= classes.length) return;
+        List<CompanionSkill> skills = CompanionSkill.forClass(classes[data.classId]);
         for (int i = 0; i < this.upgradeButtons.size(); i++) {
             Button button = this.upgradeButtons.get(i);
             int rowY = this.listTop + i * rowStep - this.scrollOffset;
@@ -96,7 +99,13 @@ public final class CompanionSkillsScreen extends Screen {
             button.setY(rowY + (ROW_HEIGHT - 22) / 2);
             boolean visible = rowY + ROW_HEIGHT > this.listTop && rowY < this.listBottom;
             button.visible = visible;
-            button.active = visible && button.active;
+            if (i < skills.size()) {
+                CompanionSkill skill = skills.get(i);
+                int rank = skill.ordinal() < data.ranks.length ? data.ranks[skill.ordinal()] : 0;
+                button.active = visible && canUpgrade(skill, rank);
+            } else {
+                button.active = false;
+            }
         }
     }
 
