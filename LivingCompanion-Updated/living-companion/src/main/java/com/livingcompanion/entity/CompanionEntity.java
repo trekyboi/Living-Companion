@@ -1,6 +1,8 @@
 package com.livingcompanion.entity;
 
 import com.livingcompanion.config.CompanionConfig;
+import com.livingcompanion.progression.CompanionClass;
+import com.livingcompanion.progression.CompanionProgression;
 import com.livingcompanion.ai.FollowOwnerGoal;
 import com.livingcompanion.inventory.CompanionInventory;
 import com.livingcompanion.menu.CompanionInventoryMenu;
@@ -84,6 +86,8 @@ public class CompanionEntity extends PathfinderMob {
 
     /** Persistent carried inventory shown through the companion's player-style menu. */
     private final CompanionInventory companionInventory = new CompanionInventory(this);
+    private final CompanionProgression progression = new CompanionProgression();
+    private CompanionClass companionClass = CompanionClass.UNASSIGNED;
 
     public enum Command { FOLLOW, STAY, DEFEND }
     private Command command = Command.FOLLOW;
@@ -157,6 +161,97 @@ public class CompanionEntity extends PathfinderMob {
 
     public CompanionInventory getCompanionInventory() {
         return this.companionInventory;
+    }
+
+    public CompanionClass getCompanionClass() {
+        return this.companionClass;
+    }
+
+    public CompanionProgression getProgression() {
+        return this.progression;
+    }
+
+    /** Assigns the character's permanent starting archetype. */
+    public void setCompanionClass(CompanionClass companionClass) {
+        if (companionClass == null || companionClass == CompanionClass.UNASSIGNED) return;
+        this.companionClass = companionClass;
+        if (!this.level().isClientSide) {
+            applyProgressionAttributes(true);
+            inventoryChanged();
+        }
+    }
+
+    /** Sets a player-chosen name with a strict length and control-character limit. */
+    public boolean setCompanionName(String name) {
+        if (name == null) return false;
+        String clean = name.replaceAll("[\\p{Cntrl}]", "").trim();
+        if (clean.isEmpty() || clean.length() > 24) return false;
+        this.setCustomName(Component.literal(clean));
+        this.setCustomNameVisible(true);
+        if (!this.level().isClientSide) inventoryChanged();
+        return true;
+    }
+
+    /** Awards combat experience and returns the number of levels gained. Server only. */
+    public int awardExperience(int amount) {
+        if (this.level().isClientSide || amount <= 0) return 0;
+        int oldLevel = this.progression.getLevel();
+        this.progression.addExperience(amount);
+        int gained = this.progression.getLevel() - oldLevel;
+        if (gained > 0) {
+            applyProgressionAttributes(true);
+            Player owner = getOwnerPlayer();
+            if (owner != null) {
+                owner.sendSystemMessage(Component.literal(this.getName().getString()
+                        + " reached level " + this.progression.getLevel()
+                        + "! +" + gained + " skill point" + (gained == 1 ? "" : "s") + "."));
+            }
+        }
+        inventoryChanged();
+        return gained;
+    }
+
+    /** Rebuilds class/level stats from config bases; health is preserved proportionally. */
+    private void applyProgressionAttributes(boolean preserveHealthRatio) {
+        float oldHealth = this.getHealth();
+        float oldMaxHealth = this.getMaxHealth();
+        double levelBonus = this.progression.getLevel() - 1;
+        double health = CompanionConfig.MAX_HEALTH.get();
+        double attack = CompanionConfig.ATTACK_DAMAGE.get();
+        double armor = 0.0D;
+        double toughness = 0.0D;
+        double knockback = 0.2D;
+
+        switch (this.companionClass) {
+            case PALADIN -> {
+                health += 8.0D + levelBonus * 0.8D;
+                attack += 1.0D + levelBonus * 0.18D;
+                armor = 3.0D + levelBonus * 0.08D;
+                toughness = 1.0D + levelBonus * 0.04D;
+            }
+            case TANK -> {
+                health += 16.0D + levelBonus * 1.2D;
+                attack += levelBonus * 0.12D;
+                armor = 6.0D + levelBonus * 0.16D;
+                toughness = 2.0D + levelBonus * 0.06D;
+                knockback = Math.min(0.85D, 0.5D + levelBonus * 0.006D);
+            }
+            case UNASSIGNED -> {
+                health += levelBonus * 0.5D;
+                attack += levelBonus * 0.1D;
+            }
+        }
+
+        setBase(Attributes.MAX_HEALTH, health);
+        setBase(Attributes.ATTACK_DAMAGE, attack);
+        setBase(Attributes.ARMOR, armor);
+        setBase(Attributes.ARMOR_TOUGHNESS, toughness);
+        setBase(Attributes.KNOCKBACK_RESISTANCE, knockback);
+        if (preserveHealthRatio && oldMaxHealth > 0.0F) {
+            this.setHealth(Math.min((oldHealth / oldMaxHealth) * this.getMaxHealth(), this.getMaxHealth()));
+        } else {
+            this.setHealth(this.getMaxHealth());
+        }
     }
 
     /** Marks the entity chunk dirty when carried inventory contents change. */
@@ -264,6 +359,7 @@ public class CompanionEntity extends PathfinderMob {
         super.tick();
         if (!this.level().isClientSide && !this.configApplied) {
             applyConfigAttributes();
+            applyProgressionAttributes(false);
             if (!this.loadedFromSave || this.restoreFullHealthAfterConfig) {
                 this.setHealth(this.getMaxHealth()); // fresh spawns and resurrected companions start at configured max
                 this.restoreFullHealthAfterConfig = false;
@@ -316,6 +412,8 @@ public class CompanionEntity extends PathfinderMob {
             tag.putString("OwnerName", this.ownerNameCache);
         }
         tag.putString("Command", this.command.name());
+        tag.putString("CompanionClass", this.companionClass.name());
+        tag.put("Progression", this.progression.save());
         tag.putBoolean("ProtectFromOwner", isProtectedFromOwner());
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
@@ -331,6 +429,16 @@ public class CompanionEntity extends PathfinderMob {
             setOwnerUUID(tag.getUUID("OwnerUUID"));
         }
         this.ownerNameCache = tag.getString("OwnerName");
+        if (tag.contains("CompanionClass")) {
+            try {
+                this.companionClass = CompanionClass.valueOf(tag.getString("CompanionClass"));
+            } catch (IllegalArgumentException ignored) {
+                this.companionClass = CompanionClass.UNASSIGNED;
+            }
+        }
+        if (tag.contains("Progression", Tag.TAG_COMPOUND)) {
+            this.progression.load(tag.getCompound("Progression"));
+        }
         setProtectedFromOwner(tag.getBoolean("ProtectFromOwner"));
         if (tag.contains("Command")) {
             try {
