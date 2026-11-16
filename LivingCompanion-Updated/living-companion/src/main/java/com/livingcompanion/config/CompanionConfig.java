@@ -44,8 +44,8 @@ public final class CompanionConfig {
         b.pop();
 
         b.push("resurrection");
-        RESURRECTION_DELAY_SECONDS = b.comment("Delay before the companion returns at the owner's bed.")
-                .defineInRange("delaySeconds", 120, 0, 86400);
+        RESURRECTION_DELAY_SECONDS = b.comment("Survival respawn delay in seconds (0-10). Creative-mode owners respawn the companion instantly.")
+                .defineInRange("delaySeconds", 10, 0, 10);
         b.pop();
 
         b.push("dialogue");
