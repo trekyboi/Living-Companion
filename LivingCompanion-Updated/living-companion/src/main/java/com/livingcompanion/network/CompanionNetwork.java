@@ -154,7 +154,13 @@ public final class CompanionNetwork {
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
                 Minecraft minecraft = Minecraft.getInstance();
                 net.minecraft.client.gui.screens.Screen parent = minecraft.screen;
-                com.livingcompanion.client.screen.CompanionSkillsScreen.open(parent, message);
+                if (parent instanceof com.livingcompanion.client.screen.CompanionAttributesScreen attributesScreen) {
+                    attributesScreen.updateData(message);
+                } else if (parent instanceof com.livingcompanion.client.screen.CompanionSkillsScreen skillsScreen) {
+                    skillsScreen.updateData(message);
+                } else {
+                    com.livingcompanion.client.screen.CompanionSkillsScreen.open(parent, message);
+                }
             }));
             context.setPacketHandled(true);
         }
