@@ -100,8 +100,23 @@ public final class CompanionAttributesScreen extends Screen {
             int value = getValue(attribute);
             graphics.drawString(this.font, attribute.getDisplayName() + "  " + value + "/20",
                     left + 18, y, 0xFFFFE6BE, false);
-            graphics.drawString(this.font, attribute.getDescription(),
-                    left + 18, y + 13, 0xFFBFC5CC, false);
+            int barX = left + 18;
+            int barY = y + 13;
+            int barWidth = Math.max(72, Math.min(150, panelWidth - 150));
+            graphics.fill(barX, barY, barX + barWidth, barY + 6, 0xFF090B0E);
+            graphics.fill(barX, barY, barX + (barWidth * value / 20), barY + 6, 0xFFD6A85F);
+            for (int segment = 1; segment < 20; segment++) {
+                int dividerX = barX + barWidth * segment / 20;
+                graphics.fill(dividerX, barY, dividerX + 1, barY + 6, 0xFF252A31);
+            }
+            String scaling = switch (attribute) {
+                case VIGOR -> "+1 max health per point";
+                case MIGHT -> "+0.15 melee damage per point";
+                case FORTITUDE -> "+0.4 armor per point";
+                case AGILITY -> "+0.002 movement speed per point";
+                case WISDOM -> "-0.5% skill cooldown and +1% Prayer healing per point";
+            };
+            graphics.drawString(this.font, scaling, barX + barWidth + 10, y + 12, 0xFFBFC5CC, false);
             y += rowGap;
         }
         super.render(graphics, mouseX, mouseY, partialTick);
