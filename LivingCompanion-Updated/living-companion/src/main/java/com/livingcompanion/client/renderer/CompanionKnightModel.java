@@ -6,8 +6,8 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.HumanoidArm;
 
 /**
- * Player-shaped companion model with three lightweight vanilla-rig melee
- * attack accents layered over Minecraft's normal arm-swing animation.
+ * Player-shaped companion model with three visible vanilla-rig melee attack
+ * motions layered over Minecraft's normal arm-swing animation.
  */
 public final class CompanionKnightModel extends PlayerModel<CompanionEntity> {
 
@@ -26,7 +26,9 @@ public final class CompanionKnightModel extends PlayerModel<CompanionEntity> {
         }
 
         float progress = 1.0F - (remaining / (float) CompanionEntity.ATTACK_ANIMATION_DURATION);
+        // A broad, readable attack arc with a sharp follow-through.
         float strength = (float) Math.sin(progress * Math.PI);
+        float followThrough = (float) Math.sin(progress * Math.PI * 0.5F);
         if (strength <= 0.0F) {
             return;
         }
@@ -38,21 +40,23 @@ public final class CompanionKnightModel extends PlayerModel<CompanionEntity> {
         switch (entity.getAttackAnimationStyle()) {
             case 0 -> {
                 // Horizontal slash: rotate the weapon arm across the body.
-                attackArm.xRot -= 0.55F * strength;
-                attackArm.yRot += side * 0.72F * strength;
-                this.body.yRot += side * 0.20F * strength;
+                attackArm.xRot -= 0.95F * strength;
+                attackArm.yRot += side * 1.05F * strength;
+                attackArm.zRot += side * 0.18F * strength;
+                this.body.yRot += side * 0.32F * strength;
             }
             case 1 -> {
                 // Overhead strike: lift the elbow and drive the arm downward.
-                attackArm.xRot -= 0.95F * strength;
-                attackArm.zRot += side * 0.14F * strength;
-                this.body.xRot -= 0.10F * strength;
+                attackArm.xRot -= 1.35F * strength;
+                attackArm.zRot += side * 0.22F * strength;
+                this.body.xRot -= 0.22F * strength;
             }
             default -> {
                 // Forward thrust: extend the weapon arm with a short torso lean.
-                attackArm.xRot -= 0.42F * strength;
-                attackArm.yRot += side * 0.48F * strength;
-                this.body.xRot -= 0.16F * strength;
+                attackArm.xRot -= 0.82F * strength;
+                attackArm.yRot += side * 0.22F * strength;
+                this.body.xRot -= 0.28F * strength;
+                this.body.yRot += side * 0.10F * followThrough;
             }
         }
     }
