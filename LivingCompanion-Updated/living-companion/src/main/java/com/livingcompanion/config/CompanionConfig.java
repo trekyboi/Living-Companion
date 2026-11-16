@@ -15,6 +15,7 @@ public final class CompanionConfig {
     public static final ForgeConfigSpec.DoubleValue FOLLOW_STOP_DISTANCE;
     public static final ForgeConfigSpec.DoubleValue TELEPORT_DISTANCE;
     public static final ForgeConfigSpec.DoubleValue HOSTILE_SCAN_RANGE;
+    public static final ForgeConfigSpec.BooleanValue PROACTIVE_COMBAT_ENABLED;
     public static final ForgeConfigSpec.IntValue RESURRECTION_DELAY_SECONDS;
     public static final ForgeConfigSpec.BooleanValue DIALOGUE_ENABLED;
     public static final ForgeConfigSpec.IntValue DIALOGUE_COOLDOWN_SECONDS;
@@ -45,6 +46,8 @@ public final class CompanionConfig {
         b.push("combat");
         HOSTILE_SCAN_RANGE = b.comment("Range used to find hostile monsters.")
                 .defineInRange("hostileScanRange", 16.0D, 4.0D, 48.0D);
+        PROACTIVE_COMBAT_ENABLED = b.comment("Allow the companion to proactively acquire nearby hostile targets. Direct retaliation and owner defense remain active.")
+                .define("proactiveCombatEnabled", true);
         b.pop();
 
         b.push("loot");
