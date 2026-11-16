@@ -30,6 +30,7 @@ public final class CompanionSkillsScreen extends Screen {
     private int panelHeight;
     private int listTop;
     private int listBottom;
+    private int refreshTicks;
 
     private CompanionSkillsScreen(Screen parent, SkillDataMessage data) {
         super(Component.literal("Companion Skills"));
@@ -40,12 +41,25 @@ public final class CompanionSkillsScreen extends Screen {
     public static void open(Screen parent, SkillDataMessage data) {
         net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
         if (minecraft.screen instanceof CompanionSkillsScreen current) {
-            current.data = data;
-            current.scrollOffset = 0;
-            current.init(minecraft, current.width, current.height);
+            current.updateData(data);
             minecraft.setScreen(current);
         } else {
             minecraft.setScreen(new CompanionSkillsScreen(parent, data));
+        }
+    }
+
+    public void updateData(SkillDataMessage data) {
+        if (data.entityId != this.data.entityId) return;
+        this.data = data;
+        updateButtonPositions();
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (++this.refreshTicks >= 20) {
+            this.refreshTicks = 0;
+            CompanionNetwork.requestSkillData(this.data.entityId);
         }
     }
 
@@ -174,14 +188,35 @@ public final class CompanionSkillsScreen extends Screen {
                             rowY + 27 + line * 11, 0xFFBFC5CC, false);
                 }
 
-                String requirement = data.level < skill.getUnlockLevel()
-                        ? "Unlocks at level " + skill.getUnlockLevel()
-                        : (rank >= skill.getMaximumRank() ? "Fully upgraded"
-                        : (data.skillPoints <= 0 ? "Requires 1 skill point" : " "));
-                if (!requirement.isBlank()) {
-                    graphics.drawString(this.font, requirement, textX, rowY + 53,
-                            data.level < skill.getUnlockLevel() ? 0xFFFFA070 : 0xFF9BA5AF, false);
+                int activeTicks = skill.ordinal() < data.activeTicks.length
+                        ? data.activeTicks[skill.ordinal()] : 0;
+                int cooldownTicks = skill.ordinal() < data.cooldowns.length
+                        ? data.cooldowns[skill.ordinal()] : 0;
+                String status;
+                int statusColor;
+                if (data.level < skill.getUnlockLevel()) {
+                    status = "Unlocks at level " + skill.getUnlockLevel();
+                    statusColor = 0xFFFFA070;
+                } else if (activeTicks > 0) {
+                    status = "ACTIVE  " + String.format(java.util.Locale.ROOT, "%.1fs", activeTicks / 20.0D);
+                    statusColor = 0xFF83E6A0;
+                } else if (cooldownTicks > 0) {
+                    status = "Cooldown  " + String.format(java.util.Locale.ROOT, "%.1fs", cooldownTicks / 20.0D);
+                    statusColor = 0xFFFFC078;
+                } else if (skill.getType() == CompanionSkill.SkillType.PASSIVE) {
+                    status = "Passive";
+                    statusColor = 0xFF9BA5AF;
+                } else if (rank >= skill.getMaximumRank()) {
+                    status = "Fully upgraded";
+                    statusColor = 0xFF9BA5AF;
+                } else if (data.skillPoints <= 0) {
+                    status = "Requires 1 skill point";
+                    statusColor = 0xFF9BA5AF;
+                } else {
+                    status = "Ready";
+                    statusColor = 0xFF83E6A0;
                 }
+                graphics.drawString(this.font, status, textX, rowY + 53, statusColor, false);
             }
             graphics.disableScissor();
 
