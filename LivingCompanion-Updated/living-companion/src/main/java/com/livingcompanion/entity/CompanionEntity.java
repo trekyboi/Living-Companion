@@ -289,7 +289,7 @@ public class CompanionEntity extends PathfinderMob {
     private void applyProgressionAttributes(boolean preserveHealthRatio) {
         float oldHealth = this.getHealth();
         float oldMaxHealth = this.getMaxHealth();
-        double levelBonus = this.progression.getLevel() - 1;
+        double levelBonus = Math.sqrt(this.progression.getLevel() - 1);
         double vigor = this.progression.getAttribute(CompanionAttribute.VIGOR);
         double might = this.progression.getAttribute(CompanionAttribute.MIGHT);
         double fortitude = this.progression.getAttribute(CompanionAttribute.FORTITUDE);
@@ -314,7 +314,7 @@ public class CompanionEntity extends PathfinderMob {
                 attack += levelBonus * 0.12D;
                 armor += 6.0D + levelBonus * 0.16D;
                 toughness = 2.0D + levelBonus * 0.06D;
-                knockback = Math.min(0.85D, 0.5D + levelBonus * 0.006D);
+                knockback = Math.min(0.7D, 0.5D + levelBonus * 0.025D);
             }
             case UNASSIGNED -> {
                 health += levelBonus * 0.5D;
