@@ -65,7 +65,12 @@ public final class LivingCompanion {
     }
 
     private void onCommonSetup(final FMLCommonSetupEvent event) {
-        event.enqueueWork(() ->
-                LOGGER.info("[LivingCompanion] Common setup complete. Mod id '{}', targeting MC 1.20.1 / Forge 47.x.", MOD_ID);\n        });
+        event.enqueueWork(() -> {
+            if (net.minecraftforge.fml.ModList.get().isLoaded("curios")
+                    && net.minecraftforge.fml.ModList.get().isLoaded("sophisticatedbackpacks")) {
+                com.livingcompanion.compat.sophisticated.SophisticatedBackpacksCompat.register();
+            }
+            LOGGER.info("[LivingCompanion] Common setup complete. Mod id '{}', targeting MC 1.20.1 / Forge 47.x.", MOD_ID);
+        });
     }
 }
