@@ -12,8 +12,8 @@ Player Animator.
 - Minecraft Forge 47.x (development pinned to 47.4.0)
 - Java 17
 - ForgeGradle 6 / Gradle wrapper 8.1.1
-- Optional combat stack: Better Combat 1.8.6, Better Mob Combat 1.3.0,
-  Player Animator, Mob Player Animator, and Cloth Config API
+- Optional combat stack: Better Combat 1.8.6 or 1.9.x, Better Mob Combat 1.3.0,
+  Player Animator, Mob Player Animator, Cloth Config API, and BMCFIX 1.0.2 for Better Combat 1.9.x
 
 There is no GeckoLib dependency and no custom 3D model or procedural attack-animation
 framework. Better Mob Combat routes humanoid mob melee attacks through Better
@@ -69,17 +69,20 @@ The distributable mod JAR is created in `build/libs/`. Install it in a Forge
 1.20.1 instance.
 
 For Better Combat-style companion attacks, use this Forge 1.20.1 stack:
-- Better Combat **1.8.6**
+- Better Combat **1.8.6** or **1.9.0+1.20.1**
 - Better Mob Combat **1.3.0**
 - Player Animator (Forge 1.20.1)
 - Mob Player Animator (Forge 1.20.1)
 - Cloth Config API (Forge 1.20.1)
+- Better Mob Combat Fix (**BMCFIX 1.0.2**) when using Better Combat 1.9.0
 
-Better Combat 1.9.0 changed APIs used by Better Mob Combat. The BMCFIX 1.0.2
-patch addresses two API breakages, while community reports and the Better Mob
-Combat Recruitsfix project still flag animation failures with Better Combat
-1.9.x. Better Combat 1.8.6 is the safer compatibility target for this
-companion. BMCFIX is unnecessary with Better Combat 1.8.6.
+Better Combat 1.9.0 changed two APIs used by Better Mob Combat. BMCFIX 1.0.2
+patches the removed `CompatibilityFlags.firstPersonRender()` call and the moved
+`PehkuiHelper` class. Install BMCFIX on both client and server with Better
+Combat 1.9.0. BMCFIX is unnecessary with Better Combat 1.8.6. Living Companion
+accepts Better Combat versions from 1.8.6 up to (but excluding) 2.0.0. This
+version declaration permits loading; the complete attack-animation stack still
+requires the matching addons listed above.
 
 Install Better Combat and Better Mob Combat on the client and server. Install
 Player Animator and Cloth Config API wherever required by their dependency
