@@ -13,6 +13,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     private static final int SLOT_FILL = 0xFF101216;
     private static final int SLOT_EDGE_LIGHT = 0xFF55565A;
     private static final int SLOT_EDGE_DARK = 0xFF08090B;
+    private Button protectionButton;
 
     public CompanionInventoryScreen(CompanionInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -21,11 +22,6 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         this.inventoryLabelY = 130;
         this.titleLabelX = 8;
         this.titleLabelY = 6;
-        this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
-            if (this.minecraft != null && this.minecraft.gameMode != null) {
-                this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
-            }
-        }).bounds( this.leftPos + 62, this.topPos + 94, 166, 18).build());
     }
 
     private Component protectionLabel() {
@@ -36,7 +32,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     protected void init() {
         super.init();
         this.clearWidgets();
-        this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
+        this.protectionButton = this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
             if (this.minecraft != null && this.minecraft.gameMode != null) {
                 this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
             }
@@ -96,10 +92,8 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
+        if (this.protectionButton != null) this.protectionButton.setMessage(protectionLabel());
         super.render(graphics, mouseX, mouseY, partialTick);
         this.renderTooltip(graphics, mouseX, mouseY);
-        for (var widget : this.renderables) {
-            if (widget instanceof Button button) button.setMessage(protectionLabel());
-        }
     }
 }
