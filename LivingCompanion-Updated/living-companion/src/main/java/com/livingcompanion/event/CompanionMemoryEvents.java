@@ -4,6 +4,11 @@ import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.portal.PortalInfo;
+import net.minecraftforge.common.util.ITeleporter;
+
+import java.util.function.Function;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
@@ -65,7 +70,31 @@ public final class CompanionMemoryEvents {
         else if (event.getTo() == Level.END) memory = "we entered the End together";
         if (memory == null) return;
         CompanionEntity companion = findCompanion(player);
-        if (companion != null) companion.remember(memory);
+        if (companion == null) return;
+
+        companion.remember(memory);
+
+        // FOLLOW and DEFEND companions travel with their owner. STAY companions
+        // deliberately remain in the dimension where they were ordered to wait.
+        if (companion.getCommand() != CompanionEntity.Command.STAY
+                && companion.level() != player.level()
+                && player.serverLevel() != null) {
+            ServerLevel destination = player.serverLevel();
+            ITeleporter teleporter = new ITeleporter() {
+                @Override
+                public PortalInfo getPortalInfo(Entity entity, ServerLevel destWorld,
+                                                Function<ServerLevel, PortalInfo> defaultPortalInfo) {
+                    // Place the companion beside the owner without requiring a portal
+                    // in the destination dimension.
+                    Vec3 landing = new Vec3(player.getX() + 1.5D, player.getY(), player.getZ() + 1.5D);
+                    return new PortalInfo(landing, Vec3.ZERO, player.getYRot(), player.getXRot());
+                }
+            };
+            Entity transferred = companion.changeDimension(destination, teleporter);
+            if (transferred instanceof CompanionEntity movedCompanion) {
+                movedCompanion.getNavigation().stop();
+            }
+        }
     }
 
     private static CompanionEntity findCompanion(ServerPlayer owner) {
