@@ -238,6 +238,22 @@ final class CompanionSkillRuntime {
         }
     }
 
+    int getCooldownRemaining(CompanionSkill skill) {
+        return Math.max(0, cooldowns.getOrDefault(skill.getId(), 0));
+    }
+
+    int getActiveTicksRemaining(CompanionSkill skill) {
+        return switch (skill) {
+            case PALADIN_DIVINE_PROTECTION -> divineProtectionTicks;
+            case TANK_SHIELD_WALL -> shieldWallTicks;
+            case PALADIN_PRAYER -> prayerTicks;
+            case PALADIN_AEGIS_OF_DAWN -> aegisTicks;
+            case TANK_LAST_BASTION -> lastBastionTicks;
+            case TANK_TAUNT -> tauntTicksRemaining;
+            default -> 0;
+        };
+    }
+
     private int rank(CompanionSkill skill) {
         return companion.getProgression().getSkillRank(skill.getId());
     }
