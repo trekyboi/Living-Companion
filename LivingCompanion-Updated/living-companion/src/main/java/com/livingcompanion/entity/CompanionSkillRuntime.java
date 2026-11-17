@@ -165,8 +165,7 @@ public final class CompanionSkillRuntime {
                     && startCooldown(CompanionSkill.SHAMAN_SPIRIT_BOLT)) {
                 float damage = (2.5F + bolt * 1.5F)
                         + companion.getProgression().getAttribute(CompanionAttribute.WISDOM) * 0.04F;
-                castBolt(target, damage, ParticleTypes.WITCH, ParticleTypes.HAPPY_VILLAGER,
-                        SoundEvents.AMETHYST_BLOCK_CHIME, 0.95F);
+                castBolt(target, damage, true, SoundEvents.AMETHYST_BLOCK_CHIME, 0.95F);
                 battleLine("The spirits answer.", "A little help from beyond.", "Stay close. I can mend this.");
             }
 
@@ -205,8 +204,7 @@ public final class CompanionSkillRuntime {
                 && startCooldown(CompanionSkill.ELEMENTALIST_ARCANE_BOLT)) {
             float damage = (3.0F + bolt * 1.75F + focus * 0.75F)
                     + companion.getProgression().getAttribute(CompanionAttribute.WISDOM) * 0.05F;
-            castBolt(target, damage, ParticleTypes.ELECTRIC_SPARK, ParticleTypes.FLAME,
-                    SoundEvents.FIRECHARGE_USE, 1.1F);
+            castBolt(target, damage, false, SoundEvents.FIRECHARGE_USE, 1.1F);
             battleLine("Elemental force, obey!", "A clean channel. A cleaner result.", "Keep them at a distance.");
         }
 
@@ -228,24 +226,21 @@ public final class CompanionSkillRuntime {
         }
     }
 
-    private void castBolt(LivingEntity target, float damage,
-                          net.minecraft.core.particles.ParticleOptions primary,
-                          net.minecraft.core.particles.ParticleOptions secondary,
+    private void castBolt(LivingEntity target, float damage, boolean spirit,
                           net.minecraft.sounds.SoundEvent sound, float pitch) {
         if (!(companion.level() instanceof ServerLevel level) || !target.isAlive()) return;
-        if (!target.hurt(companion.damageSources().indirectMagic(companion, companion), damage)) return;
+        com.livingcompanion.entity.CompanionMagicBolt projectile =
+                new com.livingcompanion.entity.CompanionMagicBolt(
+                        com.livingcompanion.registry.ModEntities.MAGIC_BOLT.get(), companion, level, damage, spirit);
         double sx = companion.getX();
         double sy = companion.getY() + companion.getBbHeight() * 0.65D;
-        double ex = target.getX();
-        double ey = target.getY() + target.getBbHeight() * 0.55D;
-        double ez = target.getZ();
-        for (int i = 1; i <= 10; i++) {
-            double t = i / 10.0D;
-            level.sendParticles(primary, sx + (ex - sx) * t, sy + (ey - sy) * t,
-                    companion.getZ() + (ez - companion.getZ()) * t, 2, 0.04D, 0.04D, 0.04D, 0.01D);
+        double dx = target.getX() - sx;
+        double dy = target.getY() + target.getBbHeight() * 0.55D - sy;
+        double dz = target.getZ() - companion.getZ();
+        projectile.shoot(dx, dy, dz, spirit ? 1.35F : 1.65F, 0.0F);
+        if (level.addFreshEntity(projectile)) {
+            level.playSound(null, companion.blockPosition(), sound, SoundSource.PLAYERS, 0.8F, pitch);
         }
-        level.sendParticles(secondary, ex, ey, ez, 14, 0.3D, 0.35D, 0.3D, 0.04D);
-        level.playSound(null, target.blockPosition(), sound, SoundSource.PLAYERS, 0.8F, pitch);
     }
 
     private void playSpiritRenewal() {
