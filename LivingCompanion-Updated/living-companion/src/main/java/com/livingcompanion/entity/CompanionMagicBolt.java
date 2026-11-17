@@ -66,8 +66,12 @@ public final class CompanionMagicBolt extends ThrowableItemProjectile {
         Entity owner = this.getOwner();
         if (entity == owner) return false;
         if (owner instanceof CompanionEntity shooter && entity instanceof CompanionEntity companion) {
-            return shooter.getOwnerUUID() == null
-                    || !shooter.getOwnerUUID().equals(companion.getOwnerUUID());
+            // Unknown ownership is not permission to damage another companion.
+            // Only companions with two known, different owners may hit each other.
+            java.util.UUID shooterOwner = shooter.getOwnerUUID();
+            java.util.UUID targetOwner = companion.getOwnerUUID();
+            return shooterOwner != null && targetOwner != null
+                    && !shooterOwner.equals(targetOwner);
         }
         return true;
     }
