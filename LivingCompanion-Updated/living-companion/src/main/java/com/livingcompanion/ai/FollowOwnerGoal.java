@@ -34,7 +34,8 @@ public final class FollowOwnerGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        if (companion.getCommand() == CompanionEntity.Command.STAY) return false;
+        if (companion.getCommand() == CompanionEntity.Command.STAY
+                || companion.getCommand() == CompanionEntity.Command.PATROL) return false;
         if (owner == null || !owner.isAlive() || owner.level() != companion.level()) return false;
         return companion.distanceToSqr(owner) > square(CompanionConfig.FOLLOW_STOP_DISTANCE.get());
     }
