@@ -89,18 +89,18 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         CompanionUiTheme.drawCard(graphics, left + 5, top + 198, 170, 24, true);
 
         // Equipment column: helmet, chest, legs, feet, main hand, offhand.
-        drawSlot(graphics, left + 8, top + 26);
-        drawSlot(graphics, left + 8, top + 44);
-        drawSlot(graphics, left + 8, top + 62);
-        drawSlot(graphics, left + 8, top + 80);
-        drawSlot(graphics, left + 26, top + 26);
-        drawSlot(graphics, left + 26, top + 62);
-        if (this.menu.hasCuriosBackSlot()) drawSlot(graphics, left + 26, top + 44);
+        drawSlot(graphics, left + 8, top + 20);
+        drawSlot(graphics, left + 8, top + 38);
+        drawSlot(graphics, left + 8, top + 56);
+        drawSlot(graphics, left + 8, top + 74);
+        drawSlot(graphics, left + 26, top + 20);
+        drawSlot(graphics, left + 26, top + 56);
+        if (this.menu.hasCuriosBackSlot()) drawSlot(graphics, left + 26, top + 38);
 
         // Companion storage: three rows plus its hotbar.
         for (int row = 0; row < 4; row++) {
             for (int col = 0; col < 9; col++) {
-                drawSlot(graphics, left + 62 + col * SLOT_SIZE, top + 26 + row * SLOT_SIZE);
+                drawSlot(graphics, left + 62 + col * SLOT_SIZE, top + (row == 3 ? 78 : 20 + row * SLOT_SIZE));
             }
         }
 
@@ -132,7 +132,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
                 new ItemStack(Items.IRON_SWORD),
                 new ItemStack(Items.SHIELD)
         };
-        int[][] equipmentPositions = {{8, 26}, {8, 44}, {8, 62}, {8, 80}, {26, 26}, {26, 62}};
+        int[][] equipmentPositions = {{8, 20}, {8, 38}, {8, 56}, {8, 74}, {26, 20}, {26, 56}};
         for (int i = 0; i < equipmentPositions.length; i++) {
             int sx = left + equipmentPositions[i][0];
             int sy = top + equipmentPositions[i][1];
@@ -142,7 +142,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
             }
         }
         if (this.menu.hasCuriosBackSlot() && !this.menu.getSlot(6).hasItem()) {
-            graphics.renderItem(new ItemStack(Items.CHEST), left + 27, top + 45);
+            graphics.renderItem(new ItemStack(Items.CHEST), left + 27, top + 39);
         }
     }
 
@@ -161,20 +161,20 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     private String equipmentTooltip(int x, int y) {
         int slot = -1;
         String description = null;
-        if (x >= 8 && x < 26 && y >= 26 && y < 44) {
+        if (x >= 8 && x < 26 && y >= 20 && y < 38) {
             slot = 0; description = "Helmet slot — head armor";
-        } else if (x >= 8 && x < 26 && y >= 44 && y < 62) {
+        } else if (x >= 8 && x < 26 && y >= 38 && y < 56) {
             slot = 1; description = "Chest slot — chest armor";
-        } else if (x >= 8 && x < 26 && y >= 62 && y < 80) {
+        } else if (x >= 8 && x < 26 && y >= 56 && y < 74) {
             slot = 2; description = "Leg slot — leg armor";
-        } else if (x >= 8 && x < 26 && y >= 80 && y < 98) {
+        } else if (x >= 8 && x < 26 && y >= 74 && y < 92) {
             slot = 3; description = "Boot slot — foot armor";
-        } else if (x >= 26 && x < 44 && y >= 26 && y < 44) {
+        } else if (x >= 26 && x < 44 && y >= 20 && y < 38) {
             slot = 4; description = "Main hand — weapon or utility item";
-        } else if (x >= 26 && x < 44 && y >= 62 && y < 80) {
+        } else if (x >= 26 && x < 44 && y >= 56 && y < 74) {
             slot = 5; description = "Off hand — shield or utility item";
         }
-        if (this.menu.hasCuriosBackSlot() && x >= 26 && x < 44 && y >= 44 && y < 62) {
+        if (this.menu.hasCuriosBackSlot() && x >= 26 && x < 44 && y >= 38 && y < 56) {
             return this.menu.getSlot(6).hasItem() ? null : "Back slot — equip a Curios-compatible backpack";
         }
         // Preserve vanilla item tooltips whenever the slot contains an item.
