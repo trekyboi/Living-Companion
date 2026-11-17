@@ -48,9 +48,9 @@ public class CompanionSpawnEggItem extends ForgeSpawnEggItem {
 
             // One owned companion per player. Check every dimension so a second
             // spawn egg cannot create a duplicate while the first is elsewhere.
-            if (player != null && (hasOwnedCompanion(serverLevel, player)
+            if (player != null && (hasOwnedCompanion(serverLevel, player, entityTypeSupplier.get())
                     || CompanionResurrectionData.get(serverLevel.getServer()).hasPendingResurrection(player.getUUID()))) {
-                player.sendSystemMessage(Component.literal("You already have a companion. He is still out there."));
+                player.sendSystemMessage(Component.literal("You already have this companion. They are still out there."));
                 return InteractionResult.FAIL;
             }
 
@@ -71,7 +71,7 @@ public class CompanionSpawnEggItem extends ForgeSpawnEggItem {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    private static boolean hasOwnedCompanion(ServerLevel level, Player owner) {
+    private static boolean hasOwnedCompanion(ServerLevel level, Player owner, EntityType<?> requestedType) {
         for (ServerLevel serverLevel : level.getServer().getAllLevels()) {
             for (Entity entity : serverLevel.getAllEntities()) {
                 if (entity instanceof CompanionEntity companion
