@@ -43,6 +43,11 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
                 CompanionNetwork.requestOpenBackpack(this.menu.getCompanion().getId());
             }).bounds(this.leftPos + 70, this.topPos + 2, 58, 18).build());
         }
+        this.addRenderableWidget(Button.builder(Component.literal("Loadouts"), button -> {
+            if (this.minecraft != null) {
+                this.minecraft.setScreen(new CompanionLoadoutsScreen(this, this.menu.getCompanion().getId()));
+            }
+        }).bounds(this.leftPos + 8, this.topPos + 2, 58, 18).build());
         this.skillsButton = this.addRenderableWidget(Button.builder(Component.literal("Skills"), button -> {
             CompanionNetwork.requestSkillData(this.menu.getCompanion().getId());
         }).bounds(this.leftPos + 132, this.topPos + 2, 46, 18).build());
