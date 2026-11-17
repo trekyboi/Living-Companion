@@ -74,6 +74,10 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         int left = this.leftPos;
         int top = this.topPos;
         CompanionUiTheme.drawPanel(graphics, left, top, this.imageWidth, this.imageHeight);
+        CompanionUiTheme.drawCard(graphics, left + 5, top + 14, 44, 90, false);
+        CompanionUiTheme.drawCard(graphics, left + 58, top + 14, 170, 76, false);
+        CompanionUiTheme.drawCard(graphics, left + 5, top + 140, 170, 78, false);
+        CompanionUiTheme.drawCard(graphics, left + 5, top + 198, 170, 24, true);
 
         // Equipment column: helmet, chest, legs, feet, main hand, offhand.
         drawSlot(graphics, left + 8, top + 20);
@@ -103,9 +107,12 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
 
         graphics.fill(left + 52, top + 14, left + 53, top + 104, 0xFF51483C);
         graphics.fill(left + 6, top + 126, left + this.imageWidth - 6, top + 127, 0xFF51483C);
-        graphics.drawString(this.font, "Equipment", left + 8, top + 116, 0xFFE6D3B0, false);
-        graphics.drawString(this.font, "Companion Storage", left + 62, top + 116, 0xFFE6D3B0, false);
-        graphics.drawString(this.font, "Your Inventory", left + 8, top + 132, 0xFFE6D3B0, false);
+        CompanionUiTheme.drawSectionHeader(graphics, this.font, "GEAR",
+                left + 8, top + 108, 40);
+        CompanionUiTheme.drawSectionHeader(graphics, this.font, "COMPANION STORAGE",
+                left + 62, top + 108, 166);
+        CompanionUiTheme.drawSectionHeader(graphics, this.font, "YOUR INVENTORY",
+                left + 8, top + 132, 166);
 
         // Recognizable vanilla item silhouettes identify each empty equipment slot.
         ItemStack[] equipmentIcons = {
