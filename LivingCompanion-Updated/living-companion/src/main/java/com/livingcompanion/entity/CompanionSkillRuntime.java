@@ -59,6 +59,7 @@ public final class CompanionSkillRuntime {
 
         tickDurations();
         tickSpecializationSkills();
+        tickMageSkills();
 
         if (companion.tickCount % 20 == 0) {
             int graceRank = rank(CompanionSkill.PALADIN_DIVINE_GRACE);
@@ -138,6 +139,137 @@ public final class CompanionSkillRuntime {
         }
 
         syncVisualFlags();
+    }
+
+    /** Executes the Mage's automatic spell rotations on the server. */
+    private void tickMageSkills() {
+        CompanionClass archetype = companion.getCompanionClass();
+        if (archetype != CompanionClass.SHAMAN && archetype != CompanionClass.ELEMENTALIST) return;
+
+        LivingEntity owner = companion.getOwnerPlayer();
+        LivingEntity target = companion.getTarget();
+        boolean validTarget = target != null && target.isAlive()
+                && target.level() == companion.level()
+                && companion.distanceToSqr(target) <= 324.0D;
+
+        if (archetype == CompanionClass.SHAMAN) {
+            int attunement = rank(CompanionSkill.SHAMAN_SPIRIT_ATTUNEMENT);
+            if (attunement > 0 && companion.tickCount % 40 == 0
+                    && companion.getHealth() < companion.getMaxHealth()) {
+                companion.heal(0.35F * attunement);
+            }
+
+            int bolt = rank(CompanionSkill.SHAMAN_SPIRIT_BOLT);
+            if (bolt > 0 && validTarget && companion.distanceToSqr(target) >= 16.0D
+                    && isReady(CompanionSkill.SHAMAN_SPIRIT_BOLT)
+                    && startCooldown(CompanionSkill.SHAMAN_SPIRIT_BOLT)) {
+                float damage = (2.5F + bolt * 1.5F)
+                        + companion.getProgression().getAttribute(CompanionAttribute.WISDOM) * 0.04F;
+                castBolt(target, damage, ParticleTypes.WITCH, ParticleTypes.HAPPY_VILLAGER,
+                        SoundEvents.AMETHYST_BLOCK_CHIME, 0.95F);
+                battleLine("The spirits answer.", "A little help from beyond.", "Stay close. I can mend this.");
+            }
+
+            int tide = rank(CompanionSkill.SHAMAN_RESTORATION_TIDE);
+            boolean needsHealing = companion.getHealth() <= companion.getMaxHealth() * 0.72F
+                    || (owner != null && owner.isAlive() && owner.getHealth() <= owner.getMaxHealth() * 0.72F
+                    && companion.distanceToSqr(owner) <= 196.0D);
+            if (tide > 0 && needsHealing && isReady(CompanionSkill.SHAMAN_RESTORATION_TIDE)
+                    && startCooldown(CompanionSkill.SHAMAN_RESTORATION_TIDE)) {
+                float heal = 3.0F + tide * 2.5F
+                        + companion.getProgression().getAttribute(CompanionAttribute.WISDOM) * 0.08F;
+                companion.heal(heal);
+                if (owner != null && owner.isAlive() && companion.distanceToSqr(owner) <= 196.0D) owner.heal(heal);
+                playSpiritRenewal();
+                battleLine("Let the old spirits carry some of that pain.", "Breathe. The worst has passed.",
+                        "The land still has strength to give.");
+            }
+
+            int ultimate = rank(CompanionSkill.SHAMAN_ANCESTRAL_WRATH);
+            if (ultimate > 0 && validTarget && companion.distanceToSqr(target) <= 100.0D
+                    && isReady(CompanionSkill.SHAMAN_ANCESTRAL_WRATH)
+                    && startCooldown(CompanionSkill.SHAMAN_ANCESTRAL_WRATH)) {
+                damageNearbyHostiles(7.0F, 6.0D);
+                companion.heal(8.0F);
+                if (owner != null && owner.isAlive() && companion.distanceToSqr(owner) <= 144.0D) owner.heal(6.0F);
+                playSpiritRenewal();
+                battleLine("Ancestors, stand with us!");
+            }
+            return;
+        }
+
+        int focus = rank(CompanionSkill.ELEMENTALIST_ELEMENTAL_FOCUS);
+        int bolt = rank(CompanionSkill.ELEMENTALIST_ARCANE_BOLT);
+        if (bolt > 0 && validTarget && companion.distanceToSqr(target) >= 16.0D
+                && isReady(CompanionSkill.ELEMENTALIST_ARCANE_BOLT)
+                && startCooldown(CompanionSkill.ELEMENTALIST_ARCANE_BOLT)) {
+            float damage = (3.0F + bolt * 1.75F + focus * 0.75F)
+                    + companion.getProgression().getAttribute(CompanionAttribute.WISDOM) * 0.05F;
+            castBolt(target, damage, ParticleTypes.ELECTRIC_SPARK, ParticleTypes.FLAME,
+                    SoundEvents.FIRECHARGE_USE, 1.1F);
+            battleLine("Elemental force, obey!", "A clean channel. A cleaner result.", "Keep them at a distance.");
+        }
+
+        int surge = rank(CompanionSkill.ELEMENTALIST_PRIMAL_SURGE);
+        if (surge > 0 && validTarget && companion.distanceToSqr(target) <= 100.0D
+                && isReady(CompanionSkill.ELEMENTALIST_PRIMAL_SURGE)
+                && startCooldown(CompanionSkill.ELEMENTALIST_PRIMAL_SURGE)) {
+            damageNearbyHostiles(2.5F + surge * 2.0F + focus, 4.5D);
+            playElementalBurst();
+        }
+
+        int ultimate = rank(CompanionSkill.ELEMENTALIST_CATACLYSM);
+        if (ultimate > 0 && validTarget && companion.distanceToSqr(target) <= 144.0D
+                && isReady(CompanionSkill.ELEMENTALIST_CATACLYSM)
+                && startCooldown(CompanionSkill.ELEMENTALIST_CATACLYSM)) {
+            damageNearbyHostiles(12.0F + focus * 2.0F, 7.0D);
+            playElementalBurst();
+            battleLine("Let the elements decide this!");
+        }
+    }
+
+    private void castBolt(LivingEntity target, float damage,
+                          net.minecraft.core.particles.ParticleOptions primary,
+                          net.minecraft.core.particles.ParticleOptions secondary,
+                          net.minecraft.sounds.SoundEvent sound, float pitch) {
+        if (!(companion.level() instanceof ServerLevel level) || !target.isAlive()) return;
+        if (!target.hurt(companion.damageSources().indirectMagic(companion, companion), damage)) return;
+        double sx = companion.getX();
+        double sy = companion.getY() + companion.getBbHeight() * 0.65D;
+        double ex = target.getX();
+        double ey = target.getY() + target.getBbHeight() * 0.55D;
+        double ez = target.getZ();
+        for (int i = 1; i <= 10; i++) {
+            double t = i / 10.0D;
+            level.sendParticles(primary, sx + (ex - sx) * t, sy + (ey - sy) * t,
+                    companion.getZ() + (ez - companion.getZ()) * t, 2, 0.04D, 0.04D, 0.04D, 0.01D);
+        }
+        level.sendParticles(secondary, ex, ey, ez, 14, 0.3D, 0.35D, 0.3D, 0.04D);
+        level.playSound(null, target.blockPosition(), sound, SoundSource.PLAYERS, 0.8F, pitch);
+    }
+
+    private void playSpiritRenewal() {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        level.sendParticles(ParticleTypes.HEART, companion.getX(), companion.getY() + 1.0D,
+                companion.getZ(), 12, 0.6D, 0.7D, 0.6D, 0.02D);
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, companion.getX(), companion.getY() + 1.0D,
+                companion.getZ(), 28, 0.7D, 0.8D, 0.7D, 0.08D);
+        level.sendParticles(ParticleTypes.ENCHANT, companion.getX(), companion.getY() + 1.0D,
+                companion.getZ(), 18, 0.45D, 0.65D, 0.45D, 0.4D);
+        level.playSound(null, companion.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
+                SoundSource.PLAYERS, 0.9F, 1.35F);
+    }
+
+    private void playElementalBurst() {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        level.sendParticles(ParticleTypes.FLAME, companion.getX(), companion.getY() + 0.8D,
+                companion.getZ(), 48, 1.4D, 0.65D, 1.4D, 0.08D);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, companion.getX(), companion.getY() + 0.8D,
+                companion.getZ(), 28, 1.2D, 0.75D, 1.2D, 0.12D);
+        level.sendParticles(ParticleTypes.CRIT, companion.getX(), companion.getY() + 0.8D,
+                companion.getZ(), 24, 1.0D, 0.6D, 1.0D, 0.1D);
+        level.playSound(null, companion.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER,
+                SoundSource.PLAYERS, 0.65F, 1.5F);
     }
 
     /**
