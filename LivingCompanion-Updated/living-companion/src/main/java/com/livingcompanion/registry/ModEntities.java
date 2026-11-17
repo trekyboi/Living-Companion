@@ -45,7 +45,7 @@ public final class ModEntities {
 
     public static final RegistryObject<EntityType<CompanionMagicBolt>> MAGIC_BOLT =
             ENTITIES.register("magic_bolt", () -> EntityType.Builder
-                    .of(CompanionMagicBolt::new, MobCategory.MISC)
+                    .of((type, level) -> new CompanionMagicBolt(type, level), MobCategory.MISC)
                     .sized(0.22F, 0.22F)
                     .clientTrackingRange(8)
                     .updateInterval(1)
