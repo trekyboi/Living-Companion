@@ -21,7 +21,7 @@ public final class CompanionSkillsScreen extends Screen {
     private static final int PANEL_MAX_HEIGHT = 430;
     private static final int ROW_HEIGHT = 68;
     private static final int ROW_GAP = 6;
-    private static final int HEADER_HEIGHT = 102;
+    private static final int HEADER_HEIGHT = 126;
 
     private final Screen parent;
     private SkillDataMessage data;
@@ -108,7 +108,7 @@ public final class CompanionSkillsScreen extends Screen {
                 CompanionSpecialization choice = choices[i];
                 Button select = Button.builder(Component.literal(choice.getDisplayName()), button ->
                         CompanionNetwork.requestSpecialization(data.entityId, choice.getId()))
-                        .bounds(this.panelLeft + 16 + i * (choiceWidth + 8), this.panelTop + 72,
+                        .bounds(this.panelLeft + 16 + i * (choiceWidth + 8), this.panelTop + 98,
                                 choiceWidth, 20).build();
                 this.specializationButtons.add(select);
                 this.addRenderableWidget(select);
@@ -214,16 +214,16 @@ public final class CompanionSkillsScreen extends Screen {
                             ? CompanionUiTheme.SUCCESS : CompanionUiTheme.TEXT_MUTED);
             String xp = data.level >= CompanionProgressionMaxLevel.VALUE
                     ? "Maximum level reached" : "XP: " + data.experience + " / " + data.experienceToNext;
-            graphics.drawString(this.font, xp, left + 16, top + 49, 0xFFB9B9B9, false);
+            graphics.drawString(this.font, xp, left + 16, top + 65, 0xFFB9B9B9, false);
             if (getSelectedSpecialization() != null) {
                 graphics.drawString(this.font, "Path: " + getSelectedSpecialization().getDisplayName(),
-                        left + 16, top + 70, 0xFFFFD58A, false);
+                        left + 16, top + 83, 0xFFFFD58A, false);
             } else if (data.level < 30) {
                 graphics.drawString(this.font, "Specialization unlocks at level 30",
-                        left + 16, top + 70, 0xFF9BA5AF, false);
+                        left + 16, top + 83, 0xFF9BA5AF, false);
             } else {
                 graphics.drawString(this.font, "Choose your permanent class specialization:",
-                        left + 16, top + 70, 0xFFFFD58A, false);
+                        left + 16, top + 83, 0xFFFFD58A, false);
             }
 
             List<CompanionSkill> skills = CompanionSkill.forClassAndSpecialization(
