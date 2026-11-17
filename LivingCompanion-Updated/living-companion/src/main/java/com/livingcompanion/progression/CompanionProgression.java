@@ -30,9 +30,9 @@ public final class CompanionProgression {
     public int getAttributePoints() { return attributePoints; }
     public CompanionSpecialization getSpecialization() { return specialization; }
 
-    /** Specialization is a permanent level-15 choice validated against the base class. */
+    /** Specialization is a permanent level-30 choice validated against the base class. */
     public boolean chooseSpecialization(CompanionSpecialization choice, CompanionClass archetype) {
-        if (choice == null || archetype == null || specialization != null || level < 15
+        if (choice == null || archetype == null || specialization != null || level < 30
                 || choice.getArchetype() != archetype) return false;
         specialization = choice;
         return true;
