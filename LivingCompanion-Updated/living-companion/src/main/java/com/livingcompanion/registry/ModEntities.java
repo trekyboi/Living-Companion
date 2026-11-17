@@ -2,6 +2,7 @@ package com.livingcompanion.registry;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
+import com.livingcompanion.entity.MageCompanionEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
@@ -33,9 +34,18 @@ public final class ModEntities {
                     .updateInterval(3)           // ticks between position sync packets
                     .build("companion"));
 
+    public static final RegistryObject<EntityType<MageCompanionEntity>> MAGE_COMPANION =
+            ENTITIES.register("mage_companion", () -> EntityType.Builder
+                    .of(MageCompanionEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.95F)
+                    .clientTrackingRange(10)
+                    .updateInterval(3)
+                    .build("mage_companion"));
+
     /** Mod-bus listener, wired in {@code LivingCompanion}'s constructor. */
     public static void onAttributeCreation(EntityAttributeCreationEvent event) {
         event.put(COMPANION.get(), CompanionEntity.createAttributes().build());
+        event.put(MAGE_COMPANION.get(), CompanionEntity.createAttributes().build());
     }
 
     private ModEntities() {
