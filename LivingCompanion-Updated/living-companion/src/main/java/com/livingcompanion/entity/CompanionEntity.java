@@ -583,6 +583,14 @@ public class CompanionEntity extends PathfinderMob {
         } else if (specialization == CompanionSpecialization.TANK_VANGUARD) {
             attack += 1.0D;
             movement += 0.01D;
+        } else if (specialization == CompanionSpecialization.PALADIN_TEMPLAR) {
+            health += 2.0D;
+            armor += 1.5D;
+            toughness += 0.5D;
+        } else if (specialization == CompanionSpecialization.TANK_JUGGERNAUT) {
+            health += 4.0D;
+            attack += 1.0D;
+            toughness += 0.5D;
         }
 
         setBase(Attributes.MAX_HEALTH, health);
@@ -600,6 +608,14 @@ public class CompanionEntity extends PathfinderMob {
 
     public void refreshProgressionAttributes() {
         if (!this.level().isClientSide) applyProgressionAttributes(true);
+        inventoryChanged();
+    }
+
+    /** Applies the Creative-only progression test shortcut to this companion. */
+    public void maxLevelForCreative() {
+        if (this.level().isClientSide) return;
+        this.progression.setMaxLevelForCreative();
+        applyProgressionAttributes(true);
         inventoryChanged();
     }
 
