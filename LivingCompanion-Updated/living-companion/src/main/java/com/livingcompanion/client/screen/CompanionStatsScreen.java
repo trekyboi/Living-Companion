@@ -5,6 +5,7 @@ import com.livingcompanion.network.CompanionNetwork.StatsDataMessage;
 import com.livingcompanion.progression.CompanionAttribute;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
+import com.livingcompanion.progression.CompanionSpecialization;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -91,7 +92,12 @@ public final class CompanionStatsScreen extends Screen {
 
         String className=data.classId>=0 && data.classId<CompanionClass.values().length
                 ? CompanionClass.values()[data.classId].getDisplayName() : "Unknown";
-        graphics.drawString(font,className+"  |  Level "+data.level,left+16,top+29,0xFFFFD58A,false);
+        String specializationName=data.specializationId>=0
+                && data.specializationId<CompanionSpecialization.values().length
+                ? CompanionSpecialization.values()[data.specializationId].getDisplayName() : null;
+        String classLine=className+(specializationName==null?"":"  |  "+specializationName)
+                +"  |  Level "+data.level;
+        graphics.drawString(font,classLine,left+16,top+29,0xFFFFD58A,false);
         String xp=data.experienceToNext>0 ? data.experience+" / "+data.experienceToNext+" XP" : "MAX LEVEL";
         graphics.drawString(font,xp,left+panelWidth-16-font.width(xp),top+29,0xFFBFC5CC,false);
 
@@ -143,15 +149,20 @@ public final class CompanionStatsScreen extends Screen {
         }
 
         int lowerY=top+198;
-        graphics.drawString(font,"UNLOCKED SKILLS",col1,lowerY,0xFFFFE6BE,false);
+        graphics.drawString(font,"CLASS & SPECIALIZATION SKILLS",col1,lowerY,0xFFFFE6BE,false);
         int shown=0;
-        for(CompanionSkill skill:CompanionSkill.values()) {
-            if(skill.getArchetype().ordinal()!=data.classId || skill.getRequiredSpecialization()!=null) continue;
-            if(shown>=5) break;
-            int rank=skill.ordinal()<data.ranks.length?data.ranks[skill.ordinal()]:0;
-            graphics.drawString(font,skill.getDisplayName()+"  "+rank+"/"+skill.getMaximumRank(),
-                    col1+8,lowerY+15+shown*12,rank>0?0xFFFFD58A:0xFF858B94,false);
-            shown++;
+        if(data.classId>=0 && data.classId<CompanionClass.values().length) {
+            CompanionSpecialization selected=data.specializationId>=0
+                    && data.specializationId<CompanionSpecialization.values().length
+                    ? CompanionSpecialization.values()[data.specializationId] : null;
+            for(CompanionSkill skill:CompanionSkill.forClassAndSpecialization(
+                    CompanionClass.values()[data.classId],selected)) {
+                if(shown>=8) break;
+                int rank=skill.ordinal()<data.ranks.length?data.ranks[skill.ordinal()]:0;
+                graphics.drawString(font,skill.getDisplayName()+"  "+rank+"/"+skill.getMaximumRank(),
+                        col1+8,lowerY+13+shown*10,rank>0?0xFFFFD58A:0xFF858B94,false);
+                shown++;
+            }
         }
 
         graphics.drawString(font,"ACHIEVEMENTS",col2,lowerY,0xFFFFE6BE,false);
