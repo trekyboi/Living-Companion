@@ -88,8 +88,7 @@ public final class CompanionAttributesScreen extends Screen {
         int panelHeight = Math.min(300, Math.max(220, this.height - 16));
         int left = (this.width - panelWidth) / 2;
         int top = (this.height - panelHeight) / 2;
-        graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xF0181B20);
-        graphics.fill(left, top, left + panelWidth, top + 2, 0xFF9A784A);
+        CompanionUiTheme.drawPanel(graphics, left, top, panelWidth, panelHeight);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, top + 14, 0xFFFFE6BE);
         graphics.drawCenteredString(this.font, "Unspent attribute points: " + data.attributePoints,
                 this.width / 2, top + 38, 0xFF83E6A0);
