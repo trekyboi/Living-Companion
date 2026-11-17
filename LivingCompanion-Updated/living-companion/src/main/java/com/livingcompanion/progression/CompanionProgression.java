@@ -70,6 +70,19 @@ public final class CompanionProgression {
     public int getSkillRank(String skillId) { return skillRanks.getOrDefault(skillId, 0); }
 
     /** Adds XP and returns the number of levels gained. Each level grants one skill and two attribute points. */
+    /** Creative-only testing shortcut. Preserves already-spent progression points. */
+    public void setMaxLevelForCreative() {
+        level = MAX_LEVEL;
+        experience = 0;
+        int spentSkillPoints = skillRanks.values().stream().mapToInt(Integer::intValue).sum();
+        int spentAttributePoints = attributes.values().stream().mapToInt(Integer::intValue).sum();
+        skillPoints = Math.max(0, MAX_LEVEL - spentSkillPoints);
+        attributePoints = Math.max(0, (MAX_LEVEL - 1) * 2 - spentAttributePoints);
+        awardAchievement(CompanionAchievement.VETERAN);
+        awardAchievement(CompanionAchievement.ELITE);
+        awardAchievement(CompanionAchievement.LEGEND);
+    }
+
     public int addExperience(int amount) {
         if (amount <= 0 || level >= MAX_LEVEL) return 0;
         experience += amount;
