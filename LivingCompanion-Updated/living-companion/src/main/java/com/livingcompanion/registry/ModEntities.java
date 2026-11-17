@@ -3,6 +3,7 @@ package com.livingcompanion.registry;
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
 import com.livingcompanion.entity.MageCompanionEntity;
+import com.livingcompanion.entity.CompanionMagicBolt;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
@@ -41,6 +42,14 @@ public final class ModEntities {
                     .clientTrackingRange(10)
                     .updateInterval(3)
                     .build("mage_companion"));
+
+    public static final RegistryObject<EntityType<CompanionMagicBolt>> MAGIC_BOLT =
+            ENTITIES.register("magic_bolt", () -> EntityType.Builder
+                    .of(CompanionMagicBolt::new, MobCategory.MISC)
+                    .sized(0.22F, 0.22F)
+                    .clientTrackingRange(8)
+                    .updateInterval(1)
+                    .build("magic_bolt"));
 
     /** Mod-bus listener, wired in {@code LivingCompanion}'s constructor. */
     public static void onAttributeCreation(EntityAttributeCreationEvent event) {
