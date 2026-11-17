@@ -67,6 +67,9 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(9, OpenBackpackMessage.class,
                 OpenBackpackMessage::encode, OpenBackpackMessage::decode,
                 OpenBackpackMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(10, EquipmentLoadoutMessage.class,
+                EquipmentLoadoutMessage::encode, EquipmentLoadoutMessage::decode,
+                EquipmentLoadoutMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -92,6 +95,10 @@ public final class CompanionNetwork {
 
     public static void requestOpenBackpack(int companionEntityId) {
         CHANNEL.sendToServer(new OpenBackpackMessage(companionEntityId));
+    }
+
+    public static void requestEquipmentLoadout(int companionEntityId, int preset, boolean save) {
+        CHANNEL.sendToServer(new EquipmentLoadoutMessage(companionEntityId, preset, save));
     }
 
     public static void requestStats(int companionEntityId) {
@@ -551,6 +558,44 @@ public final class CompanionNetwork {
             }
         }
         return null;
+    }
+
+    public static final class EquipmentLoadoutMessage {
+        private final int entityId;
+        private final int preset;
+        private final boolean save;
+        public EquipmentLoadoutMessage(int entityId, int preset, boolean save) {
+            this.entityId = entityId; this.preset = preset; this.save = save;
+        }
+        public static void encode(EquipmentLoadoutMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.entityId);
+            buffer.writeVarInt(message.preset);
+            buffer.writeBoolean(message.save);
+        }
+        public static EquipmentLoadoutMessage decode(FriendlyByteBuf buffer) {
+            return new EquipmentLoadoutMessage(buffer.readVarInt(), buffer.readVarInt(), buffer.readBoolean());
+        }
+        public static void handle(EquipmentLoadoutMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null || message.preset < 0 || message.preset >= 3) return;
+                Entity entity = player.serverLevel().getEntity(message.entityId);
+                if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
+                        || !companion.isAlive() || companion.distanceToSqr(player) > 64.0D) return;
+                boolean success = message.save
+                        ? companion.saveEquipmentLoadout(message.preset)
+                        : companion.equipEquipmentLoadout(message.preset);
+                if (!success) {
+                    player.sendSystemMessage(Component.literal("That equipment preset has not been saved yet."));
+                    return;
+                }
+                player.sendSystemMessage(Component.literal(companion.getName().getString()
+                        + (message.save ? " saved equipment preset " : " equipped equipment preset ")
+                        + (message.preset + 1) + "."));
+            });
+            context.setPacketHandled(true);
+        }
     }
 
     private CompanionNetwork() { }
