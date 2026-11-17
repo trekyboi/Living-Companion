@@ -335,6 +335,14 @@ public final class CompanionSkillsScreen extends Screen {
             case TANK_VANGUARD_WARCRY -> new ItemStack(Items.BELL);
             case TANK_VANGUARD_WARPATH -> new ItemStack(Items.IRON_AXE);
             case TANK_JUGGERNAUT_CRUSHING_BLOW, TANK_JUGGERNAUT_UNSTOPPABLE_RAMPAGE -> new ItemStack(Items.ANVIL);
+            case SHAMAN_SPIRIT_ATTUNEMENT -> new ItemStack(Items.GHAST_TEAR);
+            case SHAMAN_SPIRIT_BOLT -> new ItemStack(Items.SPECTRAL_ARROW);
+            case SHAMAN_RESTORATION_TIDE -> new ItemStack(Items.HONEY_BOTTLE);
+            case SHAMAN_ANCESTRAL_WRATH -> new ItemStack(Items.SOUL_LANTERN);
+            case ELEMENTALIST_ELEMENTAL_FOCUS -> new ItemStack(Items.AMETHYST_SHARD);
+            case ELEMENTALIST_ARCANE_BOLT -> new ItemStack(Items.BLAZE_POWDER);
+            case ELEMENTALIST_PRIMAL_SURGE -> new ItemStack(Items.FIRE_CHARGE);
+            case ELEMENTALIST_CATACLYSM -> new ItemStack(Items.DRAGON_BREATH);
         };
     }
 
