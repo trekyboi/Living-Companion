@@ -117,6 +117,12 @@ public class CompanionEntity extends PathfinderMob {
     private boolean insideVillage = false;
     private String lastStructureId = "";
     private final CompanionSkillRuntime skillRuntime = new CompanionSkillRuntime(this);
+    private static final EquipmentSlot[] LOADOUT_SLOTS = {
+            EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND, EquipmentSlot.HEAD,
+            EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
+    };
+    private final ItemStack[][] equipmentLoadouts = new ItemStack[3][LOADOUT_SLOTS.length];
+    private final boolean[] equipmentLoadoutSaved = new boolean[3];
     private CompanionClass companionClass = CompanionClass.UNASSIGNED;
 
     /** Custom survival food state. Food drains over time and is replenished from carried supplies. */
@@ -298,6 +304,35 @@ public class CompanionEntity extends PathfinderMob {
         this.entityData.define(DATA_OWNER_UUID, Optional.empty());
         this.entityData.define(DATA_OWNER_PROTECTION, false);
         this.entityData.define(DATA_SKILL_VISUAL_FLAGS, 0);
+    }
+
+    /** Saves the six live equipment slots into one of three persistent loadout presets. */
+    public boolean saveEquipmentLoadout(int index) {
+        if (index < 0 || index >= equipmentLoadouts.length || this.level().isClientSide) return false;
+        for (int i = 0; i < LOADOUT_SLOTS.length; i++) {
+            equipmentLoadouts[index][i] = getItemBySlot(LOADOUT_SLOTS[i]).copy();
+        }
+        equipmentLoadoutSaved[index] = true;
+        return true;
+    }
+
+    /** Exchanges the active equipment with a saved preset; no item stacks are duplicated. */
+    public boolean equipEquipmentLoadout(int index) {
+        if (index < 0 || index >= equipmentLoadouts.length || !equipmentLoadoutSaved[index]
+                || this.level().isClientSide) return false;
+        for (int i = 0; i < LOADOUT_SLOTS.length; i++) {
+            ItemStack current = getItemBySlot(LOADOUT_SLOTS[i]).copy();
+            ItemStack replacement = equipmentLoadouts[index][i] == null
+                    ? ItemStack.EMPTY : equipmentLoadouts[index][i].copy();
+            setItemSlot(LOADOUT_SLOTS[i], replacement);
+            equipmentLoadouts[index][i] = current;
+        }
+        inventoryChanged();
+        return true;
+    }
+
+    public boolean hasEquipmentLoadout(int index) {
+        return index >= 0 && index < equipmentLoadoutSaved.length && equipmentLoadoutSaved[index];
     }
 
     public CompanionInventory getCompanionInventory() {
@@ -1113,6 +1148,24 @@ public class CompanionEntity extends PathfinderMob {
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
         tag.put("Memories", savedMemories);
+        ListTag savedLoadouts = new ListTag();
+        for (int preset = 0; preset < equipmentLoadouts.length; preset++) {
+            CompoundTag presetTag = new CompoundTag();
+            presetTag.putBoolean("Saved", equipmentLoadoutSaved[preset]);
+            ListTag presetItems = new ListTag();
+            if (equipmentLoadoutSaved[preset]) {
+                for (int slot = 0; slot < LOADOUT_SLOTS.length; slot++) {
+                    ItemStack stack = equipmentLoadouts[preset][slot];
+                    CompoundTag stackTag = new CompoundTag();
+                    stackTag.putInt("Slot", slot);
+                    if (stack != null && !stack.isEmpty()) stackTag.put("Item", stack.save(new CompoundTag()));
+                    presetItems.add(stackTag);
+                }
+            }
+            presetTag.put("Items", presetItems);
+            savedLoadouts.add(presetTag);
+        }
+        tag.put("EquipmentLoadouts", savedLoadouts);
         this.companionInventory.save(tag);
     }
 
@@ -1168,6 +1221,23 @@ public class CompanionEntity extends PathfinderMob {
             this.patrolAnchor = new BlockPos(tag.getInt("PatrolAnchorX"), tag.getInt("PatrolAnchorY"), tag.getInt("PatrolAnchorZ"));
         } else {
             this.patrolAnchor = this.blockPosition();
+        }
+        for (int preset = 0; preset < equipmentLoadouts.length; preset++) {
+            for (int slot = 0; slot < LOADOUT_SLOTS.length; slot++) equipmentLoadouts[preset][slot] = ItemStack.EMPTY;
+            equipmentLoadoutSaved[preset] = false;
+        }
+        ListTag savedLoadouts = tag.getList("EquipmentLoadouts", Tag.TAG_COMPOUND);
+        for (int preset = 0; preset < Math.min(savedLoadouts.size(), equipmentLoadouts.length); preset++) {
+            CompoundTag presetTag = savedLoadouts.getCompound(preset);
+            equipmentLoadoutSaved[preset] = presetTag.getBoolean("Saved");
+            ListTag presetItems = presetTag.getList("Items", Tag.TAG_COMPOUND);
+            for (int i = 0; i < presetItems.size(); i++) {
+                CompoundTag itemTag = presetItems.getCompound(i);
+                int slot = itemTag.getInt("Slot");
+                if (slot >= 0 && slot < LOADOUT_SLOTS.length && itemTag.contains("Item", Tag.TAG_COMPOUND)) {
+                    equipmentLoadouts[preset][slot] = ItemStack.of(itemTag.getCompound("Item"));
+                }
+            }
         }
         this.companionInventory.load(tag);
         this.memories.clear();
