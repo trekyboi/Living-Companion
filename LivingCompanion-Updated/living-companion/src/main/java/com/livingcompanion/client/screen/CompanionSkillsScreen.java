@@ -216,7 +216,7 @@ public final class CompanionSkillsScreen extends Screen {
             if (getSelectedSpecialization() != null) {
                 graphics.drawString(this.font, "Path: " + getSelectedSpecialization().getDisplayName(),
                         left + 16, top + 70, 0xFFFFD58A, false);
-            } else if (data.level < 15) {
+            } else if (data.level < 30) {
                 graphics.drawString(this.font, "Specialization unlocks at level 30",
                         left + 16, top + 70, 0xFF9BA5AF, false);
             } else {
