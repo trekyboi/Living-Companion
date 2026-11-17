@@ -21,7 +21,8 @@ public final class ModCreativeTabs {
             TABS.register("companion", () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
                     .title(Component.translatable("itemGroup.livingcompanion"))
                     .icon(() -> new ItemStack(ModItems.COMPANION_SPAWN_EGG.get()))
-                    .displayItems((parameters, output) -> output.accept(ModItems.COMPANION_SPAWN_EGG.get()))
+                    .displayItems((parameters, output) -> output.accept(ModItems.COMPANION_SPAWN_EGG.get());
+                        output.accept(ModItems.MAGE_COMPANION_SPAWN_EGG.get()))
                     .build());
 
     private ModCreativeTabs() {
