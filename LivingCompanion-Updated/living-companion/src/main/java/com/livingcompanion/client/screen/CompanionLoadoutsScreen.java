@@ -40,8 +40,7 @@ public final class CompanionLoadoutsScreen extends Screen {
         this.renderBackground(graphics);
         int left = this.width / 2 - 110;
         int top = this.height / 2 - 58;
-        graphics.fill(left - 10, top - 24, left + 250, top + 142, 0xE0181B20);
-        graphics.fill(left - 10, top - 24, left + 250, top - 23, 0xFF9A784A);
+        CompanionUiTheme.drawPanel(graphics, left - 10, top - 24, 260, 166);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, top - 15, 0xFFE6D3B0);
         for (int preset = 0; preset < 3; preset++) {
             graphics.drawString(this.font, "Preset " + (preset + 1), left, top + 6 + preset * 34, 0xFFFFFFFF);
