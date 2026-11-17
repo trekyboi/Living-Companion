@@ -11,6 +11,7 @@ import com.livingcompanion.progression.CompanionSpecialization;
 import com.livingcompanion.ai.FollowOwnerGoal;
 import com.livingcompanion.ai.CompanionPatrolGoal;
 import com.livingcompanion.ai.CompanionIdleRoutineGoal;
+import com.livingcompanion.ai.CompanionCampWatchGoal;
 import com.livingcompanion.inventory.CompanionInventory;
 import com.livingcompanion.menu.CompanionInventoryMenu;
 import net.minecraft.nbt.CompoundTag;
@@ -142,7 +143,9 @@ public class CompanionEntity extends PathfinderMob {
     private Command command = Command.FOLLOW;
     private long nextDialogueTick = 0L;
     private final List<String> memories = new ArrayList<>();
+    private final List<JournalEntry> journalEntries = new ArrayList<>();
     private static final int MAX_MEMORIES = 12;
+    private static final int MAX_JOURNAL_ENTRIES = 64;
     private String lastDialogueLine = "";
     private static final List<String> IDLE_LINES = List.of(
             "The road ahead looks quiet. I don't trust it.", "I've seen worse roads. Usually right before things get interesting.",
@@ -416,6 +419,9 @@ public class CompanionEntity extends PathfinderMob {
             if (owner != null) {
                 owner.sendSystemMessage(Component.literal(this.getName().getString()
                         + " feels closer to you. Relationship: " + this.relationship.getTitle() + "."));
+                remember("our bond deepened: " + this.relationship.getTitle());
+                commentOnEvent("We've come a long way together.", "I trust you more with every journey.",
+                        "This bond has become something I would fight to protect.");
             }
             commentOnEvent(
                     "We've grown into a good team. I trust your judgement.",
@@ -699,6 +705,7 @@ public class CompanionEntity extends PathfinderMob {
         this.goalSelector.addGoal(2, new CompanionPatrolGoal(this));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+        this.goalSelector.addGoal(4, new CompanionCampWatchGoal(this));
         this.goalSelector.addGoal(5, new CompanionIdleRoutineGoal(this));
 
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
@@ -1164,6 +1171,9 @@ public class CompanionEntity extends PathfinderMob {
         ListTag savedMemories = new ListTag();
         for (String memory : this.memories) savedMemories.add(StringTag.valueOf(memory));
         tag.put("Memories", savedMemories);
+        ListTag savedJournal = new ListTag();
+        for (JournalEntry entry : this.journalEntries) savedJournal.add(entry.save());
+        tag.put("JournalEntries", savedJournal);
         ListTag savedLoadouts = new ListTag();
         for (int preset = 0; preset < equipmentLoadouts.length; preset++) {
             CompoundTag presetTag = new CompoundTag();
@@ -1261,6 +1271,14 @@ public class CompanionEntity extends PathfinderMob {
         for (int i = 0; i < savedMemories.size() && this.memories.size() < MAX_MEMORIES; i++) {
             this.memories.add(savedMemories.getString(i));
         }
+        this.journalEntries.clear();
+        ListTag savedJournal = tag.getList("JournalEntries", Tag.TAG_COMPOUND);
+        for (int i = 0; i < savedJournal.size() && this.journalEntries.size() < MAX_JOURNAL_ENTRIES; i++) {
+            this.journalEntries.add(JournalEntry.load(savedJournal.getCompound(i)));
+        }
+        if (this.journalEntries.isEmpty()) {
+            for (String memory : this.memories) this.journalEntries.add(JournalEntry.capture(this, memory));
+        }
     }
 
     /** Delivers a short event-specific line through the same dialogue cooldown. */
@@ -1286,10 +1304,16 @@ public class CompanionEntity extends PathfinderMob {
         }
         this.memories.add(memory);
         while (this.memories.size() > MAX_MEMORIES) this.memories.remove(0);
+        this.journalEntries.add(JournalEntry.capture(this, memory));
+        while (this.journalEntries.size() > MAX_JOURNAL_ENTRIES) this.journalEntries.remove(0);
     }
 
     public List<String> getMemories() {
         return List.copyOf(this.memories);
+    }
+
+    public List<JournalEntry> getJournalEntries() {
+        return List.copyOf(this.journalEntries);
     }
 
     /** Requests full-health restoration after the first-tick config pass. */
