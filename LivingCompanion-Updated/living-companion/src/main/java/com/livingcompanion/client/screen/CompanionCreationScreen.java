@@ -84,16 +84,22 @@ public final class CompanionCreationScreen extends Screen {
         int panelHeight = Math.min(226, Math.max(210, this.height - 16));
         int top = (this.height - panelHeight) / 2;
         CompanionUiTheme.drawPanel(graphics, panelLeft, top, panelWidth, panelHeight);
-        graphics.drawCenteredString(this.font, "A COMPANION FOR THE JOURNEY",
-                center, top + 12, 0xFFE8D5B5);
-        graphics.drawCenteredString(this.font, "Choose his name and calling.",
-                center, top + 29, 0xFFB8B0A2);
+        CompanionUiTheme.drawTitle(graphics, this.font, "A COMPANION FOR THE JOURNEY",
+                "Choose his name and calling", center, top + 10);
+        CompanionUiTheme.drawCard(graphics, center - 104, this.height / 2 - 25,
+                100, 26, selectedClass == CompanionClass.PALADIN);
+        CompanionUiTheme.drawCard(graphics, center + 2, this.height / 2 - 25,
+                100, 26, selectedClass == CompanionClass.TANK);
+        CompanionUiTheme.drawSectionHeader(graphics, this.font, "IDENTITY",
+                center - 100, this.height / 2 - 76, 200);
         graphics.drawString(this.font, "NAME", center - 100, this.height / 2 - 76, 0xFFE8D5B5);
+        CompanionUiTheme.drawCard(graphics, center - 104, this.height / 2 + 2,
+                208, 42, true);
         graphics.drawCenteredString(this.font, selectedClass.getDescription(),
-                center, this.height / 2 + 6, 0xFFD5C6AA);
+                center, this.height / 2 + 8, CompanionUiTheme.TEXT_PRIMARY);
         if (selectedClass == CompanionClass.PALADIN) {
             graphics.drawCenteredString(this.font, "Healing • protection • holy strikes",
-                    center, this.height / 2 + 23, 0xFFD9C38F);
+                    center, this.height / 2 + 23, CompanionUiTheme.GOLD_BRIGHT);
         } else {
             graphics.drawCenteredString(this.font, "Taunts • resilience • frontline defense",
                     center, this.height / 2 + 23, 0xFFD9C38F);
