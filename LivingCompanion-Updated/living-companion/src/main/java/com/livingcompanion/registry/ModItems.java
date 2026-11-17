@@ -24,6 +24,13 @@ public final class ModItems {
                     0xD9A441,
                     new Item.Properties()));
 
+    public static final RegistryObject<CompanionSpawnEggItem> MAGE_COMPANION_SPAWN_EGG =
+            ITEMS.register("mage_companion_spawn_egg", () -> new CompanionSpawnEggItem(
+                    ModEntities.MAGE_COMPANION,
+                    0x352B55,
+                    0xC58BDB,
+                    new Item.Properties()));
+
     private ModItems() {
     }
 }
