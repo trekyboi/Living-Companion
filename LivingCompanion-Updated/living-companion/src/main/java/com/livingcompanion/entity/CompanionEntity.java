@@ -1298,14 +1298,16 @@ public class CompanionEntity extends PathfinderMob {
 
     /** Stores a short, unique memory. The newest twelve memories survive world saves. */
     public void remember(String memory) {
-        if (memory == null || memory.isBlank() || this.memories.contains(memory)) return;
+        if (memory == null || memory.isBlank()) return;
+        // Journal records are chronological, so repeated events remain separate entries.
+        this.journalEntries.add(JournalEntry.capture(this, memory));
+        while (this.journalEntries.size() > MAX_JOURNAL_ENTRIES) this.journalEntries.remove(0);
+        if (this.memories.contains(memory)) return;
         if (memory.contains("discovered") || memory.contains("found") || memory.contains("diamonds")) {
             this.personality.recordDiscovery();
         }
         this.memories.add(memory);
         while (this.memories.size() > MAX_MEMORIES) this.memories.remove(0);
-        this.journalEntries.add(JournalEntry.capture(this, memory));
-        while (this.journalEntries.size() > MAX_JOURNAL_ENTRIES) this.journalEntries.remove(0);
     }
 
     public List<String> getMemories() {
