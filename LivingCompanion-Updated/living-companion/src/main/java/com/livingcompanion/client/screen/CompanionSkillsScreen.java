@@ -206,9 +206,12 @@ public final class CompanionSkillsScreen extends Screen {
 
         CompanionClass[] classes = CompanionClass.values();
         if (data.classId > 0 && data.classId < classes.length) {
-            graphics.drawString(this.font, classes[data.classId].getDisplayName()
-                    + "  |  Level " + data.level + "  |  Skill points: " + data.skillPoints,
-                    left + 16, top + 32, 0xFFE6D3B0, false);
+            graphics.drawString(this.font, classes[data.classId].getDisplayName().toUpperCase(java.util.Locale.ROOT)
+                    + "  •  LEVEL " + data.level,
+                    left + 16, top + 32, CompanionUiTheme.GOLD_BRIGHT, false);
+            CompanionUiTheme.drawPill(graphics, this.font, "SKILL POINTS: " + data.skillPoints,
+                    left + 16, top + 47, data.skillPoints > 0
+                            ? CompanionUiTheme.SUCCESS : CompanionUiTheme.TEXT_MUTED);
             String xp = data.level >= CompanionProgressionMaxLevel.VALUE
                     ? "Maximum level reached" : "XP: " + data.experience + " / " + data.experienceToNext;
             graphics.drawString(this.font, xp, left + 16, top + 49, 0xFFB9B9B9, false);
@@ -232,7 +235,8 @@ public final class CompanionSkillsScreen extends Screen {
                 int rank = skill.ordinal() < data.ranks.length ? data.ranks[skill.ordinal()] : 0;
                 int rowY = this.listTop + i * (ROW_HEIGHT + ROW_GAP) - this.scrollOffset;
                 int rowBottom = rowY + ROW_HEIGHT;
-                graphics.fill(left + 8, rowY, right - 8, rowBottom, 0xFF252A31);
+                CompanionUiTheme.drawCard(graphics, left + 8, rowY,
+                    right - left - 16, ROW_HEIGHT, false);
                 boolean locked = data.level < skill.getUnlockLevel();
                 if (locked) graphics.fill(left + 8, rowY, right - 8, rowBottom, 0x884B2525);
 
@@ -240,9 +244,13 @@ public final class CompanionSkillsScreen extends Screen {
                 if (locked) graphics.drawString(this.font, "L", left + 30, rowY + 39, 0xFFFFA070, false);
                 int textX = left + 44;
                 int textRight = textX + descriptionWidth;
-                graphics.drawString(this.font, skill.getDisplayName() + "  [" + skill.getType().name()
-                                + "]  Rank " + rank + "/" + skill.getMaximumRank(),
-                        textX, rowY + 8, 0xFFFFE6BE, false);
+                graphics.drawString(this.font, skill.getDisplayName(),
+                        textX, rowY + 8, CompanionUiTheme.TEXT_PRIMARY, false);
+                String skillMeta = skill.getType().name() + "  •  RANK "
+                        + rank + "/" + skill.getMaximumRank();
+                graphics.drawString(this.font, skillMeta,
+                        textX + Math.min(descriptionWidth - this.font.width(skillMeta), 150),
+                        rowY + 8, CompanionUiTheme.GOLD_BRIGHT, false);
                 for (int pip = 0; pip < skill.getMaximumRank(); pip++) {
                     int pipX = textX + pip * 9;
                     graphics.fill(pipX, rowY + 19, pipX + 7, rowY + 23,
@@ -290,8 +298,8 @@ public final class CompanionSkillsScreen extends Screen {
                     int barWidth = Math.max(36, descriptionWidth - 8);
                     int remaining = Math.min(skill.getCooldownTicks(), cooldownTicks);
                     int filled = barWidth * remaining / skill.getCooldownTicks();
-                    graphics.fill(textX, rowY + 63, textX + barWidth, rowY + 66, 0xFF090B0E);
-                    graphics.fill(textX, rowY + 63, textX + filled, rowY + 66, 0xFFD6A85F);
+                    CompanionUiTheme.drawProgressBar(graphics, textX, rowY + 63,
+                            barWidth, 3, filled / (float) barWidth, CompanionUiTheme.GOLD);
                 }
             }
             graphics.disableScissor();
