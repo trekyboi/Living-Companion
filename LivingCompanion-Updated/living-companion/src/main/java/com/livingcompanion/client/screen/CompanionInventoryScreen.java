@@ -158,12 +158,12 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
             slot = 2; description = "Leg slot — leg armor";
         } else if (x >= 8 && x < 26 && y >= 80 && y < 98) {
             slot = 3; description = "Boot slot — foot armor";
-        } else if (x >= 26 && x < 44 && y >= 20 && y < 38) {
+        } else if (x >= 26 && x < 44 && y >= 26 && y < 44) {
             slot = 4; description = "Main hand — weapon or utility item";
-        } else if (x >= 26 && x < 44 && y >= 56 && y < 74) {
+        } else if (x >= 26 && x < 44 && y >= 62 && y < 80) {
             slot = 5; description = "Off hand — shield or utility item";
         }
-        if (this.menu.hasCuriosBackSlot() && x >= 26 && x < 44 && y >= 38 && y < 56) {
+        if (this.menu.hasCuriosBackSlot() && x >= 26 && x < 44 && y >= 44 && y < 62) {
             return this.menu.getSlot(6).hasItem() ? null : "Back slot — equip a Curios-compatible backpack";
         }
         // Preserve vanilla item tooltips whenever the slot contains an item.
