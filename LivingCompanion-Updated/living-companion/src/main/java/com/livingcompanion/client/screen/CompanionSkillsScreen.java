@@ -87,11 +87,11 @@ public final class CompanionSkillsScreen extends Screen {
         this.addRenderableWidget(Button.builder(Component.literal("Attributes"), button ->
                 CompanionAttributesScreen.open(this, this.data))
                 .bounds(this.panelLeft + this.panelWidth - 108, this.panelTop + 29, 94, 22).build());
-        if (this.minecraft != null && this.minecraft.player != null
+        if (this.panelWidth >= 400 && this.minecraft != null && this.minecraft.player != null
                 && this.minecraft.player.getAbilities().instabuild) {
             this.addRenderableWidget(Button.builder(Component.literal("MAX LEVEL (CREATIVE)"), button ->
                     CompanionNetwork.requestCreativeMaxLevel(this.data.entityId))
-                    .bounds(this.panelLeft + 16, this.panelTop + 27, 132, 24).build());
+                    .bounds(this.panelLeft + this.panelWidth - 244, this.panelTop + 27, 132, 24).build());
         }
         this.listBottom = this.panelTop + this.panelHeight - 12;
 
