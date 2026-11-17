@@ -1277,7 +1277,8 @@ public class CompanionEntity extends PathfinderMob {
             this.journalEntries.add(JournalEntry.load(savedJournal.getCompound(i)));
         }
         if (this.journalEntries.isEmpty()) {
-            for (String memory : this.memories) this.journalEntries.add(JournalEntry.capture(this, memory));
+            for (String memory : this.memories) this.journalEntries.add(
+                    new JournalEntry(0L, "unknown", "unknown", 0, 0, 0, memory));
         }
     }
 
