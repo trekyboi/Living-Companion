@@ -1,5 +1,9 @@
 package com.livingcompanion.entity;
 
+import com.livingcompanion.ai.FollowOwnerGoal;
+import com.livingcompanion.ai.CompanionPatrolGoal;
+import com.livingcompanion.ai.CompanionCampWatchGoal;
+import com.livingcompanion.ai.CompanionIdleRoutineGoal;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
