@@ -14,6 +14,7 @@ public final class CompanionConfig {
     public static final ForgeConfigSpec.DoubleValue FOLLOW_START_DISTANCE;
     public static final ForgeConfigSpec.DoubleValue FOLLOW_STOP_DISTANCE;
     public static final ForgeConfigSpec.DoubleValue TELEPORT_DISTANCE;
+    public static final ForgeConfigSpec.DoubleValue PATROL_RADIUS;
     public static final ForgeConfigSpec.DoubleValue HOSTILE_SCAN_RANGE;
     public static final ForgeConfigSpec.BooleanValue PROACTIVE_COMBAT_ENABLED;
     public static final ForgeConfigSpec.BooleanValue HEALING_ENABLED;
@@ -44,6 +45,8 @@ public final class CompanionConfig {
                 .defineInRange("stopDistance", 1.5D, 0.5D, 16.0D);
         TELEPORT_DISTANCE = b.comment("Catch-up teleport distance. Set to 0 to disable.")
                 .defineInRange("teleportDistance", 24.0D, 0.0D, 128.0D);
+        PATROL_RADIUS = b.comment("Maximum patrol distance from the position where PATROL was ordered.")
+                .defineInRange("patrolRadius", 8.0D, 3.0D, 32.0D);
         b.pop();
 
         b.push("combat");
