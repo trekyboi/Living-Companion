@@ -76,6 +76,12 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(12, SetCommandMessage.class,
                 SetCommandMessage::encode, SetCommandMessage::decode,
                 SetCommandMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(13, RequestJournalMessage.class,
+                RequestJournalMessage::encode, RequestJournalMessage::decode,
+                RequestJournalMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(14, JournalDataMessage.class,
+                JournalDataMessage::encode, JournalDataMessage::decode,
+                JournalDataMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -156,6 +162,84 @@ public final class CompanionNetwork {
 
     public static void requestStats(int companionEntityId) {
         CHANNEL.sendToServer(new RequestStatsMessage(companionEntityId));
+    }
+
+    public static void requestJournal(int companionEntityId) {
+        CHANNEL.sendToServer(new RequestJournalMessage(companionEntityId));
+    }
+
+    public static final class RequestJournalMessage {
+        private final int entityId;
+        public RequestJournalMessage(int entityId) { this.entityId = entityId; }
+        public static void encode(RequestJournalMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.entityId);
+        }
+        public static RequestJournalMessage decode(FriendlyByteBuf buffer) {
+            return new RequestJournalMessage(buffer.readVarInt());
+        }
+        public static void handle(RequestJournalMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null) return;
+                Entity entity = player.serverLevel().getEntity(message.entityId);
+                if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
+                        || !companion.isAlive() || companion.distanceToSqr(player) > 64.0D) return;
+                String[] memories = companion.getMemories().toArray(String[]::new);
+                CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+                        new JournalDataMessage(companion.getId(), companion.getName().getString(),
+                                companion.getCompanionClass().getDisplayName(),
+                                companion.getProgression().getLevel(),
+                                companion.getRelationship().getLevel(),
+                                companion.getRelationship().getTitle(), memories));
+            });
+            context.setPacketHandled(true);
+        }
+    }
+
+    public static final class JournalDataMessage {
+        private final int entityId, level, bondLevel;
+        private final String name, className, bondTitle;
+        private final String[] memories;
+        public JournalDataMessage(int entityId, String name, String className, int level,
+                                  int bondLevel, String bondTitle, String[] memories) {
+            this.entityId = entityId; this.name = name; this.className = className;
+            this.level = level; this.bondLevel = bondLevel; this.bondTitle = bondTitle;
+            this.memories = memories == null ? new String[0] : memories;
+        }
+        public static void encode(JournalDataMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.entityId);
+            buffer.writeUtf(message.name, 64);
+            buffer.writeUtf(message.className, 32);
+            buffer.writeVarInt(message.level);
+            buffer.writeVarInt(message.bondLevel);
+            buffer.writeUtf(message.bondTitle, 64);
+            buffer.writeVarInt(Math.min(message.memories.length, 12));
+            for (int i = 0; i < Math.min(message.memories.length, 12); i++) {
+                buffer.writeUtf(message.memories[i], 160);
+            }
+        }
+        public static JournalDataMessage decode(FriendlyByteBuf buffer) {
+            int entityId = buffer.readVarInt();
+            String name = buffer.readUtf(64);
+            String className = buffer.readUtf(32);
+            int level = buffer.readVarInt();
+            int bondLevel = buffer.readVarInt();
+            String bondTitle = buffer.readUtf(64);
+            int count = Math.max(0, Math.min(12, buffer.readVarInt()));
+            String[] memories = new String[count];
+            for (int i = 0; i < count; i++) memories[i] = buffer.readUtf(160);
+            return new JournalDataMessage(entityId, name, className, level, bondLevel, bondTitle, memories);
+        }
+        public static void handle(JournalDataMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                    () -> () -> Minecraft.getInstance().setScreen(
+                            new com.livingcompanion.client.screen.CompanionJournalScreen(
+                                    message.name, message.className, message.level,
+                                    message.bondLevel, message.bondTitle, message.memories))));
+            context.setPacketHandled(true);
+        }
     }
 
     private static void sendStatsData(ServerPlayer player, CompanionEntity companion) {
