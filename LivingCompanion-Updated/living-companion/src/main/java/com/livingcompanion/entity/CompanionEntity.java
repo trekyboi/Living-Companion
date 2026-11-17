@@ -332,7 +332,7 @@ public class CompanionEntity extends PathfinderMob {
     /** Prioritizes the hostile target deliberately attacked by the owner. */
     public void focusOwnerTarget(LivingEntity target) {
         if (this.level().isClientSide || target == null || !target.isAlive()
-                || this.command == Command.STAY
+                || this.command == Command.STAY || this.command == Command.RETREAT
                 || (!(target instanceof Monster) && !(target instanceof EnderDragon)
                 && !(target instanceof WitherBoss))) return;
         Player owner = getOwnerPlayer();
@@ -348,7 +348,7 @@ public class CompanionEntity extends PathfinderMob {
     public void assistOwnerAgainst(LivingEntity attacker) {
         if (this.level().isClientSide || attacker == null || !attacker.isAlive()
                 || (!(attacker instanceof Monster) && !(attacker instanceof EnderDragon))
-                || this.command == Command.STAY) return;
+                || this.command == Command.STAY || this.command == Command.RETREAT) return;
         Player owner = getOwnerPlayer();
         if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
         double protectiveRange = 16.0D + this.personality.getProtectiveInstinct() * 4.0D;
@@ -660,7 +660,7 @@ public class CompanionEntity extends PathfinderMob {
         if (!CompanionConfig.PROACTIVE_COMBAT_ENABLED.get()) return false;
         // STAY disables proactive target acquisition. HurtByTargetGoal remains active,
         // so the companion can still respond when directly attacked.
-        if (this.command == Command.STAY) return false;
+        if (this.command == Command.STAY || this.command == Command.RETREAT) return false;
 
         double range = CompanionConfig.HOSTILE_SCAN_RANGE.get();
         Player owner = getOwnerPlayer();
@@ -704,7 +704,7 @@ public class CompanionEntity extends PathfinderMob {
      * the owner or companion. This reduces target switching and helps finish threats.
      */
     private void tickCombatCooperation() {
-        if (!CompanionConfig.PROACTIVE_COMBAT_ENABLED.get() || this.command == Command.STAY) return;
+        if (!CompanionConfig.PROACTIVE_COMBAT_ENABLED.get() || this.command == Command.STAY || this.command == Command.RETREAT) return;
         Player owner = getOwnerPlayer();
         if (owner == null || !owner.isAlive() || owner.level() != this.level()) return;
         LivingEntity current = this.getTarget();
