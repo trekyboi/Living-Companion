@@ -25,7 +25,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         super(menu, playerInventory, title);
         this.imageWidth = 236;
         this.imageHeight = 250;
-        this.inventoryLabelY = 130;
+        this.inventoryLabelY = -1000;
         this.titleLabelX = 8;
         this.titleLabelY = 6;
     }
@@ -111,6 +111,8 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
                 left + 8, top + 108, 40);
         CompanionUiTheme.drawSectionHeader(graphics, this.font, "COMPANION STORAGE",
                 left + 62, top + 108, 166);
+        CompanionUiTheme.drawSectionHeader(graphics, this.font, "YOUR INVENTORY",
+                left + 8, top + 132, 166);
 
         // Recognizable vanilla item silhouettes identify each empty equipment slot.
         ItemStack[] equipmentIcons = {
