@@ -1,6 +1,8 @@
 package com.livingcompanion.entity;
 
 import com.livingcompanion.ai.FollowOwnerGoal;
+import com.livingcompanion.ai.MageRangedPositionGoal;
+import com.livingcompanion.config.CompanionConfig;
 import com.livingcompanion.ai.CompanionPatrolGoal;
 import com.livingcompanion.ai.CompanionCampWatchGoal;
 import com.livingcompanion.ai.CompanionIdleRoutineGoal;
@@ -28,6 +30,9 @@ public final class MageCompanionEntity extends CompanionEntity {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
+        // Combat positioning takes precedence over following so the Mage can keep
+        // a casting lane instead of walking into the target or abandoning range.
+        this.goalSelector.addGoal(1, new MageRangedPositionGoal(this));
         this.goalSelector.addGoal(2, new FollowOwnerGoal(this, 1.10D));
         this.goalSelector.addGoal(2, new CompanionPatrolGoal(this));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
@@ -37,8 +42,20 @@ public final class MageCompanionEntity extends CompanionEntity {
 
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Monster.class,
-                10, true, false, target -> target.distanceToSqr(this)
-                <= net.minecraft.world.entity.ai.attributes.Attributes.FOLLOW_RANGE.getDefaultValue()
-                * net.minecraft.world.entity.ai.attributes.Attributes.FOLLOW_RANGE.getDefaultValue()));
+                10, true, false, target -> {
+                    // Match the Knight's server config and command policy.
+                    // Direct retaliation remains available through HurtByTargetGoal.
+                    if (!CompanionConfig.PROACTIVE_COMBAT_ENABLED.get()) return false;
+                    Command command = this.getCommand();
+                    if (command == Command.STAY || command == Command.RETREAT) return false;
+
+                    double range = CompanionConfig.HOSTILE_SCAN_RANGE.get();
+                    Player owner = this.getOwnerPlayer();
+                    if (command == Command.DEFEND && owner != null && owner.isAlive()
+                            && owner.level() == this.level()) {
+                        return target.distanceToSqr(owner) <= range * range;
+                    }
+                    return target.distanceToSqr(this) <= range * range;
+                }));
     }
 }
