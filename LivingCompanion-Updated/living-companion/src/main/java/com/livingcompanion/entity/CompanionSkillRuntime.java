@@ -166,6 +166,11 @@ public final class CompanionSkillRuntime {
                     && furyRank > 0 && target.isAlive()) {
                 target.hurt(companion.damageSources().mobAttack(companion), 0.5F * furyRank);
             }
+            int momentumRank = rank(CompanionSkill.TANK_JUGGERNAUT_MOMENTUM);
+            if (companion.getProgression().getSpecialization() == CompanionSpecialization.TANK_JUGGERNAUT
+                    && momentumRank > 0 && target.isAlive()) {
+                target.hurt(companion.damageSources().mobAttack(companion), 1.0F * momentumRank);
+            }
             return;
         }
         if (companion.getCompanionClass() != CompanionClass.PALADIN) return;
@@ -314,6 +319,11 @@ public final class CompanionSkillRuntime {
         if (companion.getCompanionClass() == CompanionClass.PALADIN) {
             if (divineProtectionTicks > 0) amount *= 0.65F;
             if (aegisTicks > 0) amount *= 0.35F;
+            int vigilRank = rank(CompanionSkill.PALADIN_TEMPLAR_VIGIL);
+            if (companion.getProgression().getSpecialization() == CompanionSpecialization.PALADIN_TEMPLAR
+                    && vigilRank > 0) {
+                amount *= 1.0F - Math.min(0.15F, 0.05F * vigilRank);
+            }
             return amount;
         }
 
