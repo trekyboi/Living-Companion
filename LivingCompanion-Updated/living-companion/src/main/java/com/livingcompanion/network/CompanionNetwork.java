@@ -149,6 +149,8 @@ public final class CompanionNetwork {
         }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                 new StatsDataMessage(companion.getId(), companion.getCompanionClass().ordinal(),
+                        companion.getProgression().getSpecialization() == null ? -1
+                                : companion.getProgression().getSpecialization().ordinal(),
                         companion.getProgression().getLevel(), companion.getProgression().getExperience(),
                         companion.getProgression().getExperienceToNextLevel(), stats, attributes, ranks,
                         companion.getRelationship().getLevel(), companion.getRelationship().getExperience(),
@@ -201,19 +203,19 @@ public final class CompanionNetwork {
     }
 
     public static final class StatsDataMessage {
-        public final int entityId, classId, level, experience, experienceToNext;
+        public final int entityId, classId, specializationId, level, experience, experienceToNext;
         public final int relationshipLevel, relationshipExperience, relationshipExperienceToNext;
         public final String relationshipTitle, companionTitle;
         public final int achievementCount;
         public final String[] achievementTitles;
         public final double[] stats;
         public final int[] attributes, ranks;
-        public StatsDataMessage(int entityId, int classId, int level, int experience,
+        public StatsDataMessage(int entityId, int classId, int specializationId, int level, int experience,
                                 int experienceToNext, double[] stats, int[] attributes, int[] ranks,
                                 int relationshipLevel, int relationshipExperience,
                                 int relationshipExperienceToNext, String relationshipTitle,
                                 String companionTitle, int achievementCount, String[] achievementTitles) {
-            this.entityId=entityId; this.classId=classId; this.level=level;
+            this.entityId=entityId; this.classId=classId; this.specializationId=specializationId; this.level=level;
             this.experience=experience; this.experienceToNext=experienceToNext;
             this.stats=stats; this.attributes=attributes; this.ranks=ranks;
             this.relationshipLevel=relationshipLevel; this.relationshipExperience=relationshipExperience;
@@ -224,6 +226,7 @@ public final class CompanionNetwork {
         }
         public static void encode(StatsDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId); buffer.writeVarInt(message.classId);
+            buffer.writeVarInt(message.specializationId);
             buffer.writeVarInt(message.level); buffer.writeVarInt(message.experience);
             buffer.writeVarInt(message.experienceToNext);
             buffer.writeVarInt(message.stats.length);
@@ -240,8 +243,8 @@ public final class CompanionNetwork {
             for (String achievement : message.achievementTitles) buffer.writeUtf(achievement, 64);
         }
         public static StatsDataMessage decode(FriendlyByteBuf buffer) {
-            int entityId=buffer.readVarInt(), classId=buffer.readVarInt(), level=buffer.readVarInt();
-            int experience=buffer.readVarInt(), next=buffer.readVarInt();
+            int entityId=buffer.readVarInt(), classId=buffer.readVarInt(), specializationId=buffer.readVarInt();
+            int level=buffer.readVarInt(), experience=buffer.readVarInt(), next=buffer.readVarInt();
             int count=Math.min(16, buffer.readVarInt());
             double[] stats=new double[count];
             for(int i=0;i<count;i++) stats[i]=buffer.readDouble();
@@ -256,7 +259,7 @@ public final class CompanionNetwork {
             int achievementTitleCount=Math.min(32, buffer.readVarInt());
             String[] achievementTitles=new String[achievementTitleCount];
             for(int i=0;i<achievementTitleCount;i++) achievementTitles[i]=buffer.readUtf(64);
-            return new StatsDataMessage(entityId,classId,level,experience,next,stats,
+            return new StatsDataMessage(entityId,classId,specializationId,level,experience,next,stats,
                     attributes,ranks,relationshipLevel,relationshipExperience,relationshipNext,
                     relationshipTitle,companionTitle,achievementCount,achievementTitles);
         }
