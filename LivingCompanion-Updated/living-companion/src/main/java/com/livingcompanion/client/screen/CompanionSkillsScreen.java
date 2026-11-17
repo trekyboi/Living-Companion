@@ -200,8 +200,7 @@ public final class CompanionSkillsScreen extends Screen {
         int right = left + this.panelWidth;
         int bottom = top + this.panelHeight;
 
-        graphics.fill(left, top, right, bottom, 0xF0181B20);
-        graphics.fill(left, top, right, top + 2, 0xFF9A784A);
+        CompanionUiTheme.drawPanel(graphics, left, top, right - left, bottom - top);
         graphics.fill(left, bottom - 2, right, bottom, 0xFF9A784A);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, top + 10, 0xFFFFE6BE);
 
