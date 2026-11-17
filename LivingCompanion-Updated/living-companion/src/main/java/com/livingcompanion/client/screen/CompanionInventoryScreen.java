@@ -73,11 +73,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int left = this.leftPos;
         int top = this.topPos;
-        graphics.fill(left, top, left + this.imageWidth, top + this.imageHeight, 0xE0181B20);
-        graphics.fill(left, top, left + this.imageWidth, top + 1, 0xFF9A784A);
-        graphics.fill(left, top + this.imageHeight - 1, left + this.imageWidth, top + this.imageHeight, 0xFF9A784A);
-        graphics.fill(left, top, left + 1, top + this.imageHeight, 0xFF9A784A);
-        graphics.fill(left + this.imageWidth - 1, top, left + this.imageWidth, top + this.imageHeight, 0xFF9A784A);
+        CompanionUiTheme.drawPanel(graphics, left, top, this.imageWidth, this.imageHeight);
 
         // Equipment column: helmet, chest, legs, feet, main hand, offhand.
         drawSlot(graphics, left + 8, top + 20);
