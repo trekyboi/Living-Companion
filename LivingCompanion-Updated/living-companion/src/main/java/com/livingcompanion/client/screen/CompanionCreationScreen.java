@@ -33,7 +33,7 @@ public final class CompanionCreationScreen extends Screen {
     }
 
     private int panelWidth() { return Math.min(460, Math.max(260, width - 24)); }
-    private int panelHeight() { return Math.min(360, Math.max(300, height - 20)); }
+    private int panelHeight() { return Math.min(360, Math.max(320, height - 20)); }
     private int panelLeft() { return (width - panelWidth()) / 2; }
     private int panelTop() { return (height - panelHeight()) / 2; }
 
@@ -95,7 +95,7 @@ public final class CompanionCreationScreen extends Screen {
         if (step == 0) {
             knightName = entered;
             step = 1;
-            init();
+            rebuildWidgets();
             return;
         }
         String mageName = entered;
@@ -107,7 +107,7 @@ public final class CompanionCreationScreen extends Screen {
     private void goBack() {
         if (step != 1) return;
         step = 0;
-        init();
+        rebuildWidgets();
     }
 
     @Override
