@@ -32,8 +32,8 @@ public final class CompanionCreationScreen extends Screen {
         Minecraft.getInstance().setScreen(new CompanionCreationScreen());
     }
 
-    private int panelWidth() { return Math.min(460, Math.max(260, width - 24)); }
-    private int panelHeight() { return Math.min(360, Math.max(320, height - 20)); }
+    private int panelWidth() { return Math.min(420, Math.max(260, width - 24)); }
+    private int panelHeight() { return Math.min(320, Math.max(240, height - 24)); }
     private int panelLeft() { return (width - panelWidth()) / 2; }
     private int panelTop() { return (height - panelHeight()) / 2; }
 
@@ -41,10 +41,10 @@ public final class CompanionCreationScreen extends Screen {
     protected void init() {
         int left = panelLeft();
         int top = panelTop();
-        int innerWidth = panelWidth() - 56;
-        int gap = 12;
+        int innerWidth = panelWidth() - 48;
+        int gap = 10;
         int classWidth = (innerWidth - gap) / 2;
-        nameField = new EditBox(font, left + 28, top + 82, innerWidth, 22,
+        nameField = new EditBox(font, left + 24, top + 68, innerWidth, 22,
                 Component.literal("Companion name"));
         nameField.setMaxLength(24);
         nameField.setValue(step == 0 ? knightName : "Lyra");
@@ -52,15 +52,15 @@ public final class CompanionCreationScreen extends Screen {
 
         firstClassButton = addRenderableWidget(Button.builder(Component.empty(),
                 button -> selectClass(step == 0 ? CompanionClass.PALADIN : CompanionClass.SHAMAN))
-                .bounds(left + 28, top + 130, classWidth, 24).build());
+                .bounds(left + 24, top + 108, classWidth, 24).build());
         secondClassButton = addRenderableWidget(Button.builder(Component.empty(),
                 button -> selectClass(step == 0 ? CompanionClass.TANK : CompanionClass.ELEMENTALIST))
-                .bounds(left + 28 + classWidth + gap, top + 130, classWidth, 24).build());
+                .bounds(left + 24 + classWidth + gap, top + 108, classWidth, 24).build());
 
         backButton = addRenderableWidget(Button.builder(Component.literal("Back"), button -> goBack())
-                .bounds(left + 28, top + 278, 90, 24).build());
+                .bounds(left + 24, top + panelHeight() - 36, 84, 22).build());
         continueButton = addRenderableWidget(Button.builder(Component.literal("Next: Meet the Mage"), button -> advance())
-                .bounds(left + 128, top + 278, innerWidth - 100, 24).build());
+                .bounds(left + 116, top + panelHeight() - 36, innerWidth - 92, 22).build());
         backButton.visible = step == 1;
         refreshButtons();
         setInitialFocus(nameField);
@@ -114,7 +114,7 @@ public final class CompanionCreationScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics);
         int left = panelLeft(), top = panelTop(), panelWidth = panelWidth();
-        int innerLeft = left + 28, innerWidth = panelWidth - 56, center = width / 2;
+        int innerLeft = left + 24, innerWidth = panelWidth - 48, center = width / 2;
         CompanionUiTheme.drawPanel(graphics, left, top, panelWidth, panelHeight());
         String character = step == 0 ? "THE KNIGHT" : "THE MAGE";
         String subtitle = step == 0 ? "Your steadfast blade on the road ahead"
@@ -122,20 +122,20 @@ public final class CompanionCreationScreen extends Screen {
         CompanionUiTheme.drawTitle(graphics, font, "A COMPANION FOR THE JOURNEY",
                 character + "  •  " + subtitle, center, top + 14);
         CompanionUiTheme.drawSectionHeader(graphics, font, step == 0 ? "KNIGHT'S NAME" : "MAGE'S NAME",
-                innerLeft, top + 62, innerWidth);
+                innerLeft, top + 48, innerWidth);
 
-        int gap = 12, classWidth = (innerWidth - gap) / 2;
-        CompanionUiTheme.drawCard(graphics, innerLeft - 3, top + 127,
+        int gap = 10, classWidth = (innerWidth - gap) / 2;
+        CompanionUiTheme.drawCard(graphics, innerLeft - 3, top + 105,
                 classWidth + 6, 30, (step == 0 ? knightClass : mageClass)
                         == (step == 0 ? CompanionClass.PALADIN : CompanionClass.SHAMAN));
-        CompanionUiTheme.drawCard(graphics, innerLeft + classWidth + gap - 3, top + 127,
+        CompanionUiTheme.drawCard(graphics, innerLeft + classWidth + gap - 3, top + 105,
                 classWidth + 6, 30, (step == 0 ? knightClass : mageClass)
                         == (step == 0 ? CompanionClass.TANK : CompanionClass.ELEMENTALIST));
 
         CompanionClass selected = step == 0 ? knightClass : mageClass;
-        CompanionUiTheme.drawCard(graphics, innerLeft - 3, top + 168, innerWidth + 6, 82, true);
+        CompanionUiTheme.drawCard(graphics, innerLeft - 3, top + 142, innerWidth + 6, 76, true);
         List<FormattedCharSequence> lines = font.split(Component.literal(selected.getDescription()), innerWidth - 24);
-        int y = top + 179;
+        int y = top + 153;
         for (FormattedCharSequence line : lines) {
             graphics.drawCenteredString(font, line, center, y, CompanionUiTheme.TEXT_PRIMARY);
             y += 12;
@@ -145,7 +145,7 @@ public final class CompanionCreationScreen extends Screen {
                 : "Taunts  •  Resilience  •  Frontline defense")
                 : (mageClass == CompanionClass.SHAMAN ? "Nature  •  Spirit magic  •  Restoration"
                 : "Fire  •  Water  •  Air  •  Earth");
-        graphics.drawCenteredString(font, traits, center, top + 229, CompanionUiTheme.GOLD_BRIGHT);
+        graphics.drawCenteredString(font, traits, center, top + 198, CompanionUiTheme.GOLD_BRIGHT);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
