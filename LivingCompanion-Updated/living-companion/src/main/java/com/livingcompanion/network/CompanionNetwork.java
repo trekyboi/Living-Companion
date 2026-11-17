@@ -83,6 +83,9 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(14, JournalDataMessage.class,
                 JournalDataMessage::encode, JournalDataMessage::decode,
                 JournalDataMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(15, CreateCompanionsMessage.class,
+                CreateCompanionsMessage::encode, CreateCompanionsMessage::decode,
+                CreateCompanionsMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -701,6 +704,82 @@ public final class CompanionNetwork {
                 }
             });
             context.setPacketHandled(true);
+        }
+    }
+
+    /** Creates both companions from the sequential first-join introduction. */
+    public static final class CreateCompanionsMessage {
+        private final String knightName, mageName;
+        private final int knightClassId, mageClassId;
+
+        public CreateCompanionsMessage(String knightName, int knightClassId, String mageName, int mageClassId) {
+            this.knightName = knightName; this.knightClassId = knightClassId;
+            this.mageName = mageName; this.mageClassId = mageClassId;
+        }
+
+        public static void encode(CreateCompanionsMessage message, FriendlyByteBuf buffer) {
+            buffer.writeUtf(message.knightName, 24);
+            buffer.writeVarInt(message.knightClassId);
+            buffer.writeUtf(message.mageName, 24);
+            buffer.writeVarInt(message.mageClassId);
+        }
+
+        public static CreateCompanionsMessage decode(FriendlyByteBuf buffer) {
+            return new CreateCompanionsMessage(buffer.readUtf(24), buffer.readVarInt(),
+                    buffer.readUtf(24), buffer.readVarInt());
+        }
+
+        public static void handle(CreateCompanionsMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null || player.getServer() == null) return;
+                if (message.knightClassId < CompanionClass.PALADIN.ordinal()
+                        || message.knightClassId > CompanionClass.TANK.ordinal()
+                        || (message.mageClassId != CompanionClass.SHAMAN.ordinal()
+                        && message.mageClassId != CompanionClass.ELEMENTALIST.ordinal())) return;
+                String knightName = cleanCompanionName(message.knightName);
+                String mageName = cleanCompanionName(message.mageName);
+                if (knightName == null || mageName == null) {
+                    player.sendSystemMessage(Component.literal("Both companions need names between 1 and 24 characters."));
+                    return;
+                }
+                if (findCompanion(player) != null
+                        || CompanionResurrectionData.get(player.getServer()).hasPendingResurrection(player.getUUID())) {
+                    player.getPersistentData().putBoolean("LivingCompanionCreationComplete", true);
+                    player.sendSystemMessage(Component.literal("Your companions are already present or awaiting resurrection."));
+                    return;
+                }
+
+                ServerLevel level = player.serverLevel();
+                CompanionEntity knight = ModEntities.COMPANION.get().create(level);
+                CompanionEntity mage = ModEntities.MAGE_COMPANION.get().create(level);
+                if (knight == null || mage == null) return;
+                knight.moveTo(player.getX() + 1.5D, player.getY(), player.getZ() + 1.5D, player.getYRot(), 0.0F);
+                mage.moveTo(player.getX() - 1.5D, player.getY(), player.getZ() + 1.5D, player.getYRot(), 0.0F);
+                knight.bindOwner(player);
+                mage.bindOwner(player);
+                knight.setCompanionClass(CompanionClass.values()[message.knightClassId]);
+                mage.setCompanionClass(CompanionClass.values()[message.mageClassId]);
+                knight.setCompanionName(knightName);
+                mage.setCompanionName(mageName);
+                if (level.addFreshEntity(knight)) {
+                    if (level.addFreshEntity(mage)) {
+                        player.getPersistentData().putBoolean("LivingCompanionCreationComplete", true);
+                        player.sendSystemMessage(Component.literal(knightName + " and " + mageName
+                                + " have joined your adventure."));
+                    } else {
+                        knight.discard();
+                    }
+                }
+            });
+            context.setPacketHandled(true);
+        }
+
+        private static String cleanCompanionName(String raw) {
+            if (raw == null) return null;
+            String clean = raw.replaceAll("[\\\\p{Cntrl}]", "").trim();
+            return clean.isEmpty() || clean.length() > 24 ? null : clean;
         }
     }
 
