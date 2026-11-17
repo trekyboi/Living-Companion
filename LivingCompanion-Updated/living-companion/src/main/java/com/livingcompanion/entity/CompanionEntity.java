@@ -1305,7 +1305,7 @@ public class CompanionEntity extends PathfinderMob {
         return this.command;
     }
 
-    private void setCommand(Command next) {
+    public void setCommand(Command next) {
         this.command = next;
         this.getNavigation().stop();
 
