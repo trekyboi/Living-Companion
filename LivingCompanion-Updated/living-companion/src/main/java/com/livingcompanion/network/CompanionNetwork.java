@@ -221,7 +221,7 @@ public final class CompanionNetwork {
             buffer.writeVarInt(count);
             for (int i = 0; i < count; i++) {
                 JournalEntry entry = message.entries[i];
-                buffer.writeLong(entry.getGameTime());
+                buffer.writeLong(entry.getWorldTime());
                 buffer.writeUtf(entry.getDimension(), 128);
                 buffer.writeUtf(entry.getBiome(), 128);
                 buffer.writeInt(entry.getX()); buffer.writeInt(entry.getY()); buffer.writeInt(entry.getZ());
