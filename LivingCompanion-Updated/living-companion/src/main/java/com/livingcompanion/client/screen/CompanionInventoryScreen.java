@@ -59,12 +59,12 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
                 this.minecraft.setScreen(new CompanionCommandScreen(this, this.menu.getCompanion().getId(),
                         this.menu.getCompanion().getCommand()));
             }
-        }).bounds(this.leftPos + 62, this.topPos + 248, 166, 18).build());
+        }).bounds(this.leftPos + 62, this.topPos + 226, 166, 18).build());
         this.protectionButton = this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
             if (this.minecraft != null && this.minecraft.gameMode != null) {
                 this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
             }
-        }).bounds(this.leftPos + 62, this.topPos + 226, 166, 18).build());
+        }).bounds(this.leftPos + 62, this.topPos + 248, 166, 18).build());
     }
 
     private static void drawSlot(GuiGraphics graphics, int x, int y) {
