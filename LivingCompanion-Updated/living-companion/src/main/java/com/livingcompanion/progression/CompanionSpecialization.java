@@ -1,6 +1,6 @@
 package com.livingcompanion.progression;
 
-/** Permanent level-15 class paths that shape the companion's combat role. */
+/** Permanent level-30 class paths that shape the companion's combat role. */
 public enum CompanionSpecialization {
     PALADIN_WARDEN(CompanionClass.PALADIN, "warden", "Warden", "A protective healer who strengthens wards and restorative skills."),
     PALADIN_CRUSADER(CompanionClass.PALADIN, "crusader", "Crusader", "An aggressive holy warrior who amplifies melee damage and Holy Strike."),
