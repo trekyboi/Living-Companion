@@ -85,9 +85,7 @@ public final class CompanionStatsScreen extends Screen {
         int panelWidth=Math.min(470,Math.max(220,virtualWidth-24));
         int panelHeight=Math.min(310,Math.max(250,virtualHeight-20));
         int left=(virtualWidth-panelWidth)/2, top=(virtualHeight-panelHeight)/2;
-        graphics.fill(left,top,left+panelWidth,top+panelHeight,0xF0181B20);
-        graphics.fill(left,top,left+panelWidth,top+2,0xFF9A784A);
-        graphics.fill(left,top+panelHeight-1,left+panelWidth,top+panelHeight,0xFF9A784A);
+        CompanionUiTheme.drawPanel(graphics,left,top,panelWidth,panelHeight);
         graphics.drawCenteredString(font,title,virtualWidth/2,top+9,0xFFFFE6BE);
 
         String className=data.classId>=0 && data.classId<CompanionClass.values().length
