@@ -102,16 +102,20 @@ public final class CompanionSkillsScreen extends Screen {
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
         if (data.level >= 30 && data.specializationId < 0) {
             CompanionSpecialization[] choices = CompanionSpecialization.forClass(classes[data.classId]);
-            int choiceWidth = Math.max(54, Math.min(120,
-                    (this.panelWidth - 48 - 8 * (choices.length - 1)) / choices.length));
-            for (int i = 0; i < choices.length; i++) {
+            // Some archetypes (including the Mage classes) do not have specializations.
+            // Never calculate a per-choice width when there are no available choices.
+            if (choices.length > 0) {
+                int choiceWidth = Math.max(54, Math.min(120,
+                        (this.panelWidth - 48 - 8 * (choices.length - 1)) / choices.length));
+                for (int i = 0; i < choices.length; i++) {
                 CompanionSpecialization choice = choices[i];
                 Button select = Button.builder(Component.literal(choice.getDisplayName()), button ->
                         CompanionNetwork.requestSpecialization(data.entityId, choice.getId()))
                         .bounds(this.panelLeft + 16 + i * (choiceWidth + 8), this.panelTop + 98,
                                 choiceWidth, 20).build();
-                this.specializationButtons.add(select);
-                this.addRenderableWidget(select);
+                    this.specializationButtons.add(select);
+                    this.addRenderableWidget(select);
+                }
             }
         }
         for (CompanionSkill skill : CompanionSkill.forClassAndSpecialization(
