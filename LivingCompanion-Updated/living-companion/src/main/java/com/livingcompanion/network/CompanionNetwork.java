@@ -400,7 +400,7 @@ public final class CompanionNetwork {
                         || companion.distanceToSqr(player) > 64.0D) return;
                 CompanionSpecialization choice = CompanionSpecialization.byId(message.specializationId);
                 if (!companion.getProgression().chooseSpecialization(choice, companion.getCompanionClass())) {
-                    player.sendSystemMessage(Component.literal("That specialization is unavailable. Reach level 15 and choose a path for your class."));
+                    player.sendSystemMessage(Component.literal("That specialization is unavailable. Reach level 30 and choose a path for your class."));
                     return;
                 }
                 companion.refreshProgressionAttributes();
