@@ -6,6 +6,7 @@ import com.livingcompanion.progression.CompanionAttribute;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -23,6 +24,17 @@ public final class CompanionStatsScreen extends Screen {
 
     public static void open(Screen parent, StatsDataMessage data) {
         net.minecraft.client.Minecraft.getInstance().setScreen(new CompanionStatsScreen(parent,data));
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        if (minecraft != null && minecraft.player != null
+                && minecraft.player.getAbilities().instabuild) {
+            addRenderableWidget(Button.builder(Component.literal("MAX LEVEL (CREATIVE)"), button ->
+                    CompanionNetwork.requestCreativeMaxLevel(data.entityId))
+                    .bounds(width / 2 - 76, height - 30, 152, 20).build());
+        }
     }
 
     public void updateData(StatsDataMessage next) {
