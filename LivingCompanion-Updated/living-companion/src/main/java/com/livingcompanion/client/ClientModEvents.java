@@ -2,6 +2,7 @@ package com.livingcompanion.client;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.client.renderer.CompanionPlayerRenderer;
+import com.livingcompanion.client.renderer.MageCompanionRenderer;
 import com.livingcompanion.registry.ModEntities;
 import com.livingcompanion.registry.ModMenus;
 import com.livingcompanion.client.screen.CompanionInventoryScreen;
@@ -21,6 +22,7 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.COMPANION.get(), CompanionPlayerRenderer::new);
+        event.registerEntityRenderer(ModEntities.MAGE_COMPANION.get(), MageCompanionRenderer::new);
     }
 
     @SubscribeEvent
