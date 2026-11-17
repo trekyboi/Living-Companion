@@ -1416,6 +1416,42 @@ public class CompanionEntity extends PathfinderMob {
         return true;
     }
 
+    /** Returns short ambient opinions grounded in the companion's current biome. */
+    private List<String> locationOpinionLines() {
+        String biome = this.lastBiomeId;
+        if (biome.contains("forest") || biome.contains("grove")) {
+            return List.of("I like the shelter these trees give us. The shadows still deserve a careful look.",
+                    "The forest feels old. I wonder how many travelers have passed this way.",
+                    "There is good cover here. We should keep an eye on the treeline.");
+        }
+        if (biome.contains("mountain") || biome.contains("peaks") || biome.contains("highlands")) {
+            return List.of("The view is worth the climb. The path down deserves equal respect.",
+                    "Thin air and narrow trails. Stay close on this ridge.",
+                    "From up here, the world looks almost peaceful.");
+        }
+        if (biome.contains("savanna")) {
+            return List.of("Open country. We can see trouble coming a long way off.",
+                    "The grass moves with the wind. I still check it for movement.",
+                    "A fine place to travel. Shade may become precious by midday.");
+        }
+        if (biome.contains("nether")) {
+            return List.of("The Nether never feels quiet. Even the stone seems hostile.",
+                    "Keep our route in mind. Getting lost here is an expensive mistake.",
+                    "I would gladly trade this heat for a cold rain back home.");
+        }
+        if (biome.contains("end")) {
+            return List.of("This place feels abandoned by the rest of creation.",
+                    "Keep your footing. There is very little forgiveness out here.",
+                    "I still cannot get used to this sky.");
+        }
+        if (biome.contains("river")) {
+            return List.of("A river gives us water and a landmark. Both are worth keeping.",
+                    "We should follow the bank carefully. Water draws all kinds of company.",
+                    "The sound of running water makes this stretch feel almost gentle.");
+        }
+        return List.of();
+    }
+
     /** Context-aware dialogue with broad pools, memory callbacks, and repetition protection. */
     private void speakOccasionally() {
         if (!CompanionConfig.DIALOGUE_ENABLED.get() || this.getOwnerUUID() == null) return;
@@ -1463,6 +1499,8 @@ public class CompanionEntity extends PathfinderMob {
             pool = OWNER_HURT_LINES;
         } else if (this.getHealth() <= this.getMaxHealth() * 0.35F) {
             pool = COMPANION_HURT_LINES;
+        } else if (!locationOpinionLines().isEmpty() && this.random.nextInt(4) == 0) {
+            pool = locationOpinionLines();
         } else if (this.level().isRaining() || this.level().isThundering()) {
             pool = WEATHER_LINES;
         } else if (this.level().getDayTime() % 24000L >= 13000L
