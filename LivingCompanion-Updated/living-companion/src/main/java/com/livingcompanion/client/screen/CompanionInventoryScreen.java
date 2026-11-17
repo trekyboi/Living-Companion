@@ -31,7 +31,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     }
 
     private Component protectionLabel() {
-        return Component.literal("Owner damage blocked: " + (this.menu.getCompanion().isProtectedFromOwner() ? "ON" : "OFF"));
+        return Component.literal("Protect: " + (this.menu.getCompanion().isProtectedFromOwner() ? "ON" : "OFF"));
     }
 
     @Override
