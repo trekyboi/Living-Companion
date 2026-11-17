@@ -57,7 +57,7 @@ public final class CompanionUiTheme {
         if (fillWidth > 0) {
             graphics.fill(x, y, x + fillWidth, y + height, fillColor);
         }
-        graphics.fill(x, y, x + width, y + 1, 0x553FFFFFFF);
+        graphics.fill(x, y, x + width, y + 1, 0x55FFFFFF);
     }
 
     public static void drawTab(GuiGraphics graphics, Font font, int x, int y, int width,
