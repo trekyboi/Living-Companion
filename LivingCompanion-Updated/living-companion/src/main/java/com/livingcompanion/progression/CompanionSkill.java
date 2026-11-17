@@ -43,7 +43,7 @@ public enum CompanionSkill {
             CompanionSpecialization.TANK_JUGGERNAUT),
 
     PALADIN_WARDEN_SANCTUARY_PULSE("paladin_warden_sanctuary_pulse", CompanionClass.PALADIN, SkillType.ACTIVE, "Sanctuary Pulse",
-            "Warden active: restores nearby allies and reinforces the Paladin's ward.", 3, 15, 240,
+            "Warden active: restores nearby allies and reinforces the Paladin's ward.", 3, 30, 240,
             CompanionSpecialization.PALADIN_WARDEN),
     PALADIN_WARDEN_CIRCLE_OF_RENEWAL("paladin_warden_circle_of_renewal", CompanionClass.PALADIN, SkillType.ULTIMATE, "Circle of Renewal",
             "Warden ultimate: delivers a major group heal and a powerful protective ward.", 1, 30, 2400,
