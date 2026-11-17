@@ -1388,7 +1388,7 @@ public class CompanionEntity extends PathfinderMob {
                 NetworkHooks.openScreen(serverPlayer,
                         new SimpleMenuProvider((id, inventory, opener) ->
                                 new CompanionInventoryMenu(id, inventory, this),
-                                Component.literal("Knight's Inventory")),
+                                Component.literal(this.getName().getString() + "'s Inventory")),
                         buffer -> buffer.writeVarInt(this.getId()));
             }
         }
