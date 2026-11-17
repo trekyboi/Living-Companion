@@ -38,6 +38,7 @@ public final class CompanionSkillRuntime {
     private int lastBastionTicks;
     private int interceptVisualTicks;
     private int holyStrikeVisualTicks;
+    private int templarWardTicks;
     private long nextBattleLineTick;
     private String lastBattleLine = "";
 
@@ -57,6 +58,7 @@ public final class CompanionSkillRuntime {
         }
 
         tickDurations();
+        tickSpecializationSkills();
 
         if (companion.tickCount % 20 == 0) {
             int graceRank = rank(CompanionSkill.PALADIN_DIVINE_GRACE);
@@ -138,6 +140,155 @@ public final class CompanionSkillRuntime {
         syncVisualFlags();
     }
 
+    /**
+     * Executes the specialization branch actives and ultimates automatically.
+     * This keeps the companion self-sufficient while making every branch skill
+     * meaningful without adding another hotbar or command layer.
+     */
+    private void tickSpecializationSkills() {
+        CompanionSpecialization specialization = companion.getProgression().getSpecialization();
+        LivingEntity target = companion.getTarget();
+        boolean inCombat = target != null && target.isAlive()
+                && companion.distanceToSqr(target) <= 144.0D;
+
+        if (specialization == CompanionSpecialization.PALADIN_WARDEN) {
+            int active = rank(CompanionSkill.PALADIN_WARDEN_SANCTUARY_PULSE);
+            if (active > 0 && inCombat && isReady(CompanionSkill.PALADIN_WARDEN_SANCTUARY_PULSE)) {
+                if (startCooldown(CompanionSkill.PALADIN_WARDEN_SANCTUARY_PULSE)) {
+                    float heal = 1.5F * active;
+                    companion.heal(heal);
+                    LivingEntity owner = companion.getOwnerPlayer();
+                    if (owner != null && owner.isAlive() && companion.distanceToSqr(owner) <= 144.0D) owner.heal(heal);
+                    divineProtectionTicks = Math.max(divineProtectionTicks, 30 + active * 20);
+                    playPrayerEffect();
+                }
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.30F
+                    && rank(CompanionSkill.PALADIN_WARDEN_CIRCLE_OF_RENEWAL) > 0
+                    && isReady(CompanionSkill.PALADIN_WARDEN_CIRCLE_OF_RENEWAL)
+                    && startCooldown(CompanionSkill.PALADIN_WARDEN_CIRCLE_OF_RENEWAL)) {
+                companion.heal(14.0F);
+                LivingEntity owner = companion.getOwnerPlayer();
+                if (owner != null && owner.isAlive() && companion.distanceToSqr(owner) <= 144.0D) owner.heal(10.0F);
+                aegisTicks = Math.max(aegisTicks, 100);
+                playAegisEffect();
+            }
+        } else if (specialization == CompanionSpecialization.PALADIN_CRUSADER) {
+            int active = rank(CompanionSkill.PALADIN_CRUSADER_RADIANT_ASSAULT);
+            if (active > 0 && inCombat && isReady(CompanionSkill.PALADIN_CRUSADER_RADIANT_ASSAULT)
+                    && startCooldown(CompanionSkill.PALADIN_CRUSADER_RADIANT_ASSAULT)) {
+                target.hurt(companion.damageSources().mobAttack(companion), 2.5F * active);
+                holyStrikeVisualTicks = 10;
+                if (companion.level() instanceof ServerLevel level) {
+                    level.sendParticles(ParticleTypes.FLAME, target.getX(), target.getY() + 0.7D, target.getZ(),
+                            10 + active * 4, 0.25D, 0.3D, 0.25D, 0.02D);
+                    level.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT,
+                            SoundSource.PLAYERS, 0.9F, 1.25F);
+                }
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.30F
+                    && rank(CompanionSkill.PALADIN_CRUSADER_JUDGMENT_OF_DAWN) > 0
+                    && isReady(CompanionSkill.PALADIN_CRUSADER_JUDGMENT_OF_DAWN)
+                    && startCooldown(CompanionSkill.PALADIN_CRUSADER_JUDGMENT_OF_DAWN)) {
+                damageNearbyHostiles(8.0F, 7.0D);
+                companion.heal(6.0F);
+                playAegisEffect();
+            }
+        } else if (specialization == CompanionSpecialization.PALADIN_TEMPLAR) {
+            int active = rank(CompanionSkill.PALADIN_TEMPLAR_AEGIS_LINK);
+            LivingEntity owner = companion.getOwnerPlayer();
+            if (active > 0 && owner != null && owner.isAlive()
+                    && owner.getHealth() <= owner.getMaxHealth() * 0.75F
+                    && companion.distanceToSqr(owner) <= 144.0D
+                    && isReady(CompanionSkill.PALADIN_TEMPLAR_AEGIS_LINK)
+                    && startCooldown(CompanionSkill.PALADIN_TEMPLAR_AEGIS_LINK)) {
+                templarWardTicks = Math.max(templarWardTicks, 80 + active * 30);
+                owner.heal(2.0F * active);
+                playDivineWardEffect();
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.30F
+                    && rank(CompanionSkill.PALADIN_TEMPLAR_HOLY_STANDARD) > 0
+                    && isReady(CompanionSkill.PALADIN_TEMPLAR_HOLY_STANDARD)
+                    && startCooldown(CompanionSkill.PALADIN_TEMPLAR_HOLY_STANDARD)) {
+                templarWardTicks = Math.max(templarWardTicks, 300);
+                divineProtectionTicks = Math.max(divineProtectionTicks, 100);
+                if (owner != null && owner.isAlive() && companion.distanceToSqr(owner) <= 144.0D) owner.heal(10.0F);
+                playAegisEffect();
+            }
+        } else if (specialization == CompanionSpecialization.TANK_BULWARK) {
+            int active = rank(CompanionSkill.TANK_BULWARK_FORTRESS_STANCE);
+            if (active > 0 && inCombat && companion.getHealth() <= companion.getMaxHealth() * 0.75F
+                    && isReady(CompanionSkill.TANK_BULWARK_FORTRESS_STANCE)
+                    && startCooldown(CompanionSkill.TANK_BULWARK_FORTRESS_STANCE)) {
+                shieldWallTicks = Math.max(shieldWallTicks, 50 + active * 25);
+                tauntRange = 8.0D + active;
+                tauntTicksRemaining = Math.max(tauntTicksRemaining, 50 + active * 20);
+                applyTauntTargets();
+                playShieldWallEffect();
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.30F
+                    && rank(CompanionSkill.TANK_BULWARK_UNBREAKABLE_LINE) > 0
+                    && isReady(CompanionSkill.TANK_BULWARK_UNBREAKABLE_LINE)
+                    && startCooldown(CompanionSkill.TANK_BULWARK_UNBREAKABLE_LINE)) {
+                lastBastionTicks = Math.max(lastBastionTicks, 240);
+                shieldWallTicks = Math.max(shieldWallTicks, 160);
+                tauntRange = 12.0D;
+                tauntTicksRemaining = Math.max(tauntTicksRemaining, 180);
+                applyTauntTargets();
+                playLastBastionEffect();
+            }
+        } else if (specialization == CompanionSpecialization.TANK_VANGUARD) {
+            int active = rank(CompanionSkill.TANK_VANGUARD_WARCRY);
+            if (active > 0 && inCombat && isReady(CompanionSkill.TANK_VANGUARD_WARCRY)
+                    && startCooldown(CompanionSkill.TANK_VANGUARD_WARCRY)) {
+                damageNearbyHostiles(1.5F * active, 6.0D);
+                tauntRange = 8.0D + active * 2.0D;
+                tauntTicksRemaining = Math.max(tauntTicksRemaining, 60 + active * 20);
+                applyTauntTargets();
+                playDefensiveEffect(ParticleTypes.ANGRY_VILLAGER, SoundEvents.SHIELD_BLOCK);
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.30F
+                    && rank(CompanionSkill.TANK_VANGUARD_WARPATH) > 0
+                    && isReady(CompanionSkill.TANK_VANGUARD_WARPATH)
+                    && startCooldown(CompanionSkill.TANK_VANGUARD_WARPATH)) {
+                damageNearbyHostiles(7.0F, 9.0D);
+                tauntRange = 12.0D;
+                tauntTicksRemaining = Math.max(tauntTicksRemaining, 220);
+                applyTauntTargets();
+                companion.heal(7.0F);
+                playLastBastionEffect();
+            }
+        } else if (specialization == CompanionSpecialization.TANK_JUGGERNAUT) {
+            int active = rank(CompanionSkill.TANK_JUGGERNAUT_CRUSHING_BLOW);
+            if (active > 0 && inCombat && isReady(CompanionSkill.TANK_JUGGERNAUT_CRUSHING_BLOW)
+                    && startCooldown(CompanionSkill.TANK_JUGGERNAUT_CRUSHING_BLOW)) {
+                target.hurt(companion.damageSources().mobAttack(companion), 3.0F * active);
+                companion.heal(1.0F * active);
+                if (companion.level() instanceof ServerLevel level) {
+                    level.sendParticles(ParticleTypes.CRIT, target.getX(), target.getY() + 0.7D, target.getZ(),
+                            12 + active * 4, 0.3D, 0.3D, 0.3D, 0.08D);
+                }
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.30F
+                    && rank(CompanionSkill.TANK_JUGGERNAUT_UNSTOPPABLE_RAMPAGE) > 0
+                    && isReady(CompanionSkill.TANK_JUGGERNAUT_UNSTOPPABLE_RAMPAGE)
+                    && startCooldown(CompanionSkill.TANK_JUGGERNAUT_UNSTOPPABLE_RAMPAGE)) {
+                damageNearbyHostiles(8.0F, 8.0D);
+                companion.heal(12.0F);
+                lastBastionTicks = Math.max(lastBastionTicks, 100);
+                playLastBastionEffect();
+            }
+        }
+    }
+
+    private void damageNearbyHostiles(float damage, double radius) {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        for (Monster hostile : level.getEntitiesOfClass(Monster.class,
+                companion.getBoundingBox().inflate(radius), Monster::isAlive)) {
+            hostile.hurt(companion.damageSources().mobAttack(companion), damage);
+        }
+    }
+
     /** Publishes persistent skill states to the client renderer through entity data. */
     private void syncVisualFlags() {
         int flags = 0;
@@ -206,6 +357,7 @@ public final class CompanionSkillRuntime {
         if (lastBastionTicks > 0) lastBastionTicks--;
         if (interceptVisualTicks > 0) interceptVisualTicks--;
         if (holyStrikeVisualTicks > 0) holyStrikeVisualTicks--;
+        if (templarWardTicks > 0) templarWardTicks--;
     }
 
     private void activatePrayer(int rank) {
@@ -320,6 +472,7 @@ public final class CompanionSkillRuntime {
             if (divineProtectionTicks > 0) amount *= 0.65F;
             if (aegisTicks > 0) amount *= 0.35F;
             int vigilRank = rank(CompanionSkill.PALADIN_TEMPLAR_VIGIL);
+            if (templarWardTicks > 0) amount *= 0.70F;
             if (companion.getProgression().getSpecialization() == CompanionSpecialization.PALADIN_TEMPLAR
                     && vigilRank > 0) {
                 amount *= 1.0F - Math.min(0.15F, 0.05F * vigilRank);
@@ -431,6 +584,7 @@ public final class CompanionSkillRuntime {
         tag.putInt("LastBastionTicks", lastBastionTicks);
         tag.putInt("InterceptVisualTicks", interceptVisualTicks);
         tag.putInt("HolyStrikeVisualTicks", holyStrikeVisualTicks);
+        tag.putInt("TemplarWardTicks", templarWardTicks);
         tag.putString("LastBattleLine", lastBattleLine);
         return tag;
     }
@@ -456,6 +610,7 @@ public final class CompanionSkillRuntime {
         lastBastionTicks = Math.max(0, Math.min(160, tag.getInt("LastBastionTicks")));
         interceptVisualTicks = Math.max(0, Math.min(14, tag.getInt("InterceptVisualTicks")));
         holyStrikeVisualTicks = Math.max(0, Math.min(10, tag.getInt("HolyStrikeVisualTicks")));
+        templarWardTicks = Math.max(0, Math.min(300, tag.getInt("TemplarWardTicks")));
         lastBattleLine = tag.getString("LastBattleLine");
     }
 }
