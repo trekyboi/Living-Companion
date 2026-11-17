@@ -100,7 +100,7 @@ public final class CompanionSkillsScreen extends Screen {
 
         int buttonWidth = Math.min(96, Math.max(76, this.panelWidth / 6));
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
-        if (data.level >= 15 && data.specializationId < 0) {
+        if (data.level >= 30 && data.specializationId < 0) {
             CompanionSpecialization[] choices = CompanionSpecialization.forClass(classes[data.classId]);
             int choiceWidth = Math.max(54, Math.min(120,
                     (this.panelWidth - 48 - 8 * (choices.length - 1)) / choices.length));
@@ -217,7 +217,7 @@ public final class CompanionSkillsScreen extends Screen {
                 graphics.drawString(this.font, "Path: " + getSelectedSpecialization().getDisplayName(),
                         left + 16, top + 70, 0xFFFFD58A, false);
             } else if (data.level < 15) {
-                graphics.drawString(this.font, "Specialization unlocks at level 15",
+                graphics.drawString(this.font, "Specialization unlocks at level 30",
                         left + 16, top + 70, 0xFF9BA5AF, false);
             } else {
                 graphics.drawString(this.font, "Choose your permanent class specialization:",
