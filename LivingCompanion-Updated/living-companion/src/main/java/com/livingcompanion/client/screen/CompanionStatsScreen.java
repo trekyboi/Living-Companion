@@ -34,7 +34,7 @@ public final class CompanionStatsScreen extends Screen {
                 && minecraft.player.getAbilities().instabuild) {
             addRenderableWidget(Button.builder(Component.literal("MAX LEVEL (CREATIVE)"), button ->
                     CompanionNetwork.requestCreativeMaxLevel(data.entityId))
-                    .bounds(width / 2 - 76, height - 30, 152, 20).build());
+                    .bounds(width / 2 - 76, height - 32, 152, 20).build());
         }
     }
 
@@ -73,9 +73,9 @@ public final class CompanionStatsScreen extends Screen {
         renderBackground(graphics);
 
         int panelWidth = Math.min(600, Math.max(300, width - 16));
-        int panelHeight = Math.min(400, Math.max(250, height - 48));
+        int panelHeight = Math.min(400, Math.max(250, height - 20));
         int left = (width - panelWidth) / 2;
-        int top = (height - panelHeight) / 2 - 8;
+        int top = (height - panelHeight) / 2;
         int innerLeft = left + 16;
         int innerRight = left + panelWidth - 16;
         int columnGap = 18;
@@ -164,6 +164,9 @@ public final class CompanionStatsScreen extends Screen {
             attributeY += 29;
         }
 
+        // The compact layout prioritizes readable combat values and every attribute.
+        // Skill and achievement details remain available in their dedicated screens.
+        if (panelHeight >= 390) {
         int lowerY = sectionY + 166;
         CompanionUiTheme.drawSectionHeader(graphics, font, "CLASS & SPECIALIZATION SKILLS",
                 innerLeft, lowerY, columnWidth);
@@ -202,9 +205,14 @@ public final class CompanionStatsScreen extends Screen {
                     CompanionUiTheme.TEXT_MUTED, false);
         }
 
-        String footer = "Combat values include progression and equipped gear bonuses.";
-        graphics.drawCenteredString(font, footer, width / 2,
-                top + panelHeight - 14, CompanionUiTheme.TEXT_MUTED);
+        }
+        boolean creativeButtonVisible = minecraft != null && minecraft.player != null
+                && minecraft.player.getAbilities().instabuild;
+        if (!creativeButtonVisible) {
+            String footer = "Combat values include progression and equipped gear bonuses.";
+            graphics.drawCenteredString(font, footer, width / 2,
+                    top + panelHeight - 14, CompanionUiTheme.TEXT_MUTED);
+        }
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 }
