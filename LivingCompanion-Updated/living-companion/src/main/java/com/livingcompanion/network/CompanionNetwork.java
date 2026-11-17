@@ -2,6 +2,7 @@ package com.livingcompanion.network;
 
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.entity.CompanionEntity;
+import com.livingcompanion.entity.JournalEntry;
 import com.livingcompanion.progression.CompanionClass;
 import com.livingcompanion.progression.CompanionSkill;
 import com.livingcompanion.progression.CompanionAttribute;
@@ -185,13 +186,13 @@ public final class CompanionNetwork {
                 Entity entity = player.serverLevel().getEntity(message.entityId);
                 if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
                         || !companion.isAlive() || companion.distanceToSqr(player) > 64.0D) return;
-                String[] memories = companion.getMemories().toArray(String[]::new);
+                JournalEntry[] entries = companion.getJournalEntries().toArray(JournalEntry[]::new);
                 CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                         new JournalDataMessage(companion.getId(), companion.getName().getString(),
                                 companion.getCompanionClass().getDisplayName(),
                                 companion.getProgression().getLevel(),
                                 companion.getRelationship().getLevel(),
-                                companion.getRelationship().getTitle(), memories));
+                                companion.getRelationship().getTitle(), entries));
             });
             context.setPacketHandled(true);
         }
@@ -200,13 +201,15 @@ public final class CompanionNetwork {
     public static final class JournalDataMessage {
         private final int entityId, level, bondLevel;
         private final String name, className, bondTitle;
-        private final String[] memories;
+        private final JournalEntry[] entries;
+
         public JournalDataMessage(int entityId, String name, String className, int level,
-                                  int bondLevel, String bondTitle, String[] memories) {
+                                  int bondLevel, String bondTitle, JournalEntry[] entries) {
             this.entityId = entityId; this.name = name; this.className = className;
             this.level = level; this.bondLevel = bondLevel; this.bondTitle = bondTitle;
-            this.memories = memories == null ? new String[0] : memories;
+            this.entries = entries == null ? new JournalEntry[0] : entries;
         }
+
         public static void encode(JournalDataMessage message, FriendlyByteBuf buffer) {
             buffer.writeVarInt(message.entityId);
             buffer.writeUtf(message.name, 64);
@@ -214,11 +217,18 @@ public final class CompanionNetwork {
             buffer.writeVarInt(message.level);
             buffer.writeVarInt(message.bondLevel);
             buffer.writeUtf(message.bondTitle, 64);
-            buffer.writeVarInt(Math.min(message.memories.length, 12));
-            for (int i = 0; i < Math.min(message.memories.length, 12); i++) {
-                buffer.writeUtf(message.memories[i], 160);
+            int count = Math.min(message.entries.length, 64);
+            buffer.writeVarInt(count);
+            for (int i = 0; i < count; i++) {
+                JournalEntry entry = message.entries[i];
+                buffer.writeLong(entry.getGameTime());
+                buffer.writeUtf(entry.getDimension(), 128);
+                buffer.writeUtf(entry.getBiome(), 128);
+                buffer.writeInt(entry.getX()); buffer.writeInt(entry.getY()); buffer.writeInt(entry.getZ());
+                buffer.writeUtf(entry.getText(), 256);
             }
         }
+
         public static JournalDataMessage decode(FriendlyByteBuf buffer) {
             int entityId = buffer.readVarInt();
             String name = buffer.readUtf(64);
@@ -226,18 +236,22 @@ public final class CompanionNetwork {
             int level = buffer.readVarInt();
             int bondLevel = buffer.readVarInt();
             String bondTitle = buffer.readUtf(64);
-            int count = Math.max(0, Math.min(12, buffer.readVarInt()));
-            String[] memories = new String[count];
-            for (int i = 0; i < count; i++) memories[i] = buffer.readUtf(160);
-            return new JournalDataMessage(entityId, name, className, level, bondLevel, bondTitle, memories);
+            int count = Math.max(0, Math.min(64, buffer.readVarInt()));
+            JournalEntry[] entries = new JournalEntry[count];
+            for (int i = 0; i < count; i++) {
+                entries[i] = new JournalEntry(buffer.readLong(), buffer.readUtf(128), buffer.readUtf(128),
+                        buffer.readInt(), buffer.readInt(), buffer.readInt(), buffer.readUtf(256));
+            }
+            return new JournalDataMessage(entityId, name, className, level, bondLevel, bondTitle, entries);
         }
+
         public static void handle(JournalDataMessage message, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                     () -> () -> Minecraft.getInstance().setScreen(
                             new com.livingcompanion.client.screen.CompanionJournalScreen(
                                     message.name, message.className, message.level,
-                                    message.bondLevel, message.bondTitle, message.memories))));
+                                    message.bondLevel, message.bondTitle, message.entries))));
             context.setPacketHandled(true);
         }
     }
