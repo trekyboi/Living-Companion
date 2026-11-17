@@ -32,9 +32,12 @@ public final class CompanionStatsScreen extends Screen {
         super.init();
         if (minecraft != null && minecraft.player != null
                 && minecraft.player.getAbilities().instabuild) {
+            int panelWidth = Math.min(600, Math.max(300, width - 16));
+            int panelLeft = (width - panelWidth) / 2;
+            int panelTop = (height - Math.min(400, Math.max(250, height - 20))) / 2;
             addRenderableWidget(Button.builder(Component.literal("MAX LEVEL (CREATIVE)"), button ->
                     CompanionNetwork.requestCreativeMaxLevel(data.entityId))
-                    .bounds(width / 2 - 76, height - 32, 152, 20).build());
+                    .bounds(panelLeft + panelWidth - 168, panelTop + 36, 152, 20).build());
         }
     }
 
@@ -100,8 +103,12 @@ public final class CompanionStatsScreen extends Screen {
 
         String xp = data.experienceToNext > 0
                 ? data.experience + " / " + data.experienceToNext + " XP" : "MAX LEVEL";
-        graphics.drawString(font, xp, innerRight - font.width(xp), top + 39,
-                CompanionUiTheme.TEXT_SECONDARY, false);
+        boolean creativeButtonVisible = minecraft != null && minecraft.player != null
+                && minecraft.player.getAbilities().instabuild;
+        if (!creativeButtonVisible) {
+            graphics.drawString(font, xp, innerRight - font.width(xp), top + 39,
+                    CompanionUiTheme.TEXT_SECONDARY, false);
+        }
 
         String bond = "BOND  " + data.relationshipTitle + "  •  Lv. " + data.relationshipLevel;
         graphics.drawString(font, bond, innerLeft, top + 57, CompanionUiTheme.TEXT_PRIMARY, false);
@@ -206,8 +213,6 @@ public final class CompanionStatsScreen extends Screen {
         }
 
         }
-        boolean creativeButtonVisible = minecraft != null && minecraft.player != null
-                && minecraft.player.getAbilities().instabuild;
         if (!creativeButtonVisible) {
             String footer = "Combat values include progression and equipped gear bonuses.";
             graphics.drawCenteredString(font, footer, width / 2,
