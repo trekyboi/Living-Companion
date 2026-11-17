@@ -9,5 +9,5 @@ public final class ModModelLayers {
     public static final ModelLayerLocation COMPANION =
             new ModelLayerLocation(new ResourceLocation(LivingCompanion.MOD_ID, "companion"), "main");
 
-    private ModModelLayers() { }
+    public static final ModelLayerLocation MAGE_COMPANION =\n            new ModelLayerLocation(new ResourceLocation(LivingCompanion.MOD_ID, "mage_companion"), "main");\n\n    private ModModelLayers() { }
 }
