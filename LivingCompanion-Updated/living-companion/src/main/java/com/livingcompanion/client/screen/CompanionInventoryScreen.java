@@ -74,24 +74,24 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         int left = this.leftPos;
         int top = this.topPos;
         CompanionUiTheme.drawPanel(graphics, left, top, this.imageWidth, this.imageHeight);
-        CompanionUiTheme.drawCard(graphics, left + 5, top + 14, 44, 90, false);
-        CompanionUiTheme.drawCard(graphics, left + 58, top + 14, 170, 76, false);
+        CompanionUiTheme.drawCard(graphics, left + 5, top + 22, 44, 80, false);
+        CompanionUiTheme.drawCard(graphics, left + 58, top + 22, 170, 80, false);
         CompanionUiTheme.drawCard(graphics, left + 5, top + 140, 170, 78, false);
         CompanionUiTheme.drawCard(graphics, left + 5, top + 198, 170, 24, true);
 
         // Equipment column: helmet, chest, legs, feet, main hand, offhand.
-        drawSlot(graphics, left + 8, top + 20);
-        drawSlot(graphics, left + 8, top + 38);
-        drawSlot(graphics, left + 8, top + 56);
-        drawSlot(graphics, left + 8, top + 74);
-        drawSlot(graphics, left + 26, top + 20);
-        drawSlot(graphics, left + 26, top + 56);
-        if (this.menu.hasCuriosBackSlot()) drawSlot(graphics, left + 26, top + 38);
+        drawSlot(graphics, left + 8, top + 26);
+        drawSlot(graphics, left + 8, top + 44);
+        drawSlot(graphics, left + 8, top + 62);
+        drawSlot(graphics, left + 8, top + 80);
+        drawSlot(graphics, left + 26, top + 26);
+        drawSlot(graphics, left + 26, top + 62);
+        if (this.menu.hasCuriosBackSlot()) drawSlot(graphics, left + 26, top + 44);
 
         // Companion storage: three rows plus its hotbar.
         for (int row = 0; row < 4; row++) {
             for (int col = 0; col < 9; col++) {
-                drawSlot(graphics, left + 62 + col * SLOT_SIZE, top + 20 + row * SLOT_SIZE);
+                drawSlot(graphics, left + 62 + col * SLOT_SIZE, top + 26 + row * SLOT_SIZE);
             }
         }
 
@@ -105,14 +105,12 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
             drawSlot(graphics, left + 8 + col * SLOT_SIZE, top + 200);
         }
 
-        graphics.fill(left + 52, top + 14, left + 53, top + 104, 0xFF51483C);
+        graphics.fill(left + 52, top + 22, left + 53, top + 104, 0xFF51483C);
         graphics.fill(left + 6, top + 126, left + this.imageWidth - 6, top + 127, 0xFF51483C);
         CompanionUiTheme.drawSectionHeader(graphics, this.font, "GEAR",
                 left + 8, top + 108, 40);
         CompanionUiTheme.drawSectionHeader(graphics, this.font, "COMPANION STORAGE",
                 left + 62, top + 108, 166);
-        CompanionUiTheme.drawSectionHeader(graphics, this.font, "YOUR INVENTORY",
-                left + 8, top + 132, 166);
 
         // Recognizable vanilla item silhouettes identify each empty equipment slot.
         ItemStack[] equipmentIcons = {
@@ -123,7 +121,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
                 new ItemStack(Items.IRON_SWORD),
                 new ItemStack(Items.SHIELD)
         };
-        int[][] equipmentPositions = {{8, 20}, {8, 38}, {8, 56}, {8, 74}, {26, 20}, {26, 56}};
+        int[][] equipmentPositions = {{8, 26}, {8, 44}, {8, 62}, {8, 80}, {26, 26}, {26, 62}};
         for (int i = 0; i < equipmentPositions.length; i++) {
             int sx = left + equipmentPositions[i][0];
             int sy = top + equipmentPositions[i][1];
@@ -133,7 +131,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
             }
         }
         if (this.menu.hasCuriosBackSlot() && !this.menu.getSlot(6).hasItem()) {
-            graphics.renderItem(new ItemStack(Items.CHEST), left + 27, top + 39);
+            graphics.renderItem(new ItemStack(Items.CHEST), left + 27, top + 45);
         }
     }
 
@@ -152,13 +150,13 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     private String equipmentTooltip(int x, int y) {
         int slot = -1;
         String description = null;
-        if (x >= 8 && x < 26 && y >= 20 && y < 38) {
+        if (x >= 8 && x < 26 && y >= 26 && y < 44) {
             slot = 0; description = "Helmet slot — head armor";
-        } else if (x >= 8 && x < 26 && y >= 38 && y < 56) {
+        } else if (x >= 8 && x < 26 && y >= 44 && y < 62) {
             slot = 1; description = "Chest slot — chest armor";
-        } else if (x >= 8 && x < 26 && y >= 56 && y < 74) {
+        } else if (x >= 8 && x < 26 && y >= 62 && y < 80) {
             slot = 2; description = "Leg slot — leg armor";
-        } else if (x >= 8 && x < 26 && y >= 74 && y < 92) {
+        } else if (x >= 8 && x < 26 && y >= 80 && y < 98) {
             slot = 3; description = "Boot slot — foot armor";
         } else if (x >= 26 && x < 44 && y >= 20 && y < 38) {
             slot = 4; description = "Main hand — weapon or utility item";
