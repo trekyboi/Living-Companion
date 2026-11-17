@@ -71,10 +71,15 @@ public final class CompanionJournalScreen extends Screen {
                 String title = fit(entry.getText(), innerWidth - 38);
                 graphics.drawString(this.font, title, innerLeft + 29, y + 4,
                         CompanionUiTheme.TEXT_PRIMARY, false);
-                String biome = humanize(entry.getBiome());
-                long day = entry.getGameTime() / 24000L + 1L;
-                String details = "DAY " + day + "  •  " + biome + "  •  "
-                        + entry.getX() + ", " + entry.getY() + ", " + entry.getZ();
+                String details;
+                if (entry.getGameTime() <= 0L || "unknown".equals(entry.getDimension())) {
+                    details = "DATE / LOCATION UNKNOWN  •  LEGACY MEMORY";
+                } else {
+                    String biome = humanize(entry.getBiome());
+                    long day = entry.getGameTime() / 24000L + 1L;
+                    details = "DAY " + day + "  •  " + biome + "  •  "
+                            + entry.getX() + ", " + entry.getY() + ", " + entry.getZ();
+                }
                 graphics.drawString(this.font, fit(details, innerWidth - 38),
                         innerLeft + 29, y + 17, CompanionUiTheme.TEXT_MUTED, false);
             }
