@@ -26,7 +26,7 @@ public final class FollowOwnerGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (companion.getCommand() == CompanionEntity.Command.STAY) return false;
+        if (companion.getCommand() == CompanionEntity.Command.STAY || companion.getCommand() == CompanionEntity.Command.PATROL) return false;
         owner = companion.getOwnerPlayer();
         if (owner == null || !owner.isAlive() || owner.level() != companion.level()) return false;
         return companion.distanceToSqr(owner) > square(CompanionConfig.FOLLOW_START_DISTANCE.get());
@@ -43,7 +43,7 @@ public final class FollowOwnerGoal extends Goal {
     public void start() {
         lastProgressPosition = companion.position();
         stuckTicks = 0;
-        if (owner != null) companion.getNavigation().moveTo(owner, speed);
+        if (owner != null) companion.getNavigation().moveTo(owner, companion.getCommand() == CompanionEntity.Command.RETREAT ? speed * 1.35D : speed);
     }
 
     @Override
