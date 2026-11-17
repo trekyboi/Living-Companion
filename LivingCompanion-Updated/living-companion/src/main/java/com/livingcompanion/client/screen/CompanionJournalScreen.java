@@ -72,11 +72,11 @@ public final class CompanionJournalScreen extends Screen {
                 graphics.drawString(this.font, title, innerLeft + 29, y + 4,
                         CompanionUiTheme.TEXT_PRIMARY, false);
                 String details;
-                if (entry.getGameTime() <= 0L || "unknown".equals(entry.getDimension())) {
+                if (entry.getWorldTime() <= 0L || "unknown".equals(entry.getDimension())) {
                     details = "DATE / LOCATION UNKNOWN  •  LEGACY MEMORY";
                 } else {
                     String biome = humanize(entry.getBiome());
-                    long day = entry.getGameTime() / 24000L + 1L;
+                    long day = entry.getWorldTime() / 24000L + 1L;
                     details = "DAY " + day + "  •  " + biome + "  •  "
                             + entry.getX() + ", " + entry.getY() + ", " + entry.getZ();
                 }
