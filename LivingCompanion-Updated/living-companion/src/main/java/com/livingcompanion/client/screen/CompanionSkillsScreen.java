@@ -87,6 +87,12 @@ public final class CompanionSkillsScreen extends Screen {
         this.addRenderableWidget(Button.builder(Component.literal("Attributes"), button ->
                 CompanionAttributesScreen.open(this, this.data))
                 .bounds(this.panelLeft + this.panelWidth - 108, this.panelTop + 29, 94, 22).build());
+        if (this.minecraft != null && this.minecraft.player != null
+                && this.minecraft.player.getAbilities().instabuild) {
+            this.addRenderableWidget(Button.builder(Component.literal("MAX LEVEL (CREATIVE)"), button ->
+                    CompanionNetwork.requestCreativeMaxLevel(this.data.entityId))
+                    .bounds(this.panelLeft + 16, this.panelTop + 27, 132, 24).build());
+        }
         this.listBottom = this.panelTop + this.panelHeight - 12;
 
         CompanionClass[] classes = CompanionClass.values();
@@ -96,7 +102,8 @@ public final class CompanionSkillsScreen extends Screen {
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
         if (data.level >= 15 && data.specializationId < 0) {
             CompanionSpecialization[] choices = CompanionSpecialization.forClass(classes[data.classId]);
-            int choiceWidth = Math.min(120, Math.max(80, (this.panelWidth - 48) / 2));
+            int choiceWidth = Math.max(54, Math.min(120,
+                    (this.panelWidth - 48 - 8 * (choices.length - 1)) / choices.length));
             for (int i = 0; i < choices.length; i++) {
                 CompanionSpecialization choice = choices[i];
                 Button select = Button.builder(Component.literal(choice.getDisplayName()), button ->
@@ -311,6 +318,8 @@ public final class CompanionSkillsScreen extends Screen {
             case TANK_UNYIELDING -> new ItemStack(Items.IRON_CHESTPLATE);
             case TANK_TAUNT -> new ItemStack(Items.BELL);
             case TANK_INTERCEPT -> new ItemStack(Items.IRON_INGOT);
+            case PALADIN_TEMPLAR_VIGIL -> new ItemStack(Items.IRON_CHESTPLATE);
+            case TANK_JUGGERNAUT_MOMENTUM -> new ItemStack(Items.ANVIL);
         };
     }
 
