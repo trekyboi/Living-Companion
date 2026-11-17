@@ -75,6 +75,7 @@ public class CompanionSpawnEggItem extends ForgeSpawnEggItem {
         for (ServerLevel serverLevel : level.getServer().getAllLevels()) {
             for (Entity entity : serverLevel.getAllEntities()) {
                 if (entity instanceof CompanionEntity companion
+                        && companion.getType() == requestedType
                         && companion.isAlive() && companion.isOwnedBy(owner)) {
                     return true;
                 }
