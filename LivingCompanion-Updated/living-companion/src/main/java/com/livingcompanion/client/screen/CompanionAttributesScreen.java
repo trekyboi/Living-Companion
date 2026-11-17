@@ -89,21 +89,29 @@ public final class CompanionAttributesScreen extends Screen {
         int left = (this.width - panelWidth) / 2;
         int top = (this.height - panelHeight) / 2;
         CompanionUiTheme.drawPanel(graphics, left, top, panelWidth, panelHeight);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, top + 14, 0xFFFFE6BE);
-        graphics.drawCenteredString(this.font, "Unspent attribute points: " + data.attributePoints,
-                this.width / 2, top + 38, 0xFF83E6A0);
+        CompanionUiTheme.drawTitle(graphics, this.font, "COMPANION ATTRIBUTES",
+                "Shape your companion's combat role", this.width / 2, top + 10);
+        CompanionUiTheme.drawPill(graphics, this.font,
+                "UNSPENT POINTS: " + data.attributePoints,
+                left + 18, top + 42, data.attributePoints > 0
+                        ? CompanionUiTheme.SUCCESS : CompanionUiTheme.TEXT_MUTED);
+        CompanionUiTheme.drawSectionHeader(graphics, this.font, "ATTRIBUTE ALLOCATION",
+                left + 18, top + 64, panelWidth - 36);
 
         int y = top + 78;
         int rowGap = Math.max(27, (panelHeight - 112) / CompanionAttribute.values().length);
         for (CompanionAttribute attribute : CompanionAttribute.values()) {
             int value = getValue(attribute);
-            graphics.drawString(this.font, attribute.getDisplayName() + "  " + value + "/20",
-                    left + 18, y, 0xFFFFE6BE, false);
-            int barX = left + 18;
+            CompanionUiTheme.drawCard(graphics, left + 12, y - 5,
+                    panelWidth - 24, rowGap - 3, false);
+            graphics.drawString(this.font, attribute.getDisplayName().toUpperCase(java.util.Locale.ROOT)
+                            + "  " + value + "/20",
+                    left + 22, y, CompanionUiTheme.TEXT_PRIMARY, false);
+            int barX = left + 22;
             int barY = y + 13;
-            int barWidth = Math.max(72, Math.min(150, panelWidth - 150));
-            graphics.fill(barX, barY, barX + barWidth, barY + 6, 0xFF090B0E);
-            graphics.fill(barX, barY, barX + (barWidth * value / 20), barY + 6, 0xFFD6A85F);
+            int barWidth = Math.max(42, Math.min(150, panelWidth - 190));
+            CompanionUiTheme.drawProgressBar(graphics, barX, barY, barWidth, 6,
+                    value / 20.0F, CompanionUiTheme.GOLD);
             for (int segment = 1; segment < 20; segment++) {
                 int dividerX = barX + barWidth * segment / 20;
                 graphics.fill(dividerX, barY, dividerX + 1, barY + 6, 0xFF252A31);
@@ -115,7 +123,8 @@ public final class CompanionAttributesScreen extends Screen {
                 case AGILITY -> "+0.002 movement speed per point";
                 case WISDOM -> "-0.5% skill cooldown and +1% Prayer healing per point";
             };
-            graphics.drawString(this.font, scaling, barX + barWidth + 10, y + 12, 0xFFBFC5CC, false);
+            graphics.drawString(this.font, scaling, barX + barWidth + 10, y + 12,
+                    CompanionUiTheme.TEXT_SECONDARY, false);
             y += rowGap;
         }
         super.render(graphics, mouseX, mouseY, partialTick);
