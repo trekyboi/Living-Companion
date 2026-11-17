@@ -30,7 +30,7 @@ public final class JournalEntry {
         String dimension = companion.level().dimension().location().toString();
         String biome = companion.level().getBiome(companion.blockPosition()).unwrapKey()
                 .map(key -> key.location().toString()).orElse("unknown");
-        return new JournalEntry(companion.level().getWorldTime(), dimension, biome,
+        return new JournalEntry(companion.level().getDayTime(), dimension, biome,
                 companion.blockPosition().getX(), companion.blockPosition().getY(),
                 companion.blockPosition().getZ(), text);
     }
