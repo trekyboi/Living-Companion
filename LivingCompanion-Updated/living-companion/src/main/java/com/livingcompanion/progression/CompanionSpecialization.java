@@ -5,7 +5,9 @@ public enum CompanionSpecialization {
     PALADIN_WARDEN(CompanionClass.PALADIN, "warden", "Warden", "A protective healer who strengthens wards and restorative skills."),
     PALADIN_CRUSADER(CompanionClass.PALADIN, "crusader", "Crusader", "An aggressive holy warrior who amplifies melee damage and Holy Strike."),
     TANK_BULWARK(CompanionClass.TANK, "bulwark", "Bulwark", "A steadfast protector who improves mitigation and bodyguard skills."),
-    TANK_VANGUARD(CompanionClass.TANK, "vanguard", "Vanguard", "An aggressive frontline fighter who improves pressure, taunts, and damage.");
+    TANK_VANGUARD(CompanionClass.TANK, "vanguard", "Vanguard", "An aggressive frontline fighter who improves pressure, taunts, and damage."),
+    PALADIN_TEMPLAR(CompanionClass.PALADIN, "templar", "Templar", "A battle-priest who protects allies through disciplined defensive auras."),
+    TANK_JUGGERNAUT(CompanionClass.TANK, "juggernaut", "Juggernaut", "An unstoppable bruiser who converts endurance into crushing counterattacks.");
 
     private final CompanionClass archetype;
     private final String id;
