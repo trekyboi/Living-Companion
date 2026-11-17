@@ -115,10 +115,8 @@ public final class CompanionCreationScreen extends Screen {
         CompanionUiTheme.drawTitle(graphics, this.font, "A COMPANION FOR THE JOURNEY",
                 "Choose his name and calling", center, top + 14);
 
-        CompanionUiTheme.drawSectionHeader(graphics, this.font, "IDENTITY",
+        CompanionUiTheme.drawSectionHeader(graphics, this.font, "COMPANION NAME",
                 innerLeft, top + 61, innerWidth);
-        graphics.drawString(this.font, "NAME", innerLeft, top + 70,
-                CompanionUiTheme.TEXT_SECONDARY, false);
 
         int buttonGap = 12;
         int classButtonWidth = (innerWidth - buttonGap) / 2;
