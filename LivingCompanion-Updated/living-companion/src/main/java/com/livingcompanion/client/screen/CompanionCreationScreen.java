@@ -83,9 +83,7 @@ public final class CompanionCreationScreen extends Screen {
         int panelLeft = center - panelWidth / 2;
         int panelHeight = Math.min(226, Math.max(210, this.height - 16));
         int top = (this.height - panelHeight) / 2;
-        graphics.fill(panelLeft, top, panelLeft + panelWidth, top + panelHeight, 0xE0181B20);
-        graphics.fill(panelLeft, top, panelLeft + panelWidth, top + 2, 0xFFB18A55);
-        graphics.fill(panelLeft, top + panelHeight - 2, panelLeft + panelWidth, top + panelHeight, 0xFFB18A55);
+        CompanionUiTheme.drawPanel(graphics, panelLeft, top, panelWidth, panelHeight);
         graphics.drawCenteredString(this.font, "A COMPANION FOR THE JOURNEY",
                 center, top + 12, 0xFFE8D5B5);
         graphics.drawCenteredString(this.font, "Choose his name and calling.",
