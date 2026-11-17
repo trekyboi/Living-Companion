@@ -164,7 +164,7 @@ public final class CompanionStatsScreen extends Screen {
             attributeY += 29;
         }
 
-        int lowerY = sectionY + 119;
+        int lowerY = sectionY + 166;
         CompanionUiTheme.drawSectionHeader(graphics, font, "CLASS & SPECIALIZATION SKILLS",
                 innerLeft, lowerY, columnWidth);
         CompanionUiTheme.drawSectionHeader(graphics, font, "ACHIEVEMENTS",
