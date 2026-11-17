@@ -73,6 +73,9 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(11, CreativeMaxLevelMessage.class,
                 CreativeMaxLevelMessage::encode, CreativeMaxLevelMessage::decode,
                 CreativeMaxLevelMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(12, SetCommandMessage.class,
+                SetCommandMessage::encode, SetCommandMessage::decode,
+                SetCommandMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -106,6 +109,49 @@ public final class CompanionNetwork {
 
     public static void requestCreativeMaxLevel(int companionEntityId) {
         CHANNEL.sendToServer(new CreativeMaxLevelMessage(companionEntityId));
+    }
+
+    public static void requestSetCommand(int companionEntityId, int commandId) {
+        CHANNEL.sendToServer(new SetCommandMessage(companionEntityId, commandId));
+    }
+
+    public static final class SetCommandMessage {
+        private final int companionEntityId;
+        private final int commandId;
+        public SetCommandMessage(int companionEntityId, int commandId) {
+            this.companionEntityId = companionEntityId;
+            this.commandId = commandId;
+        }
+        public static void encode(SetCommandMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.companionEntityId);
+            buffer.writeVarInt(message.commandId);
+        }
+        public static SetCommandMessage decode(FriendlyByteBuf buffer) {
+            return new SetCommandMessage(buffer.readVarInt(), buffer.readVarInt());
+        }
+        public static void handle(SetCommandMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null || message.commandId < 0
+                        || message.commandId >= CompanionEntity.Command.values().length) return;
+                Entity entity = player.serverLevel().getEntity(message.companionEntityId);
+                if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
+                        || !companion.isAlive() || companion.distanceToSqr(player) > 64.0D) return;
+                CompanionEntity.Command command = CompanionEntity.Command.values()[message.commandId];
+                companion.setCommand(command);
+                String response = switch (command) {
+                    case FOLLOW -> "I'll follow your lead.";
+                    case STAY -> "I'll hold this position.";
+                    case DEFEND -> "I'll stay close and protect you.";
+                    case RETREAT -> "Falling back to your position.";
+                    case PATROL -> "I'll watch this area.";
+                };
+                player.sendSystemMessage(Component.literal(companion.getName().getString()
+                        + ": " + response));
+            });
+            context.setPacketHandled(true);
+        }
     }
 
     public static void requestStats(int companionEntityId) {
