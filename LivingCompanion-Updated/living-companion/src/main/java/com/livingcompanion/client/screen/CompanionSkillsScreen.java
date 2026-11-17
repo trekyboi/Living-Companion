@@ -320,6 +320,14 @@ public final class CompanionSkillsScreen extends Screen {
             case TANK_INTERCEPT -> new ItemStack(Items.IRON_INGOT);
             case PALADIN_TEMPLAR_VIGIL -> new ItemStack(Items.IRON_CHESTPLATE);
             case TANK_JUGGERNAUT_MOMENTUM -> new ItemStack(Items.ANVIL);
+            case PALADIN_WARDEN_SANCTUARY_PULSE -> new ItemStack(Items.GHAST_TEAR);
+            case PALADIN_WARDEN_CIRCLE_OF_RENEWAL, PALADIN_TEMPLAR_HOLY_STANDARD -> new ItemStack(Items.TOTEM_OF_UNDYING);
+            case PALADIN_CRUSADER_RADIANT_ASSAULT, PALADIN_CRUSADER_JUDGMENT_OF_DAWN -> new ItemStack(Items.GOLDEN_SWORD);
+            case PALADIN_TEMPLAR_AEGIS_LINK -> new ItemStack(Items.SHIELD);
+            case TANK_BULWARK_FORTRESS_STANCE, TANK_BULWARK_UNBREAKABLE_LINE -> new ItemStack(Items.SHIELD);
+            case TANK_VANGUARD_WARCRY -> new ItemStack(Items.BELL);
+            case TANK_VANGUARD_WARPATH -> new ItemStack(Items.IRON_AXE);
+            case TANK_JUGGERNAUT_CRUSHING_BLOW, TANK_JUGGERNAUT_UNSTOPPABLE_RAMPAGE -> new ItemStack(Items.ANVIL);
         };
     }
 
