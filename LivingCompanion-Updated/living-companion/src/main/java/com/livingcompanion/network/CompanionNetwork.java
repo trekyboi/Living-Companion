@@ -70,6 +70,9 @@ public final class CompanionNetwork {
         CHANNEL.registerMessage(10, EquipmentLoadoutMessage.class,
                 EquipmentLoadoutMessage::encode, EquipmentLoadoutMessage::decode,
                 EquipmentLoadoutMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(11, CreativeMaxLevelMessage.class,
+                CreativeMaxLevelMessage::encode, CreativeMaxLevelMessage::decode,
+                CreativeMaxLevelMessage::handle, java.util.Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void openCreation(ServerPlayer player) {
@@ -99,6 +102,10 @@ public final class CompanionNetwork {
 
     public static void requestEquipmentLoadout(int companionEntityId, int preset, boolean save) {
         CHANNEL.sendToServer(new EquipmentLoadoutMessage(companionEntityId, preset, save));
+    }
+
+    public static void requestCreativeMaxLevel(int companionEntityId) {
+        CHANNEL.sendToServer(new CreativeMaxLevelMessage(companionEntityId));
     }
 
     public static void requestStats(int companionEntityId) {
@@ -558,6 +565,34 @@ public final class CompanionNetwork {
             }
         }
         return null;
+    }
+
+    /** Server validates Creative mode even when a modified client sends this packet. */
+    public static final class CreativeMaxLevelMessage {
+        private final int companionEntityId;
+        public CreativeMaxLevelMessage(int companionEntityId) { this.companionEntityId = companionEntityId; }
+        public static void encode(CreativeMaxLevelMessage message, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(message.companionEntityId);
+        }
+        public static CreativeMaxLevelMessage decode(FriendlyByteBuf buffer) {
+            return new CreativeMaxLevelMessage(buffer.readVarInt());
+        }
+        public static void handle(CreativeMaxLevelMessage message, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null || !player.getAbilities().instabuild) return;
+                Entity entity = player.serverLevel().getEntity(message.companionEntityId);
+                if (!(entity instanceof CompanionEntity companion) || !companion.isOwnedBy(player)
+                        || !companion.isAlive() || companion.distanceToSqr(player) > 64.0D) return;
+                companion.maxLevelForCreative();
+                player.sendSystemMessage(Component.literal(companion.getName().getString()
+                        + " has been set to level 50 for Creative testing."));
+                sendSkillData(player, companion);
+                sendStatsData(player, companion);
+            });
+            context.setPacketHandled(true);
+        }
     }
 
     public static final class EquipmentLoadoutMessage {
