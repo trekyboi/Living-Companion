@@ -24,7 +24,7 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
     public CompanionInventoryScreen(CompanionInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 236;
-        this.imageHeight = 272;
+        this.imageHeight = 294;
         this.inventoryLabelY = -1000;
         this.titleLabelX = 8;
         this.titleLabelY = 6;
@@ -54,17 +54,20 @@ public final class CompanionInventoryScreen extends AbstractContainerScreen<Comp
         this.statsButton = this.addRenderableWidget(Button.builder(Component.literal("Stats"), button -> {
             CompanionNetwork.requestStats(this.menu.getCompanion().getId());
         }).bounds(this.leftPos + 180, this.topPos + 2, 48, 18).build());
+        this.addRenderableWidget(Button.builder(Component.literal("Journal"), button -> {
+            CompanionNetwork.requestJournal(this.menu.getCompanion().getId());
+        }).bounds(this.leftPos + 62, this.topPos + 226, 166, 18).build());
         this.addRenderableWidget(Button.builder(Component.literal("Companion Commands"), button -> {
             if (this.minecraft != null) {
                 this.minecraft.setScreen(new CompanionCommandScreen(this, this.menu.getCompanion().getId(),
                         this.menu.getCompanion().getCommand()));
             }
-        }).bounds(this.leftPos + 62, this.topPos + 226, 166, 18).build());
+        }).bounds(this.leftPos + 62, this.topPos + 248, 166, 18).build());
         this.protectionButton = this.addRenderableWidget(Button.builder(protectionLabel(), button -> {
             if (this.minecraft != null && this.minecraft.gameMode != null) {
                 this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
             }
-        }).bounds(this.leftPos + 62, this.topPos + 248, 166, 18).build());
+        }).bounds(this.leftPos + 62, this.topPos + 270, 166, 18).build());
     }
 
     private static void drawSlot(GuiGraphics graphics, int x, int y) {
