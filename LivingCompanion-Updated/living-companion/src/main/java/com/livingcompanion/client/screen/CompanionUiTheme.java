@@ -4,13 +4,16 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * Shared visual language for Living Companion screens.
- * Dark slate surfaces, antique-gold framing, and restrained status colors.
+ * Shared visual language for Living Companion.
+ * Inspired by polished RPG inventory and progression interfaces: dark slate
+ * surfaces, antique-gold framing, compact labels, and restrained status colors.
  */
 public final class CompanionUiTheme {
+    public static final int BACKDROP = 0xB8000000;
     public static final int PANEL = 0xF0181B20;
     public static final int PANEL_INSET = 0xFF22272E;
     public static final int PANEL_RAISED = 0xFF2B3038;
+    public static final int PANEL_HOVER = 0xFF343A43;
     public static final int BORDER = 0xFF51483C;
     public static final int GOLD = 0xFFB18A55;
     public static final int GOLD_BRIGHT = 0xFFFFD58A;
@@ -34,6 +37,17 @@ public final class CompanionUiTheme {
         graphics.fill(x + width - 1, y, x + width, y + height, BORDER);
     }
 
+    public static void drawCard(GuiGraphics graphics, int x, int y, int width, int height,
+                                boolean highlighted) {
+        if (width <= 0 || height <= 0) return;
+        graphics.fill(x, y, x + width, y + height, highlighted ? PANEL_RAISED : PANEL_INSET);
+        int edge = highlighted ? GOLD : BORDER;
+        graphics.fill(x, y, x + width, y + 1, edge);
+        graphics.fill(x, y + height - 1, x + width, y + height, edge);
+        graphics.fill(x, y, x + 1, y + height, edge);
+        graphics.fill(x + width - 1, y, x + width, y + height, edge);
+    }
+
     public static void drawDivider(GuiGraphics graphics, int x, int y, int width) {
         if (width <= 0) return;
         graphics.fill(x, y, x + width, y + 1, BORDER);
@@ -48,21 +62,35 @@ public final class CompanionUiTheme {
         }
     }
 
+    public static void drawTitle(GuiGraphics graphics, Font font, String title,
+                                 String subtitle, int centerX, int y) {
+        graphics.drawCenteredString(font, title, centerX, y, GOLD_BRIGHT);
+        if (subtitle != null && !subtitle.isBlank()) {
+            graphics.drawCenteredString(font, subtitle, centerX, y + 14, TEXT_SECONDARY);
+        }
+    }
+
+    public static void drawPill(GuiGraphics graphics, Font font, String label,
+                                int x, int y, int color) {
+        int width = font.width(label) + 10;
+        graphics.fill(x, y, x + width, y + 13, PANEL_RAISED);
+        graphics.fill(x, y, x + 2, y + 13, color);
+        graphics.drawString(font, label, x + 6, y + 3, color, false);
+    }
+
     public static void drawProgressBar(GuiGraphics graphics, int x, int y, int width,
                                        int height, float progress, int fillColor) {
         if (width <= 0 || height <= 0) return;
         float clamped = Math.max(0.0F, Math.min(1.0F, progress));
         graphics.fill(x, y, x + width, y + height, BAR_TRACK);
         int fillWidth = Math.round(width * clamped);
-        if (fillWidth > 0) {
-            graphics.fill(x, y, x + fillWidth, y + height, fillColor);
-        }
+        if (fillWidth > 0) graphics.fill(x, y, x + fillWidth, y + height, fillColor);
         graphics.fill(x, y, x + width, y + 1, 0x55FFFFFF);
     }
 
     public static void drawTab(GuiGraphics graphics, Font font, int x, int y, int width,
                                int height, String label, boolean selected, boolean hovered) {
-        int background = selected ? PANEL_RAISED : hovered ? 0xFF30353D : PANEL_INSET;
+        int background = selected ? PANEL_RAISED : hovered ? PANEL_HOVER : PANEL_INSET;
         graphics.fill(x, y, x + width, y + height, background);
         graphics.fill(x, y, x + width, y + 1, selected ? GOLD : BORDER);
         graphics.fill(x, y + height - 1, x + width, y + height,
