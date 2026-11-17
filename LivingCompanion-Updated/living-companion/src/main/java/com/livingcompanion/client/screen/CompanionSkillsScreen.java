@@ -249,7 +249,7 @@ public final class CompanionSkillsScreen extends Screen {
                 String skillMeta = skill.getType().name() + "  •  RANK "
                         + rank + "/" + skill.getMaximumRank();
                 graphics.drawString(this.font, skillMeta,
-                        textX + Math.min(descriptionWidth - this.font.width(skillMeta), 150),
+                        textRight - this.font.width(skillMeta),
                         rowY + 8, CompanionUiTheme.GOLD_BRIGHT, false);
                 for (int pip = 0; pip < skill.getMaximumRank(); pip++) {
                     int pipX = textX + pip * 9;
