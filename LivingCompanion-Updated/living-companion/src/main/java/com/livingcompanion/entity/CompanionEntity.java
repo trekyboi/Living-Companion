@@ -9,6 +9,7 @@ import com.livingcompanion.progression.CompanionPersonality;
 import com.livingcompanion.progression.CompanionAchievement;
 import com.livingcompanion.progression.CompanionSpecialization;
 import com.livingcompanion.ai.FollowOwnerGoal;
+import com.livingcompanion.ai.CompanionPatrolGoal;
 import com.livingcompanion.ai.CompanionIdleRoutineGoal;
 import com.livingcompanion.inventory.CompanionInventory;
 import com.livingcompanion.menu.CompanionInventoryMenu;
@@ -56,6 +57,7 @@ import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.level.Level;
+import net.minecraft.core.BlockPos;
 import net.minecraft.tags.StructureTags;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
@@ -129,7 +131,8 @@ public class CompanionEntity extends PathfinderMob {
     private static final int PASSIVE_FOOD_INTERVAL = 3600; // one point every three minutes
     private static final int COMBAT_FOOD_INTERVAL = 1800;  // combat doubles food use
 
-    public enum Command { FOLLOW, STAY, DEFEND }
+    public enum Command { FOLLOW, STAY, DEFEND, RETREAT, PATROL }
+    private BlockPos patrolAnchor = BlockPos.ZERO;
     private Command command = Command.FOLLOW;
     private long nextDialogueTick = 0L;
     private final List<String> memories = new ArrayList<>();
@@ -642,6 +645,7 @@ public class CompanionEntity extends PathfinderMob {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.15D, true));
         this.goalSelector.addGoal(2, new FollowOwnerGoal(this, 1.15D));
+        this.goalSelector.addGoal(2, new CompanionPatrolGoal(this));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
         this.goalSelector.addGoal(5, new CompanionIdleRoutineGoal(this));
@@ -1086,6 +1090,9 @@ public class CompanionEntity extends PathfinderMob {
             tag.putString("OwnerName", this.ownerNameCache);
         }
         tag.putString("Command", this.command.name());
+        tag.putInt("PatrolAnchorX", this.patrolAnchor.getX());
+        tag.putInt("PatrolAnchorY", this.patrolAnchor.getY());
+        tag.putInt("PatrolAnchorZ", this.patrolAnchor.getZ());
         tag.putString("CompanionClass", this.companionClass.name());
         tag.put("Progression", this.progression.save());
         tag.put("Relationship", this.relationship.save());
@@ -1157,6 +1164,11 @@ public class CompanionEntity extends PathfinderMob {
                 this.command = Command.FOLLOW;
             }
         }
+        if (tag.contains("PatrolAnchorX") && tag.contains("PatrolAnchorY") && tag.contains("PatrolAnchorZ")) {
+            this.patrolAnchor = new BlockPos(tag.getInt("PatrolAnchorX"), tag.getInt("PatrolAnchorY"), tag.getInt("PatrolAnchorZ"));
+        } else {
+            this.patrolAnchor = this.blockPosition();
+        }
         this.companionInventory.load(tag);
         this.memories.clear();
         ListTag savedMemories = tag.getList("Memories", Tag.TAG_STRING);
@@ -1212,10 +1224,13 @@ public class CompanionEntity extends PathfinderMob {
         this.getNavigation().stop();
 
         // Clear an existing hunt target when ordered to hold position.
-        if (next == Command.STAY) {
+        if (next == Command.STAY || next == Command.RETREAT) {
             this.setTarget(null);
         }
+        if (next == Command.PATROL) this.patrolAnchor = this.blockPosition();
     }
+
+    public BlockPos getPatrolAnchor() { return this.patrolAnchor; }
 
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
@@ -1240,13 +1255,17 @@ public class CompanionEntity extends PathfinderMob {
                 Command next = switch (this.command) {
                     case FOLLOW -> Command.STAY;
                     case STAY -> Command.DEFEND;
-                    case DEFEND -> Command.FOLLOW;
+                    case DEFEND -> Command.RETREAT;
+                    case RETREAT -> Command.PATROL;
+                    case PATROL -> Command.FOLLOW;
                 };
                 setCommand(next);
                 player.sendSystemMessage(Component.literal("Knight: " + switch (next) {
                     case FOLLOW -> "I'll follow your lead.";
                     case STAY -> "I'll hold this position.";
                     case DEFEND -> "I'll stay close and protect you.";
+                    case RETREAT -> "Falling back to your position.";
+                    case PATROL -> "I'll watch this area.";
                 }));
             } else if (player instanceof ServerPlayer serverPlayer) {
                 if (this.relationshipInteractionCooldownTicks <= 0) {
