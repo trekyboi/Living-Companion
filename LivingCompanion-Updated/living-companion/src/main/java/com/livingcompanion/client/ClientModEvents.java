@@ -3,6 +3,7 @@ package com.livingcompanion.client;
 import com.livingcompanion.LivingCompanion;
 import com.livingcompanion.client.renderer.CompanionPlayerRenderer;
 import com.livingcompanion.client.renderer.MageCompanionRenderer;
+import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import com.livingcompanion.registry.ModEntities;
 import com.livingcompanion.registry.ModMenus;
 import com.livingcompanion.client.screen.CompanionInventoryScreen;
@@ -23,6 +24,7 @@ public final class ClientModEvents {
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.COMPANION.get(), CompanionPlayerRenderer::new);
         event.registerEntityRenderer(ModEntities.MAGE_COMPANION.get(), MageCompanionRenderer::new);
+        event.registerEntityRenderer(ModEntities.MAGIC_BOLT.get(), ThrownItemRenderer::new);
     }
 
     @SubscribeEvent
