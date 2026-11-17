@@ -41,14 +41,19 @@ public final class CompanionLoadoutsScreen extends Screen {
         int left = this.width / 2 - 110;
         int top = this.height / 2 - 58;
         CompanionUiTheme.drawPanel(graphics, left - 10, top - 24, 260, 166);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, top - 15, 0xFFE6D3B0);
+        CompanionUiTheme.drawTitle(graphics, this.font, "EQUIPMENT LOADOUTS",
+                "Save and swap complete gear sets", this.width / 2, top - 16);
         for (int preset = 0; preset < 3; preset++) {
-            graphics.drawString(this.font, "Preset " + (preset + 1), left, top + 6 + preset * 34, 0xFFFFFFFF);
+            int rowY = top + preset * 34 - 3;
+            CompanionUiTheme.drawCard(graphics, left - 3, rowY, 246, 29, false);
+            graphics.drawString(this.font, "PRESET 0" + (preset + 1),
+                    left + 5, rowY + 10, CompanionUiTheme.TEXT_PRIMARY, false);
         }
-        graphics.drawCenteredString(this.font, "Save captures the six equipped slots.", this.width / 2,
-                top + 91, 0xFFB9B2A7);
-        graphics.drawCenteredString(this.font, "Equip / Swap exchanges current gear with the preset.",
-                this.width / 2, top + 102, 0xFFB9B2A7);
+        CompanionUiTheme.drawDivider(graphics, left - 2, top + 91, 244);
+        graphics.drawCenteredString(this.font, "SAVE captures the six equipped slots.",
+                this.width / 2, top + 96, CompanionUiTheme.TEXT_SECONDARY);
+        graphics.drawCenteredString(this.font, "SWAP exchanges the current gear with a preset.",
+                this.width / 2, top + 108, CompanionUiTheme.TEXT_MUTED);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
