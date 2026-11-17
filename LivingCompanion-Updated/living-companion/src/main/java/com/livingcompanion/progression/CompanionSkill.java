@@ -34,7 +34,13 @@ public enum CompanionSkill {
     TANK_BULWARK_OATH("tank_bulwark_oath", CompanionClass.TANK, SkillType.PASSIVE, "Bulwark's Oath",
             "Bulwark branch: reduces damage suffered by the owner while nearby.", 3, 15, 0, CompanionSpecialization.TANK_BULWARK),
     TANK_VANGUARD_FURY("tank_vanguard_fury", CompanionClass.TANK, SkillType.PASSIVE, "Vanguard's Fury",
-            "Vanguard branch: increases the Tank's melee damage.", 3, 15, 0, CompanionSpecialization.TANK_VANGUARD);
+            "Vanguard branch: increases the Tank's melee damage.", 3, 15, 0, CompanionSpecialization.TANK_VANGUARD),
+    PALADIN_TEMPLAR_VIGIL("paladin_templar_vigil", CompanionClass.PALADIN, SkillType.PASSIVE, "Templar's Vigil",
+            "Templar branch: reduces damage suffered by the owner while the Paladin is nearby.", 3, 15, 0,
+            CompanionSpecialization.PALADIN_TEMPLAR),
+    TANK_JUGGERNAUT_MOMENTUM("tank_juggernaut_momentum", CompanionClass.TANK, SkillType.PASSIVE, "Juggernaut Momentum",
+            "Juggernaut branch: adds crushing force to successful melee hits.", 3, 15, 0,
+            CompanionSpecialization.TANK_JUGGERNAUT);
 
     public enum SkillType { PASSIVE, ACTIVE, ULTIMATE }
 
