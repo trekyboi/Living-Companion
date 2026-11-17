@@ -29,6 +29,8 @@ public final class ClientModEvents {
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(ModModelLayers.COMPANION,
                 () -> LayerDefinition.create(PlayerModel.createMesh(CubeDeformation.NONE, false), 64, 64));
+        event.registerLayerDefinition(ModModelLayers.MAGE_COMPANION,
+                () -> LayerDefinition.create(PlayerModel.createMesh(CubeDeformation.NONE, true), 64, 64));
     }
 
     @SubscribeEvent
