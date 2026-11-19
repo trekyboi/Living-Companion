@@ -43,18 +43,18 @@ public final class CompanionAttributesScreen extends Screen {
     protected void init() {
         this.clearWidgets();
         this.upgradeButtons.clear();
-        int panelWidth = Math.min(520, Math.max(220, this.width - 16));
-        int panelHeight = Math.min(300, Math.max(220, this.height - 16));
+        int panelWidth = Math.max(180, Math.min(520, this.width - 16));
+        int panelHeight = Math.max(150, Math.min(300, this.height - 16));
         int left = (this.width - panelWidth) / 2;
         int top = (this.height - panelHeight) / 2;
-        int rowGap = Math.max(27, (panelHeight - 112) / CompanionAttribute.values().length);
-        int buttonWidth = Math.min(96, Math.max(70, panelWidth / 5));
+        int rowGap = Math.max(20, Math.min(34, (panelHeight - 100) / CompanionAttribute.values().length));
+        int buttonWidth = Math.min(96, Math.max(58, panelWidth / 5));
         int buttonX = left + panelWidth - buttonWidth - 12;
-        int rowY = top + 78;
+        int rowY = top + 76;
         for (CompanionAttribute attribute : CompanionAttribute.values()) {
             Button button = Button.builder(Component.literal("Upgrade"), b ->
                     CompanionNetwork.requestAttributeUpgrade(data.entityId, attribute.getId()))
-                    .bounds(buttonX, rowY, buttonWidth, 22).build();
+                    .bounds(buttonX, rowY, buttonWidth, 18).build();
             this.upgradeButtons.add(button);
             this.addRenderableWidget(button);
             rowY += rowGap;
@@ -84,8 +84,8 @@ public final class CompanionAttributesScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
-        int panelWidth = Math.min(520, Math.max(220, this.width - 16));
-        int panelHeight = Math.min(300, Math.max(220, this.height - 16));
+        int panelWidth = Math.max(180, Math.min(520, this.width - 16));
+        int panelHeight = Math.max(150, Math.min(300, this.height - 16));
         int left = (this.width - panelWidth) / 2;
         int top = (this.height - panelHeight) / 2;
         CompanionUiTheme.drawPanel(graphics, left, top, panelWidth, panelHeight);
@@ -98,18 +98,18 @@ public final class CompanionAttributesScreen extends Screen {
         CompanionUiTheme.drawSectionHeader(graphics, this.font, "ATTRIBUTE ALLOCATION",
                 left + 18, top + 64, panelWidth - 36);
 
-        int y = top + 78;
-        int rowGap = Math.max(27, (panelHeight - 112) / CompanionAttribute.values().length);
+        int y = top + 76;
+        int rowGap = Math.max(20, Math.min(34, (panelHeight - 100) / CompanionAttribute.values().length));
         for (CompanionAttribute attribute : CompanionAttribute.values()) {
             int value = getValue(attribute);
             CompanionUiTheme.drawCard(graphics, left + 12, y - 5,
-                    panelWidth - 24, rowGap - 3, false);
+                    panelWidth - 24, rowGap - 2, false);
             graphics.drawString(this.font, attribute.getDisplayName().toUpperCase(java.util.Locale.ROOT)
                             + "  " + value + "/20",
                     left + 22, y, CompanionUiTheme.TEXT_PRIMARY, false);
             int barX = left + 22;
             int barY = y + 13;
-            int barWidth = Math.max(42, Math.min(150, panelWidth - 190));
+            int barWidth = Math.max(28, Math.min(150, panelWidth - 190));
             CompanionUiTheme.drawProgressBar(graphics, barX, barY, barWidth, 6,
                     value / 20.0F, CompanionUiTheme.GOLD);
             for (int segment = 1; segment < 20; segment++) {
