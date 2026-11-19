@@ -1373,7 +1373,7 @@ public class CompanionEntity extends PathfinderMob {
                     case PATROL -> Command.FOLLOW;
                 };
                 setCommand(next);
-                player.sendSystemMessage(Component.literal("Knight: " + switch (next) {
+                player.sendSystemMessage(Component.literal(this.getName().getString() + ": " + switch (next) {
                     case FOLLOW -> "I'll follow your lead.";
                     case STAY -> "I'll hold this position.";
                     case DEFEND -> "I'll stay close and protect you.";
@@ -1415,7 +1415,7 @@ public class CompanionEntity extends PathfinderMob {
         if (!previous.isEmpty()) this.spawnAtLocation(previous.copy());
         this.setItemSlot(slot, held.copyWithCount(1));
         if (!player.getAbilities().instabuild) held.shrink(1);
-        player.sendSystemMessage(Component.literal("Knight: I'll put this to good use."));
+        player.sendSystemMessage(Component.literal(this.getName().getString() + ": I'll put this to good use."));
         return true;
     }
 
