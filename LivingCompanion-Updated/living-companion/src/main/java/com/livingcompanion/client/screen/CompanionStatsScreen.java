@@ -32,7 +32,7 @@ public final class CompanionStatsScreen extends Screen {
         super.init();
         if (minecraft != null && minecraft.player != null
                 && minecraft.player.getAbilities().instabuild) {
-            int panelWidth = Math.min(600, Math.max(300, width - 16));
+            int panelWidth = Math.min(600, Math.max(180, width - 16));
             int panelLeft = (width - panelWidth) / 2;
             int panelTop = (height - Math.min(400, Math.max(250, height - 20))) / 2;
             addRenderableWidget(Button.builder(Component.literal("MAX LEVEL (CREATIVE)"), button ->
