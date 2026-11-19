@@ -32,8 +32,8 @@ public final class CompanionCreationScreen extends Screen {
         Minecraft.getInstance().setScreen(new CompanionCreationScreen());
     }
 
-    private int panelWidth() { return Math.min(420, Math.max(260, width - 24)); }
-    private int panelHeight() { return Math.min(320, Math.max(240, height - 24)); }
+    private int panelWidth() { return Math.max(220, Math.min(420, width - 24)); }
+    private int panelHeight() { return Math.max(190, Math.min(320, height - 24)); }
     private int panelLeft() { return (width - panelWidth()) / 2; }
     private int panelTop() { return (height - panelHeight()) / 2; }
 
