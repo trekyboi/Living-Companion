@@ -346,7 +346,13 @@ public final class CompanionSkillsScreen extends Screen {
             case ELEMENTALIST_ELEMENTAL_FOCUS -> new ItemStack(Items.AMETHYST_SHARD);
             case ELEMENTALIST_ARCANE_BOLT -> new ItemStack(Items.BLAZE_POWDER);
             case ELEMENTALIST_PRIMAL_SURGE -> new ItemStack(Items.FIRE_CHARGE);
-            case ELEMENTALIST_CATACLYSM -> new ItemStack(Items.DRAGON_BREATH);
+            case ELEMENTALIST_CATACLYSM, ELEMENTALIST_PYROMANCER_INFERNO -> new ItemStack(Items.DRAGON_BREATH);
+            case ELEMENTALIST_PYROMANCER_EMBER_HEART -> new ItemStack(Items.BLAZE_POWDER);
+            case ELEMENTALIST_PYROMANCER_FLAMEBURST -> new ItemStack(Items.FIRE_CHARGE);
+            case ELEMENTALIST_CRYOMANCER_FROSTBIND -> new ItemStack(Items.PACKED_ICE);
+            case ELEMENTALIST_CRYOMANCER_FROST_NOVA, ELEMENTALIST_CRYOMANCER_ABSOLUTE_ZERO -> new ItemStack(Items.BLUE_ICE);
+            case ELEMENTALIST_STORMCALLER_STATIC_CHARGE -> new ItemStack(Items.LIGHTNING_ROD);
+            case ELEMENTALIST_STORMCALLER_CHAIN_LIGHTNING, ELEMENTALIST_STORMCALLER_TEMPEST -> new ItemStack(Items.LIGHTNING_ROD);
         };
     }
 
