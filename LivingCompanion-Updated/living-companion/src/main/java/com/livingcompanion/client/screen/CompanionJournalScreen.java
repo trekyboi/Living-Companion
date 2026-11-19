@@ -44,11 +44,11 @@ public final class CompanionJournalScreen extends Screen {
 
         int innerLeft = left + 14;
         int innerWidth = panelWidth - 28;
-        CompanionUiTheme.drawCard(graphics, innerLeft, top + 48, innerWidth, 30, true);
+        CompanionUiTheme.drawParchment(graphics, innerLeft, top + 48, innerWidth, 30);
         graphics.drawString(this.font, "BOND  " + this.bondLevel + " / 10",
-                innerLeft + 9, top + 54, CompanionUiTheme.GOLD_BRIGHT, false);
+                innerLeft + 9, top + 54, CompanionUiTheme.PARCHMENT_TEXT, false);
         graphics.drawString(this.font, this.bondTitle,
-                innerLeft + 9, top + 66, CompanionUiTheme.TEXT_SECONDARY, false);
+                innerLeft + 9, top + 66, CompanionUiTheme.PARCHMENT_TEXT, false);
 
         CompanionUiTheme.drawSectionHeader(graphics, this.font, "CHRONICLE",
                 innerLeft, top + 88, innerWidth);
@@ -65,12 +65,12 @@ public final class CompanionJournalScreen extends Screen {
                 if (index < 0) break;
                 JournalEntry entry = this.entries[index];
                 int y = startY + row * 35;
-                CompanionUiTheme.drawCard(graphics, innerLeft, y, innerWidth, 32, row == 0);
+                CompanionUiTheme.drawParchment(graphics, innerLeft, y, innerWidth, 32);
                 graphics.drawString(this.font, String.format(java.util.Locale.ROOT, "%02d", index + 1),
                         innerLeft + 7, y + 5, CompanionUiTheme.GOLD);
                 String title = fit(entry.getText(), innerWidth - 38);
                 graphics.drawString(this.font, title, innerLeft + 29, y + 4,
-                        CompanionUiTheme.TEXT_PRIMARY, false);
+                        CompanionUiTheme.PARCHMENT_TEXT, false);
                 String details;
                 if (entry.getWorldTime() <= 0L || "unknown".equals(entry.getDimension())) {
                     details = "DATE / LOCATION UNKNOWN  •  LEGACY MEMORY";
@@ -81,7 +81,7 @@ public final class CompanionJournalScreen extends Screen {
                             + entry.getX() + ", " + entry.getY() + ", " + entry.getZ();
                 }
                 graphics.drawString(this.font, fit(details, innerWidth - 38),
-                        innerLeft + 29, y + 17, CompanionUiTheme.TEXT_MUTED, false);
+                        innerLeft + 29, y + 17, CompanionUiTheme.PARCHMENT_TEXT, false);
             }
         }
         graphics.drawCenteredString(this.font, "Mouse wheel / arrows  •  " + this.entries.length + " records",
