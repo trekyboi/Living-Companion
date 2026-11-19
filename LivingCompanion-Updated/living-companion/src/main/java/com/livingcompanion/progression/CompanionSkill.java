@@ -95,7 +95,37 @@ public enum CompanionSkill {
             CompanionSpecialization.TANK_JUGGERNAUT),
     TANK_JUGGERNAUT_UNSTOPPABLE_RAMPAGE("tank_juggernaut_unstoppable_rampage", CompanionClass.TANK, SkillType.ULTIMATE, "Unstoppable Rampage",
             "Juggernaut ultimate: tears through nearby enemies and converts the assault into healing.", 1, 30, 2400,
-            CompanionSpecialization.TANK_JUGGERNAUT);
+            CompanionSpecialization.TANK_JUGGERNAUT),
+
+    ELEMENTALIST_PYROMANCER_EMBER_HEART("elementalist_pyromancer_ember_heart", CompanionClass.ELEMENTALIST, SkillType.PASSIVE, "Ember Heart",
+            "Pyromancer passive: increases elemental spell damage and adds burning to Arcane Bolt.", 3, 30, 0,
+            CompanionSpecialization.ELEMENTALIST_PYROMANCER),
+    ELEMENTALIST_PYROMANCER_FLAMEBURST("elementalist_pyromancer_flameburst", CompanionClass.ELEMENTALIST, SkillType.ACTIVE, "Flameburst",
+            "Pyromancer active: blasts nearby hostiles with fire and sets them ablaze.", 3, 30, 220,
+            CompanionSpecialization.ELEMENTALIST_PYROMANCER),
+    ELEMENTALIST_PYROMANCER_INFERNO("elementalist_pyromancer_inferno", CompanionClass.ELEMENTALIST, SkillType.ULTIMATE, "Inferno",
+            "Pyromancer ultimate: unleashes a devastating ring of fire around the Elementalist.", 1, 30, 2400,
+            CompanionSpecialization.ELEMENTALIST_PYROMANCER),
+
+    ELEMENTALIST_CRYOMANCER_FROSTBIND("elementalist_cryomancer_frostbind", CompanionClass.ELEMENTALIST, SkillType.PASSIVE, "Frostbind",
+            "Cryomancer passive: Arcane Bolt chills its target, slowing its movement.", 3, 30, 0,
+            CompanionSpecialization.ELEMENTALIST_CRYOMANCER),
+    ELEMENTALIST_CRYOMANCER_FROST_NOVA("elementalist_cryomancer_frost_nova", CompanionClass.ELEMENTALIST, SkillType.ACTIVE, "Frost Nova",
+            "Cryomancer active: releases a freezing pulse that slows nearby hostiles.", 3, 30, 240,
+            CompanionSpecialization.ELEMENTALIST_CRYOMANCER),
+    ELEMENTALIST_CRYOMANCER_ABSOLUTE_ZERO("elementalist_cryomancer_absolute_zero", CompanionClass.ELEMENTALIST, SkillType.ULTIMATE, "Absolute Zero",
+            "Cryomancer ultimate: freezes nearby hostiles in place and deals heavy frost damage.", 1, 30, 2400,
+            CompanionSpecialization.ELEMENTALIST_CRYOMANCER),
+
+    ELEMENTALIST_STORMCALLER_STATIC_CHARGE("elementalist_stormcaller_static_charge", CompanionClass.ELEMENTALIST, SkillType.PASSIVE, "Static Charge",
+            "Stormcaller passive: Arcane Bolt deals increased damage and briefly jolts its target.", 3, 30, 0,
+            CompanionSpecialization.ELEMENTALIST_STORMCALLER),
+    ELEMENTALIST_STORMCALLER_CHAIN_LIGHTNING("elementalist_stormcaller_chain_lightning", CompanionClass.ELEMENTALIST, SkillType.ACTIVE, "Chain Lightning",
+            "Stormcaller active: strikes the current target and arcs through nearby hostiles.", 3, 30, 220,
+            CompanionSpecialization.ELEMENTALIST_STORMCALLER),
+    ELEMENTALIST_STORMCALLER_TEMPEST("elementalist_stormcaller_tempest", CompanionClass.ELEMENTALIST, SkillType.ULTIMATE, "Tempest",
+            "Stormcaller ultimate: calls a violent storm that damages and knocks back nearby hostiles.", 1, 30, 2400,
+            CompanionSpecialization.ELEMENTALIST_STORMCALLER);
 
     public enum SkillType { PASSIVE, ACTIVE, ULTIMATE }
 
