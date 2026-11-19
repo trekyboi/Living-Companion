@@ -26,7 +26,7 @@ public final class CompanionCampWatchGoal extends Goal {
             return false;
         }
         return owner.isAlive() && owner.level() == companion.level()
-                && !recordedThisSleep && companion.isAlive() && companion.onGround()
+                && companion.isAlive() && companion.onGround()
                 && !companion.isInWater() && !companion.isPassenger()
                 && companion.getTarget() == null && companion.distanceToSqr(owner) <= 64.0D;
     }
@@ -43,13 +43,15 @@ public final class CompanionCampWatchGoal extends Goal {
 
     @Override
     public void start() {
-        recordedThisSleep = true;
         companion.getNavigation().stop();
         companion.setPose(Pose.SITTING);
-        companion.remember("kept watch while you slept");
-        companion.commentOnEvent("Rest. I'll keep watch until morning.",
-                "Sleep. I'll listen for anything approaching.",
-                "I'll stay awake. We've earned a quiet night.");
+        if (!recordedThisSleep) {
+            recordedThisSleep = true;
+            companion.remember("kept watch while you slept");
+            companion.commentOnEvent("Rest. I'll keep watch until morning.",
+                    "Sleep. I'll listen for anything approaching.",
+                    "I'll stay awake. We've earned a quiet night.");
+        }
     }
 
     @Override
