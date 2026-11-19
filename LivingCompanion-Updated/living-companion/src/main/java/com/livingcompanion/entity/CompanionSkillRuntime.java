@@ -197,14 +197,25 @@ public final class CompanionSkillRuntime {
             return;
         }
 
+        int pyromancer = rank(CompanionSkill.ELEMENTALIST_PYROMANCER_EMBER_HEART);
+        int cryomancer = rank(CompanionSkill.ELEMENTALIST_CRYOMANCER_FROSTBIND);
+        int stormcaller = rank(CompanionSkill.ELEMENTALIST_STORMCALLER_STATIC_CHARGE);
         int focus = rank(CompanionSkill.ELEMENTALIST_ELEMENTAL_FOCUS);
         int bolt = rank(CompanionSkill.ELEMENTALIST_ARCANE_BOLT);
         if (bolt > 0 && validTarget && companion.distanceToSqr(target) >= 16.0D
                 && isReady(CompanionSkill.ELEMENTALIST_ARCANE_BOLT)
                 && startCooldown(CompanionSkill.ELEMENTALIST_ARCANE_BOLT)) {
-            float damage = (3.0F + bolt * 1.75F + focus * 0.75F)
+            float damage = (3.0F + bolt * 1.75F + focus * 0.75F
+                    + pyromancer * 0.9F + stormcaller * 0.65F)
                     + companion.getProgression().getAttribute(CompanionAttribute.WISDOM) * 0.05F;
             castBolt(target, damage, false, SoundEvents.FIRECHARGE_USE, 1.1F);
+            if (pyromancer > 0) target.setSecondsOnFire(1 + pyromancer);
+            if (cryomancer > 0) target.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 30 + cryomancer * 20, 0));
+            if (stormcaller > 0 && companion.level() instanceof ServerLevel level) {
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, target.getX(), target.getY() + 0.7D,
+                        target.getZ(), 6 + stormcaller * 3, 0.25D, 0.3D, 0.25D, 0.08D);
+            }
             battleLine("Elemental force, obey!", "A clean channel. A cleaner result.", "Keep them at a distance.");
         }
 
@@ -404,6 +415,106 @@ public final class CompanionSkillRuntime {
                 companion.heal(12.0F);
                 lastBastionTicks = Math.max(lastBastionTicks, 100);
                 playLastBastionEffect();
+            }
+        } else if (specialization == CompanionSpecialization.ELEMENTALIST_PYROMANCER) {
+            int active = rank(CompanionSkill.ELEMENTALIST_PYROMANCER_FLAMEBURST);
+            if (active > 0 && inCombat && isReady(CompanionSkill.ELEMENTALIST_PYROMANCER_FLAMEBURST)
+                    && startCooldown(CompanionSkill.ELEMENTALIST_PYROMANCER_FLAMEBURST)) {
+                float damage = 3.0F + active * 2.5F;
+                if (companion.level() instanceof ServerLevel level) {
+                    for (Monster hostile : level.getEntitiesOfClass(Monster.class,
+                            companion.getBoundingBox().inflate(5.0D), Monster::isAlive)) {
+                        hostile.hurt(companion.damageSources().mobAttack(companion), damage);
+                        hostile.setSecondsOnFire(3 + active * 2);
+                    }
+                }
+                playElementalBurst();
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.35F
+                    && rank(CompanionSkill.ELEMENTALIST_PYROMANCER_INFERNO) > 0
+                    && isReady(CompanionSkill.ELEMENTALIST_PYROMANCER_INFERNO)
+                    && startCooldown(CompanionSkill.ELEMENTALIST_PYROMANCER_INFERNO)) {
+                if (companion.level() instanceof ServerLevel level) {
+                    for (Monster hostile : level.getEntitiesOfClass(Monster.class,
+                            companion.getBoundingBox().inflate(8.0D), Monster::isAlive)) {
+                        hostile.hurt(companion.damageSources().mobAttack(companion), 12.0F);
+                        hostile.setSecondsOnFire(8);
+                    }
+                }
+                playElementalBurst();
+            }
+        } else if (specialization == CompanionSpecialization.ELEMENTALIST_CRYOMANCER) {
+            int active = rank(CompanionSkill.ELEMENTALIST_CRYOMANCER_FROST_NOVA);
+            if (active > 0 && inCombat && isReady(CompanionSkill.ELEMENTALIST_CRYOMANCER_FROST_NOVA)
+                    && startCooldown(CompanionSkill.ELEMENTALIST_CRYOMANCER_FROST_NOVA)) {
+                if (companion.level() instanceof ServerLevel level) {
+                    for (Monster hostile : level.getEntitiesOfClass(Monster.class,
+                            companion.getBoundingBox().inflate(5.0D), Monster::isAlive)) {
+                        hostile.hurt(companion.damageSources().mobAttack(companion), 1.5F * active);
+                        hostile.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 60 + active * 40, active >= 3 ? 1 : 0));
+                    }
+                    level.sendParticles(ParticleTypes.SNOWFLAKE, companion.getX(), companion.getY() + 0.8D,
+                            companion.getZ(), 55, 2.0D, 0.8D, 2.0D, 0.04D);
+                    level.playSound(null, companion.blockPosition(), SoundEvents.GLASS_BREAK,
+                            SoundSource.PLAYERS, 0.8F, 0.65F);
+                }
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.35F
+                    && rank(CompanionSkill.ELEMENTALIST_CRYOMANCER_ABSOLUTE_ZERO) > 0
+                    && isReady(CompanionSkill.ELEMENTALIST_CRYOMANCER_ABSOLUTE_ZERO)
+                    && startCooldown(CompanionSkill.ELEMENTALIST_CRYOMANCER_ABSOLUTE_ZERO)) {
+                if (companion.level() instanceof ServerLevel level) {
+                    for (Monster hostile : level.getEntitiesOfClass(Monster.class,
+                            companion.getBoundingBox().inflate(8.0D), Monster::isAlive)) {
+                        hostile.hurt(companion.damageSources().mobAttack(companion), 10.0F);
+                        hostile.setTicksFrozen(Math.max(hostile.getTicksFrozen(), 140));
+                        hostile.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 160, 2));
+                    }
+                    level.sendParticles(ParticleTypes.SNOWFLAKE, companion.getX(), companion.getY() + 0.8D,
+                            companion.getZ(), 100, 3.0D, 1.0D, 3.0D, 0.06D);
+                    level.playSound(null, companion.blockPosition(), SoundEvents.GLASS_BREAK,
+                            SoundSource.PLAYERS, 1.0F, 0.45F);
+                }
+            }
+        } else if (specialization == CompanionSpecialization.ELEMENTALIST_STORMCALLER) {
+            int active = rank(CompanionSkill.ELEMENTALIST_STORMCALLER_CHAIN_LIGHTNING);
+            if (active > 0 && inCombat && isReady(CompanionSkill.ELEMENTALIST_STORMCALLER_CHAIN_LIGHTNING)
+                    && startCooldown(CompanionSkill.ELEMENTALIST_STORMCALLER_CHAIN_LIGHTNING)) {
+                target.hurt(companion.damageSources().mobAttack(companion), 3.0F * active);
+                if (companion.level() instanceof ServerLevel level) {
+                    for (Monster hostile : level.getEntitiesOfClass(Monster.class,
+                            target.getBoundingBox().inflate(4.5D), mob -> mob.isAlive() && mob != target)) {
+                        hostile.hurt(companion.damageSources().mobAttack(companion), 2.0F * active);
+                        level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                                hostile.getX(), hostile.getY() + 0.7D, hostile.getZ(), 14, 0.25D, 0.3D, 0.25D, 0.12D);
+                    }
+                    level.sendParticles(ParticleTypes.ELECTRIC_SPARK, target.getX(), target.getY() + 0.7D,
+                            target.getZ(), 24, 0.4D, 0.4D, 0.4D, 0.16D);
+                    level.playSound(null, target.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT,
+                            SoundSource.PLAYERS, 0.8F, 1.4F);
+                }
+            }
+            if (companion.getHealth() <= companion.getMaxHealth() * 0.35F
+                    && rank(CompanionSkill.ELEMENTALIST_STORMCALLER_TEMPEST) > 0
+                    && isReady(CompanionSkill.ELEMENTALIST_STORMCALLER_TEMPEST)
+                    && startCooldown(CompanionSkill.ELEMENTALIST_STORMCALLER_TEMPEST)) {
+                if (companion.level() instanceof ServerLevel level) {
+                    for (Monster hostile : level.getEntitiesOfClass(Monster.class,
+                            companion.getBoundingBox().inflate(8.0D), Monster::isAlive)) {
+                        hostile.hurt(companion.damageSources().mobAttack(companion), 13.0F);
+                        double dx = hostile.getX() - companion.getX();
+                        double dz = hostile.getZ() - companion.getZ();
+                        double length = Math.max(0.1D, Math.sqrt(dx * dx + dz * dz));
+                        hostile.setDeltaMovement(hostile.getDeltaMovement().add(dx / length * 0.9D, 0.45D, dz / length * 0.9D));
+                        hostile.hurtMarked = true;
+                    }
+                    level.sendParticles(ParticleTypes.ELECTRIC_SPARK, companion.getX(), companion.getY() + 1.0D,
+                            companion.getZ(), 100, 3.0D, 1.2D, 3.0D, 0.2D);
+                    level.playSound(null, companion.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER,
+                            SoundSource.PLAYERS, 0.9F, 1.0F);
+                }
             }
         }
     }
