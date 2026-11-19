@@ -34,7 +34,7 @@ public final class CompanionStatsScreen extends Screen {
                 && minecraft.player.getAbilities().instabuild) {
             int panelWidth = Math.min(600, Math.max(180, width - 16));
             int panelLeft = (width - panelWidth) / 2;
-            int panelTop = (height - Math.min(400, Math.max(250, height - 20))) / 2;
+            int panelTop = (height - Math.min(400, Math.max(150, height - 16))) / 2;
             addRenderableWidget(Button.builder(Component.literal("MAX LEVEL (CREATIVE)"), button ->
                     CompanionNetwork.requestCreativeMaxLevel(data.entityId))
                     .bounds(panelLeft + panelWidth - 168, panelTop + 36, 152, 20).build());
@@ -76,7 +76,7 @@ public final class CompanionStatsScreen extends Screen {
         renderBackground(graphics);
 
         int panelWidth = Math.min(600, Math.max(300, width - 16));
-        int panelHeight = Math.min(400, Math.max(250, height - 20));
+        int panelHeight = Math.min(400, Math.max(150, height - 16));
         int left = (width - panelWidth) / 2;
         int top = (height - panelHeight) / 2;
         int innerLeft = left + 16;
