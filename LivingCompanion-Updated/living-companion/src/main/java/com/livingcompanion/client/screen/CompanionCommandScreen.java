@@ -24,6 +24,13 @@ public final class CompanionCommandScreen extends Screen {
     private CompanionEntity.Command selectedCommand;
     private final Button[] commandButtons = new Button[COMMANDS.length];
 
+    // Shared geometry keeps the buttons and rendered panel aligned, including
+    // after the player resizes the game window.
+    private int panelWidth;
+    private int panelHeight;
+    private int panelLeft;
+    private int panelTop;
+
     public CompanionCommandScreen(Screen parent, int companionEntityId,
                                   CompanionEntity.Command selectedCommand) {
         super(Component.literal("Companion Commands"));
@@ -35,23 +42,26 @@ public final class CompanionCommandScreen extends Screen {
 
     @Override
     protected void init() {
-        int panelWidth = Math.min(230, this.width - 16);
-        int panelHeight = Math.min(220, this.height - 16);
-        int panelLeft = (this.width - panelWidth) / 2;
-        int panelTop = (this.height - panelHeight) / 2;
+        this.panelWidth = Math.min(230, this.width - 16);
+        this.panelHeight = Math.min(220, this.height - 16);
+        this.panelLeft = (this.width - this.panelWidth) / 2;
+        this.panelTop = (this.height - this.panelHeight) / 2;
+
         for (int i = 0; i < COMMANDS.length; i++) {
             final CompanionEntity.Command command = COMMANDS[i];
-            final int index = i;
             this.commandButtons[i] = this.addRenderableWidget(Button.builder(
                     commandLabel(command), button -> {
                         CompanionNetwork.requestSetCommand(this.companionEntityId, command.ordinal());
                         this.selectedCommand = command;
                         updateCommandLabels();
-                    }).bounds(panelLeft + 10, panelTop + 43 + i * 22, panelWidth - 20, 19).build());
+                    }).bounds(this.panelLeft + 10, this.panelTop + 43 + i * 22,
+                    this.panelWidth - 20, 19).build());
         }
+
         this.addRenderableWidget(Button.builder(Component.literal("Back to Inventory"),
                 button -> returnToParent())
-                .bounds(panelLeft + 10, panelTop + panelHeight - 28, panelWidth - 20, 18).build());
+                .bounds(this.panelLeft + 10, this.panelTop + this.panelHeight - 28,
+                        this.panelWidth - 20, 18).build());
     }
 
     private Component commandLabel(CompanionEntity.Command command) {
@@ -78,16 +88,16 @@ public final class CompanionCommandScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
-        int panelLeft = this.width / 2 - 115;
-        int panelTop = this.height / 2 - 112;
-        CompanionUiTheme.drawPanel(graphics, panelLeft, panelTop, panelWidth, panelHeight);
+        CompanionUiTheme.drawPanel(graphics, this.panelLeft, this.panelTop,
+                this.panelWidth, this.panelHeight);
         CompanionUiTheme.drawTitle(graphics, this.font, "COMMAND CENTER",
-                "Choose how your companion behaves", this.width / 2, panelTop + 13);
+                "Choose how your companion behaves", this.width / 2, this.panelTop + 13);
         graphics.drawCenteredString(this.font,
                 "CURRENT ORDER: " + LABELS[this.selectedCommand.ordinal()].toUpperCase(java.util.Locale.ROOT),
-                this.width / 2, panelTop + 29, CompanionUiTheme.GOLD_BRIGHT);
+                this.width / 2, this.panelTop + 29, CompanionUiTheme.GOLD_BRIGHT);
         graphics.drawCenteredString(this.font, DESCRIPTIONS[this.selectedCommand.ordinal()],
-                this.width / 2, panelTop + panelHeight - 42, CompanionUiTheme.TEXT_SECONDARY);
+                this.width / 2, this.panelTop + this.panelHeight - 42,
+                CompanionUiTheme.TEXT_SECONDARY);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 }
