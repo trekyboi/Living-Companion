@@ -75,7 +75,7 @@ public final class CompanionStatsScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics);
 
-        int panelWidth = Math.min(600, Math.max(300, width - 16));
+        int panelWidth = Math.max(180, Math.min(600, width - 16));
         int panelHeight = Math.min(400, Math.max(150, height - 16));
         int left = (width - panelWidth) / 2;
         int top = (height - panelHeight) / 2;
@@ -110,14 +110,20 @@ public final class CompanionStatsScreen extends Screen {
                     CompanionUiTheme.TEXT_SECONDARY, false);
         }
 
+        float xpProgress = data.experienceToNext > 0
+                ? Math.max(0.0F, Math.min(1.0F, data.experience / (float) data.experienceToNext))
+                : 1.0F;
+        CompanionUiTheme.drawProgressBar(graphics, innerLeft, top + 51,
+                panelWidth - 32, 5, xpProgress, CompanionUiTheme.GOLD);
+
         String bond = "BOND  " + data.relationshipTitle + "  •  Lv. " + data.relationshipLevel;
-        graphics.drawString(font, bond, innerLeft, top + 57, CompanionUiTheme.TEXT_PRIMARY, false);
+        graphics.drawString(font, bond, innerLeft, top + 63, CompanionUiTheme.TEXT_PRIMARY, false);
         String titleLine = "Title: " + data.companionTitle + "   |   Achievements: "
                 + data.achievementCount + "/12";
-        graphics.drawString(font, titleLine, innerLeft, top + 71,
+        graphics.drawString(font, titleLine, innerLeft, top + 77,
                 CompanionUiTheme.TEXT_SECONDARY, false);
 
-        int healthY = top + 94;
+        int healthY = top + 100;
         double maxHealth = Math.max(0.0D, stat(1));
         double currentHealth = Math.max(0.0D, stat(0));
         String healthLabel = "HEALTH  " + number(currentHealth) + " / " + number(maxHealth);
@@ -127,7 +133,7 @@ public final class CompanionStatsScreen extends Screen {
                 maxHealth > 0.0D ? (float) (currentHealth / maxHealth) : 0.0F,
                 CompanionUiTheme.DANGER);
 
-        int sectionY = top + 116;
+        int sectionY = top + 122;
         CompanionUiTheme.drawSectionHeader(graphics, font, "COMBAT PROFILE",
                 innerLeft, sectionY, columnWidth);
         CompanionUiTheme.drawSectionHeader(graphics, font, "ATTRIBUTE ALLOCATION",
