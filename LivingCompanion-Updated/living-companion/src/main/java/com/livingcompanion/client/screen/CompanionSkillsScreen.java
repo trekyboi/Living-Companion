@@ -21,7 +21,7 @@ public final class CompanionSkillsScreen extends Screen {
     private static final int PANEL_MAX_HEIGHT = 430;
     private static final int ROW_HEIGHT = 68;
     private static final int ROW_GAP = 6;
-    private static final int HEADER_HEIGHT = 126;
+    private static final int HEADER_HEIGHT = 150;
 
     private final Screen parent;
     private SkillDataMessage data;
@@ -79,8 +79,8 @@ public final class CompanionSkillsScreen extends Screen {
         this.upgradeButtons.clear();
         this.specializationButtons.clear();
 
-        this.panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(220, this.width - 16));
-        this.panelHeight = Math.min(PANEL_MAX_HEIGHT, Math.max(200, this.height - 16));
+        this.panelWidth = Math.max(200, Math.min(PANEL_MAX_WIDTH, this.width - 16));
+        this.panelHeight = Math.max(170, Math.min(PANEL_MAX_HEIGHT, this.height - 16));
         this.panelLeft = (this.width - this.panelWidth) / 2;
         this.panelTop = (this.height - this.panelHeight) / 2;
         this.listTop = this.panelTop + HEADER_HEIGHT;
@@ -111,7 +111,7 @@ public final class CompanionSkillsScreen extends Screen {
                 CompanionSpecialization choice = choices[i];
                 Button select = Button.builder(Component.literal(choice.getDisplayName()), button ->
                         CompanionNetwork.requestSpecialization(data.entityId, choice.getId()))
-                        .bounds(this.panelLeft + 16 + i * (choiceWidth + 8), this.panelTop + 98,
+                        .bounds(this.panelLeft + 16 + i * (choiceWidth + 8), this.panelTop + 116,
                                 choiceWidth, 20).build();
                     this.specializationButtons.add(select);
                     this.addRenderableWidget(select);
@@ -218,7 +218,12 @@ public final class CompanionSkillsScreen extends Screen {
                             ? CompanionUiTheme.SUCCESS : CompanionUiTheme.TEXT_MUTED);
             String xp = data.level >= CompanionProgressionMaxLevel.VALUE
                     ? "Maximum level reached" : "XP: " + data.experience + " / " + data.experienceToNext;
-            graphics.drawString(this.font, xp, left + 16, top + 65, 0xFFB9B9B9, false);
+            graphics.drawString(this.font, xp, left + 16, top + 65, CompanionUiTheme.TEXT_SECONDARY, false);
+            float xpProgress = data.experienceToNext > 0
+                    ? Math.max(0.0F, Math.min(1.0F, data.experience / (float) data.experienceToNext))
+                    : 1.0F;
+            CompanionUiTheme.drawProgressBar(graphics, left + 16, top + 78,
+                    Math.min(230, this.panelWidth - 32), 6, xpProgress, CompanionUiTheme.GOLD);
             if (getSelectedSpecialization() != null) {
                 graphics.drawString(this.font, "Path: " + getSelectedSpecialization().getDisplayName(),
                         left + 16, top + 83, 0xFFFFD58A, false);
