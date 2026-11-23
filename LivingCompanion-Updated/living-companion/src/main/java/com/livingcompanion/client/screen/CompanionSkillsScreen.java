@@ -118,8 +118,7 @@ public final class CompanionSkillsScreen extends Screen {
                 }
             }
         }
-        for (CompanionSkill skill : CompanionSkill.forClassAndSpecialization(
-                classes[data.classId], getSelectedSpecialization())) {
+        for (CompanionSkill skill : skillsForDisplay()) {
             int rank = skill.ordinal() < data.ranks.length ? data.ranks[skill.ordinal()] : 0;
             boolean[] confirmationPending = {false};
             Button upgrade = Button.builder(Component.literal(rank >= skill.getMaximumRank()
@@ -158,11 +157,10 @@ public final class CompanionSkillsScreen extends Screen {
         int buttonX = this.panelLeft + this.panelWidth - buttonWidth - 14;
         CompanionClass[] classes = CompanionClass.values();
         if (data.classId <= 0 || data.classId >= classes.length) return;
-        List<CompanionSkill> skills = CompanionSkill.forClassAndSpecialization(
-                classes[data.classId], getSelectedSpecialization());
+        List<CompanionSkill> skills = skillsForDisplay();
         for (int i = 0; i < this.upgradeButtons.size(); i++) {
             Button button = this.upgradeButtons.get(i);
-            int rowY = this.listTop + i * rowStep - this.scrollOffset;
+            int rowY = skillRowY(skills, i);
             button.setX(buttonX);
             button.setY(rowY + (ROW_HEIGHT - 22) / 2);
             boolean visible = rowY >= this.listTop && rowY + ROW_HEIGHT <= this.listBottom;
@@ -181,7 +179,7 @@ public final class CompanionSkillsScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (mouseX >= this.panelLeft && mouseX <= this.panelLeft + this.panelWidth
                 && mouseY >= this.listTop && mouseY <= this.listBottom) {
-            int contentHeight = this.upgradeButtons.size() * (ROW_HEIGHT + ROW_GAP) - ROW_GAP;
+            int contentHeight = skillContentHeight(skillsForDisplay());
             int viewportHeight = this.listBottom - this.listTop;
             int maxScroll = Math.max(0, contentHeight - viewportHeight);
             this.scrollOffset = MthClamp.clamp(this.scrollOffset - (int) (delta * 24), 0, maxScroll);
@@ -237,15 +235,24 @@ public final class CompanionSkillsScreen extends Screen {
                         left + 16, top + 94, CompanionUiTheme.GOLD_BRIGHT, false);
             }
 
-            List<CompanionSkill> skills = CompanionSkill.forClassAndSpecialization(
-                    classes[data.classId], getSelectedSpecialization());
+            List<CompanionSkill> skills = skillsForDisplay();
             int descriptionWidth = Math.max(90, this.panelWidth - Math.min(96, Math.max(76, this.panelWidth / 6)) - 54);
             graphics.enableScissor(left + 8, this.listTop, right - 8, this.listBottom);
             for (int i = 0; i < skills.size(); i++) {
                 CompanionSkill skill = skills.get(i);
                 int rank = skill.ordinal() < data.ranks.length ? data.ranks[skill.ordinal()] : 0;
-                int rowY = this.listTop + i * (ROW_HEIGHT + ROW_GAP) - this.scrollOffset;
+                int rowY = skillRowY(skills, i);
                 int rowBottom = rowY + ROW_HEIGHT;
+                if (i == 0 || skills.get(i - 1).getType() != skill.getType()) {
+                    String section = switch (skill.getType()) {
+                        case PASSIVE -> "PASSIVE ABILITIES";
+                        case ACTIVE -> "ACTIVE SKILLS";
+                        case ULTIMATE -> "ULTIMATE ABILITIES";
+                    };
+                    int sectionColor = skillTypeColor(skill.getType());
+                    graphics.fill(left + 12, rowY - 13, right - 12, rowY - 12, sectionColor);
+                    graphics.drawString(this.font, section, left + 16, rowY - 11, sectionColor, false);
+                }
                 CompanionUiTheme.drawCard(graphics, left + 8, rowY,
                     right - left - 16, ROW_HEIGHT, false);
                 boolean locked = data.level < skill.getUnlockLevel();
@@ -257,11 +264,7 @@ public final class CompanionSkillsScreen extends Screen {
                 int textRight = textX + descriptionWidth;
                 graphics.drawString(this.font, skill.getDisplayName(),
                         textX, rowY + 8, CompanionUiTheme.TEXT_PRIMARY, false);
-                int typeColor = switch (skill.getType()) {
-                    case PASSIVE -> 0xFF8BC6A1;
-                    case ACTIVE -> 0xFF82BCEB;
-                    case ULTIMATE -> 0xFFE6B36C;
-                };
+                int typeColor = skillTypeColor(skill.getType());
                 graphics.fill(left + 8, rowY + 5, left + 11, rowBottom - 5, typeColor);
                 String skillMeta = skill.getType().name() + "  •  RANK "
                         + rank + "/" + skill.getMaximumRank();
@@ -321,7 +324,7 @@ public final class CompanionSkillsScreen extends Screen {
             }
             graphics.disableScissor();
 
-            int contentHeight = skills.size() * (ROW_HEIGHT + ROW_GAP) - ROW_GAP;
+            int contentHeight = skillContentHeight(skills);
             int viewportHeight = this.listBottom - this.listTop;
             if (contentHeight > viewportHeight) {
                 graphics.drawCenteredString(this.font, "Scroll to view more skills",
@@ -330,6 +333,52 @@ public final class CompanionSkillsScreen extends Screen {
         }
         updateButtonPositions();
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+
+    private List<CompanionSkill> skillsForDisplay() {
+        CompanionClass[] classes = CompanionClass.values();
+        if (data.classId <= 0 || data.classId >= classes.length) return List.of();
+        return CompanionSkill.forClassAndSpecialization(
+                classes[data.classId], getSelectedSpecialization()).stream()
+                .sorted(java.util.Comparator.comparingInt(skill -> skill.getType().ordinal()))
+                .toList();
+    }
+
+    private int skillRowY(List<CompanionSkill> skills, int index) {
+        int y = this.listTop;
+        CompanionSkill.SkillType previous = null;
+        for (int i = 0; i <= index && i < skills.size(); i++) {
+            CompanionSkill skill = skills.get(i);
+            if (skill.getType() != previous) {
+                y += 17;
+                previous = skill.getType();
+            }
+            if (i == index) return y - this.scrollOffset;
+            y += ROW_HEIGHT + ROW_GAP;
+        }
+        return y - this.scrollOffset;
+    }
+
+    private int skillContentHeight(List<CompanionSkill> skills) {
+        int height = 0;
+        CompanionSkill.SkillType previous = null;
+        for (CompanionSkill skill : skills) {
+            if (skill.getType() != previous) {
+                height += 17;
+                previous = skill.getType();
+            }
+            height += ROW_HEIGHT + ROW_GAP;
+        }
+        return Math.max(0, height - ROW_GAP);
+    }
+
+    private static int skillTypeColor(CompanionSkill.SkillType type) {
+        return switch (type) {
+            case PASSIVE -> 0xFF8BC6A1;
+            case ACTIVE -> 0xFF82BCEB;
+            case ULTIMATE -> 0xFFE6B36C;
+        };
     }
 
     private static ItemStack skillIcon(CompanionSkill skill) {
