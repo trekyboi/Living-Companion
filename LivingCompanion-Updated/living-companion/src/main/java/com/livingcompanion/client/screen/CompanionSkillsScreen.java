@@ -225,14 +225,16 @@ public final class CompanionSkillsScreen extends Screen {
             CompanionUiTheme.drawProgressBar(graphics, left + 16, top + 78,
                     Math.min(230, this.panelWidth - 32), 6, xpProgress, CompanionUiTheme.GOLD);
             if (getSelectedSpecialization() != null) {
-                graphics.drawString(this.font, "Path: " + getSelectedSpecialization().getDisplayName(),
-                        left + 16, top + 83, 0xFFFFD58A, false);
+                graphics.drawString(this.font, "SPECIALIZATION  •  " + getSelectedSpecialization().getDisplayName(),
+                        left + 16, top + 94, CompanionUiTheme.GOLD_BRIGHT, false);
+                graphics.drawString(this.font, getSelectedSpecialization().getDescription(),
+                        left + 16, top + 106, CompanionUiTheme.TEXT_SECONDARY, false);
             } else if (data.level < 30) {
-                graphics.drawString(this.font, "Specialization unlocks at level 30",
-                        left + 16, top + 83, 0xFF9BA5AF, false);
+                graphics.drawString(this.font, "SPECIALIZATION PATHS UNLOCK AT LEVEL 30",
+                        left + 16, top + 94, CompanionUiTheme.TEXT_MUTED, false);
             } else {
-                graphics.drawString(this.font, "Choose your permanent class specialization:",
-                        left + 16, top + 83, 0xFFFFD58A, false);
+                graphics.drawString(this.font, "CHOOSE ONE PERMANENT SPECIALIZATION PATH",
+                        left + 16, top + 94, CompanionUiTheme.GOLD_BRIGHT, false);
             }
 
             List<CompanionSkill> skills = CompanionSkill.forClassAndSpecialization(
@@ -255,11 +257,17 @@ public final class CompanionSkillsScreen extends Screen {
                 int textRight = textX + descriptionWidth;
                 graphics.drawString(this.font, skill.getDisplayName(),
                         textX, rowY + 8, CompanionUiTheme.TEXT_PRIMARY, false);
+                int typeColor = switch (skill.getType()) {
+                    case PASSIVE -> 0xFF8BC6A1;
+                    case ACTIVE -> 0xFF82BCEB;
+                    case ULTIMATE -> 0xFFE6B36C;
+                };
+                graphics.fill(left + 8, rowY + 5, left + 11, rowBottom - 5, typeColor);
                 String skillMeta = skill.getType().name() + "  •  RANK "
                         + rank + "/" + skill.getMaximumRank();
                 graphics.drawString(this.font, skillMeta,
                         textRight - this.font.width(skillMeta),
-                        rowY + 8, CompanionUiTheme.GOLD_BRIGHT, false);
+                        rowY + 8, typeColor, false);
                 for (int pip = 0; pip < skill.getMaximumRank(); pip++) {
                     int pipX = textX + pip * 9;
                     graphics.fill(pipX, rowY + 19, pipX + 7, rowY + 23,
