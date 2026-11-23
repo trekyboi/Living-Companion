@@ -112,7 +112,7 @@ public final class CompanionSkillsScreen extends Screen {
                 Button select = Button.builder(Component.literal(choice.getDisplayName()), button ->
                         CompanionNetwork.requestSpecialization(data.entityId, choice.getId()))
                         .bounds(this.panelLeft + 16 + i * (choiceWidth + 8), this.panelTop + 116,
-                                choiceWidth, 20).build();
+                                choiceWidth, 24).build();
                     this.specializationButtons.add(select);
                     this.addRenderableWidget(select);
                 }
@@ -222,6 +222,33 @@ public final class CompanionSkillsScreen extends Screen {
                     : 1.0F;
             CompanionUiTheme.drawProgressBar(graphics, left + 16, top + 78,
                     Math.min(230, this.panelWidth - 32), 6, xpProgress, CompanionUiTheme.GOLD);
+            if (data.level >= 30 && data.specializationId < 0) {
+                CompanionSpecialization[] choices = CompanionSpecialization.forClass(classes[data.classId]);
+                if (choices.length > 0) {
+                    int choiceWidth = Math.max(54, Math.min(120,
+                            (this.panelWidth - 48 - 8 * (choices.length - 1)) / choices.length));
+                    for (int i = 0; i < choices.length; i++) {
+                        int cardX = left + 16 + i * (choiceWidth + 8);
+                        CompanionUiTheme.drawCard(graphics, cardX, top + 112,
+                                choiceWidth, 32, false);
+                        graphics.drawCenteredString(this.font, choices[i].getDisplayName(),
+                                cardX + choiceWidth / 2, top + 119, CompanionUiTheme.GOLD_BRIGHT);
+                        String role = switch (choices[i]) {
+                            case PALADIN_WARDEN -> "Healing";
+                            case PALADIN_CRUSADER -> "Offense";
+                            case PALADIN_TEMPLAR -> "Auras";
+                            case TANK_BULWARK -> "Defense";
+                            case TANK_VANGUARD -> "Aggro";
+                            case TANK_JUGGERNAUT -> "Bruiser";
+                            case ELEMENTALIST_PYROMANCER -> "Fire";
+                            case ELEMENTALIST_CRYOMANCER -> "Frost";
+                            case ELEMENTALIST_STORMCALLER -> "Lightning";
+                        };
+                        graphics.drawCenteredString(this.font, role,
+                                cardX + choiceWidth / 2, top + 132, CompanionUiTheme.TEXT_SECONDARY);
+                    }
+                }
+            }
             if (getSelectedSpecialization() != null) {
                 graphics.drawString(this.font, "SPECIALIZATION  •  " + getSelectedSpecialization().getDisplayName(),
                         left + 16, top + 94, CompanionUiTheme.GOLD_BRIGHT, false);
